@@ -53,7 +53,11 @@
       "register": "Register",
       "unexpectedError": "An unexpected error occurred. Please try again.",
       "networkError": "Network error. Please try again.",
-      "accountNotFound": "Could not resolve your account"
+      "accountNotFound": "Could not resolve your account",
+      "selectCompany": "Select Company",
+      "multipleCompanies": "Your account exists on multiple companies. Please select one.",
+      "continue": "Continue",
+      "back": "Back"
     },
     "register": {
       "title": "Register",
@@ -804,7 +808,11 @@
     "confirmSubmitAccrual": "Submit this salary accrual? It will post to the general ledger.",
     "accrualCancelled": "Salary accrual cancelled",
     "accrualDeleted": "Salary accrual deleted",
-    "accrualSubmitted": "Salary accrual submitted"
+    "accrualSubmitted": "Salary accrual submitted",
+    "defaultExpenseAccount": "Default Expense Account",
+    "expenseAccount": "Expense Account",
+    "selectExpenseAccount": "Select expense account...",
+    "missingExpenseAccount": "All selected employees must have an expense account"
   },
   "stock": {
     "warehouses": "Warehouses",

@@ -53,7 +53,11 @@
       "register": "Рўйхатдан ўтиш",
       "unexpectedError": "Кутилмаган хато юз берди. Қайтадан уриниб кўринг.",
       "networkError": "Тармоқ хатоси. Қайтадан уриниб кўринг.",
-      "accountNotFound": "Ҳисобни топиб бўлмади"
+      "accountNotFound": "Ҳисобни топиб бўлмади",
+      "selectCompany": "Компанияни танланг",
+      "multipleCompanies": "Ҳисобингиз бир нечта компанияларда мавжуд. Бирини танланг.",
+      "continue": "Давом этиш",
+      "back": "Орқага"
     },
     "register": {
       "title": "Рўйхатдан ўтиш",
@@ -793,7 +797,11 @@
     "confirmSubmitAccrual": "Бу иш ҳақи ҳисоблашини тасдиқлайсизми? Бош китобга ёзилади.",
     "accrualCancelled": "Иш ҳақи ҳисоблаши бекор қилинди",
     "accrualDeleted": "Иш ҳақи ҳисоблаши ўчирилди",
-    "accrualSubmitted": "Иш ҳақи ҳисоблаши тасдиқланди"
+    "accrualSubmitted": "Иш ҳақи ҳисоблаши тасдиқланди",
+    "defaultExpenseAccount": "Стандарт харажат ҳисоби",
+    "expenseAccount": "Харажат ҳисоби",
+    "selectExpenseAccount": "Харажат ҳисобини танланг...",
+    "missingExpenseAccount": "Барча танланган ходимларда харажат ҳисоби кўрсатилиши керак"
   },
   "stock": {
     "warehouses": "Омборхоналар",

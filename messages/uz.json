@@ -53,7 +53,11 @@
       "register": "Ro'yxatdan o'tish",
       "unexpectedError": "Kutilmagan xato yuz berdi. Qaytadan urinib ko'ring.",
       "networkError": "Tarmoq xatosi. Qaytadan urinib ko'ring.",
-      "accountNotFound": "Hisobni topib bo'lmadi"
+      "accountNotFound": "Hisobni topib bo'lmadi",
+      "selectCompany": "Kompaniyani tanlang",
+      "multipleCompanies": "Hisobingiz bir nechta kompaniyalarda mavjud. Birini tanlang.",
+      "continue": "Davom etish",
+      "back": "Orqaga"
     },
     "register": {
       "title": "Ro'yxatdan o'tish",
@@ -793,7 +797,11 @@
     "confirmSubmitAccrual": "Bu ish haqi hisoblashini tasdiqlaysizmi? Bosh kitobga yoziladi.",
     "accrualCancelled": "Ish haqi hisoblashi bekor qilindi",
     "accrualDeleted": "Ish haqi hisoblashi o'chirildi",
-    "accrualSubmitted": "Ish haqi hisoblashi tasdiqlandi"
+    "accrualSubmitted": "Ish haqi hisoblashi tasdiqlandi",
+    "defaultExpenseAccount": "Standart xarajat hisobi",
+    "expenseAccount": "Xarajat hisobi",
+    "selectExpenseAccount": "Xarajat hisobini tanlang...",
+    "missingExpenseAccount": "Barcha tanlangan xodimlarda xarajat hisobi ko'rsatilishi kerak"
   },
   "stock": {
     "warehouses": "Omborxonalar",
