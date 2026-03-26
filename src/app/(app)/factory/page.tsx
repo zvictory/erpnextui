@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -17,6 +17,9 @@ import { buildTimeline } from "@/lib/playback/build-timeline";
 import { PlaybackModeToggle } from "@/components/digital-twin/panels/PlaybackModeToggle";
 import { TimelineControl } from "@/components/digital-twin/panels/TimelineControl";
 import { EventLog } from "@/components/digital-twin/panels/EventLog";
+import { EquipmentDetail } from "@/components/digital-twin/panels/EquipmentDetail";
+import { ViewModeToggle } from "@/components/digital-twin/controls/ViewModeToggle";
+import { useFactoryShortcuts } from "@/hooks/use-factory-shortcuts";
 
 // Dynamic import — R3F Canvas cannot SSR
 const FactoryScene = dynamic(
@@ -42,18 +45,22 @@ export default function FactoryPage() {
   const { company } = useCompanyStore();
   const { data: workOrders = [] } = useActiveWorkOrders(company);
   const { data: recentEntries = [] } = useRecentStockEntries(company);
-  const { showPipes, showFlow, togglePipes, toggleFlow, mode, snapshot, setTimeline } =
+  const { showPipes, showFlow, togglePipes, toggleFlow, mode, snapshot, viewMode } =
     useFactoryTwinStore();
+  useFactoryShortcuts();
 
-  // Build timeline when switching to playback or when data changes
+  // Build timeline when data changes — use a fingerprint to avoid infinite loops
+  const timelineKey = `${workOrders.length}-${recentEntries.length}`;
+  const prevKeyRef = useRef("");
   useEffect(() => {
-    if (workOrders.length > 0 || recentEntries.length > 0) {
-      const events = buildTimeline(workOrders, recentEntries);
-      const now = Date.now();
-      const start = events.length > 0 ? events[0].timestamp : now - 2 * 3600_000;
-      setTimeline(start, now, events);
-    }
-  }, [workOrders, recentEntries, setTimeline]);
+    if (timelineKey === prevKeyRef.current) return;
+    if (workOrders.length === 0 && recentEntries.length === 0) return;
+    prevKeyRef.current = timelineKey;
+    const events = buildTimeline(workOrders, recentEntries);
+    const now = Date.now();
+    const start = events.length > 0 ? events[0].timestamp : now - 2 * 3600_000;
+    useFactoryTwinStore.getState().setTimeline(start, now, events);
+  }, [timelineKey, workOrders, recentEntries]);
 
   // Collapse sidebar on mount, restore on unmount
   useEffect(() => {
@@ -72,12 +79,24 @@ export default function FactoryPage() {
           </Link>
         </Button>
         <PlaybackModeToggle />
+        <ViewModeToggle />
       </div>
 
       {/* Playback: Timeline control */}
       {mode === "playback" && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 w-[min(90%,700px)]">
           <TimelineControl />
+        </div>
+      )}
+
+      {/* Equipment detail panel (right side) */}
+      {selectedEquipment && mode === "live" && (
+        <div className="absolute top-14 right-3 z-10">
+          <EquipmentDetail
+            equipment={selectedEquipment}
+            workOrder={workOrders.find((w) => w.workstation === selectedEquipment.linkedWorkstation)}
+            onClose={() => setSelectedId(null)}
+          />
         </div>
       )}
 
@@ -133,6 +152,7 @@ export default function FactoryPage() {
           showPipes={showPipes}
           showFlow={showFlow}
           playbackSnapshot={mode === "playback" ? snapshot : null}
+          viewMode={viewMode}
         />
       </div>
 

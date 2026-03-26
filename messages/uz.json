@@ -921,6 +921,30 @@
     "equipment": "uskuna",
     "workstation": "Ish stantsiyasi",
     "warehouse": "Sklad",
-    "noParameters": "Bu uskuna uchun parametrlar sozlanmagan."
+    "noParameters": "Bu uskuna uchun parametrlar sozlanmagan.",
+    "pipes": "Quvurlar",
+    "flow": "Mahsulot oqimi",
+    "playback": "Qayta ko'rish",
+    "live": "Jonli",
+    "alerts": "Ogohlantirishlar",
+    "production": "Ishlab chiqarish",
+    "status": {
+      "running": "Ishlayapti",
+      "idle": "Kutmoqda",
+      "completed": "Tugallangan",
+      "error": "Xatolik"
+    },
+    "alert": {
+      "critical": "Jiddiy",
+      "warning": "Ogohlantirish",
+      "info": "Ma'lumot",
+      "acknowledge": "Tasdiqlash"
+    },
+    "summary": {
+      "planned": "Reja",
+      "produced": "Tayyor",
+      "defective": "Brak",
+      "efficiency": "Samaradorlik"
+    }
   }
 }

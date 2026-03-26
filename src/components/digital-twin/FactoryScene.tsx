@@ -185,9 +185,10 @@ interface FactorySceneProps {
   showPipes?: boolean;
   showFlow?: boolean;
   playbackSnapshot?: FactorySnapshot | null;
+  viewMode?: "3d" | "2d";
 }
 
-export function FactoryScene({ onSelectEquipment, selectedEquipment, workOrders = [], showPipes = true, showFlow = true, playbackSnapshot }: FactorySceneProps) {
+export function FactoryScene({ onSelectEquipment, selectedEquipment, workOrders = [], showPipes = true, showFlow = true, playbackSnapshot, viewMode = "3d" }: FactorySceneProps) {
   // Build a map: linkedWorkstation → work order (live mode)
   const woByWorkstation = new Map<string, ActiveWorkOrder>();
   for (const wo of workOrders) {
@@ -220,7 +221,12 @@ export function FactoryScene({ onSelectEquipment, selectedEquipment, workOrders 
   return (
     <Canvas
       shadows
-      camera={{ position: [25, 18, 25], fov: 45, near: 0.1, far: 500 }}
+      camera={{
+        position: viewMode === "2d" ? [0, 40, 0.01] : [25, 18, 25],
+        fov: viewMode === "2d" ? 35 : 45,
+        near: 0.1,
+        far: 500,
+      }}
       style={{ width: "100%", height: "100%", background: "#e5e7eb" }}
       onPointerMissed={() => onSelectEquipment?.(null)}
     >
@@ -235,8 +241,15 @@ export function FactoryScene({ onSelectEquipment, selectedEquipment, workOrders 
       <color attach="background" args={["#e5e7eb"]} />
 
       {/* Controls */}
-      <OrbitControls enableDamping dampingFactor={0.1} target={[0, 1, 2]}
-        minDistance={8} maxDistance={60} maxPolarAngle={Math.PI / 2.2} />
+      <OrbitControls
+        enableDamping dampingFactor={0.1}
+        target={[0, 0, 2]}
+        minDistance={viewMode === "2d" ? 20 : 8}
+        maxDistance={viewMode === "2d" ? 80 : 60}
+        maxPolarAngle={viewMode === "2d" ? 0.01 : Math.PI / 2.2}
+        minPolarAngle={viewMode === "2d" ? 0 : 0.2}
+        enableRotate={viewMode !== "2d"}
+      />
 
       {/* Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>

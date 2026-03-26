@@ -949,6 +949,30 @@
     "equipment": "equipment",
     "workstation": "Workstation",
     "warehouse": "Warehouse",
-    "noParameters": "No parameters configured for this equipment."
+    "noParameters": "No parameters configured for this equipment.",
+    "pipes": "Pipes",
+    "flow": "Flow",
+    "playback": "Playback",
+    "live": "Live",
+    "alerts": "Alerts",
+    "production": "Production",
+    "status": {
+      "running": "Running",
+      "idle": "Idle",
+      "completed": "Completed",
+      "error": "Error"
+    },
+    "alert": {
+      "critical": "Critical",
+      "warning": "Warning",
+      "info": "Info",
+      "acknowledge": "Acknowledge"
+    },
+    "summary": {
+      "planned": "Planned",
+      "produced": "Produced",
+      "defective": "Defective",
+      "efficiency": "Efficiency"
+    }
   }
 }

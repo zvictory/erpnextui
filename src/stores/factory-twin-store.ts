@@ -5,6 +5,7 @@ interface FactoryTwinState {
   // UI toggles
   selectedEquipment: string | null;
   hoveredEquipment: string | null;
+  viewMode: "3d" | "2d";
   showLabels: boolean;
   showGrid: boolean;
   showPipes: boolean;
@@ -23,6 +24,7 @@ interface FactoryTwinState {
   // UI actions
   setSelectedEquipment: (id: string | null) => void;
   setHoveredEquipment: (id: string | null) => void;
+  setViewMode: (mode: "3d" | "2d") => void;
   toggleLabels: () => void;
   toggleGrid: () => void;
   togglePipes: () => void;
@@ -44,6 +46,7 @@ const twoHoursAgo = now - 2 * 60 * 60 * 1000;
 export const useFactoryTwinStore = create<FactoryTwinState>((set, get) => ({
   selectedEquipment: null,
   hoveredEquipment: null,
+  viewMode: "3d",
   showLabels: true,
   showGrid: true,
   showPipes: true,
@@ -60,6 +63,7 @@ export const useFactoryTwinStore = create<FactoryTwinState>((set, get) => ({
 
   setSelectedEquipment: (id) => set({ selectedEquipment: id }),
   setHoveredEquipment: (id) => set({ hoveredEquipment: id }),
+  setViewMode: (viewMode) => set({ viewMode }),
   toggleLabels: () => set((s) => ({ showLabels: !s.showLabels })),
   toggleGrid: () => set((s) => ({ showGrid: !s.showGrid })),
   togglePipes: () => set((s) => ({ showPipes: !s.showPipes })),

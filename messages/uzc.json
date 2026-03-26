@@ -921,6 +921,30 @@
     "equipment": "ускуна",
     "workstation": "Иш станцияси",
     "warehouse": "Склад",
-    "noParameters": "Бу ускуна учун параметрлар созланмаган."
+    "noParameters": "Бу ускуна учун параметрлар созланмаган.",
+    "pipes": "Қувурлар",
+    "flow": "Маҳсулот оқими",
+    "playback": "Қайта кўриш",
+    "live": "Жонли",
+    "alerts": "Огоҳлантиришлар",
+    "production": "Ишлаб чиқариш",
+    "status": {
+      "running": "Ишлаяпти",
+      "idle": "Кутмоқда",
+      "completed": "Тугалланган",
+      "error": "Хатолик"
+    },
+    "alert": {
+      "critical": "Жиддий",
+      "warning": "Огоҳлантириш",
+      "info": "Маълумот",
+      "acknowledge": "Тасдиқлаш"
+    },
+    "summary": {
+      "planned": "Режа",
+      "produced": "Тайёр",
+      "defective": "Брак",
+      "efficiency": "Самарадорлик"
+    }
   }
 }
