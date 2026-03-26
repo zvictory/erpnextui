@@ -16,8 +16,7 @@ export function FactoryFloor() {
       </mesh>
       {/* Grid overlay */}
       <Grid
-        position={[0, 0, 0]}
-        args={[40, 30]}
+        position={[0, 0.001, 0]}
         cellSize={1}
         cellThickness={0.5}
         cellColor="#d0d0d0"
@@ -25,7 +24,7 @@ export function FactoryFloor() {
         sectionThickness={1}
         sectionColor="#b0b0b0"
         fadeDistance={50}
-        infiniteGrid={false}
+        infiniteGrid
       />
     </>
   );

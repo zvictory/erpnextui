@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { Home } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { useSidebar } from "@/components/ui/sidebar";
 import { FACTORY_LAYOUT } from "@/config/factory-layout";
 
 // Dynamic import — R3F Canvas cannot SSR
@@ -13,41 +17,58 @@ const FactoryScene = dynamic(
     import("@/components/digital-twin/FactoryScene").then((mod) => ({
       default: mod.FactoryScene,
     })),
-  { ssr: false },
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-full bg-neutral-100 dark:bg-neutral-900 text-muted-foreground">
+        Loading 3D scene...
+      </div>
+    ),
+  },
 );
 
 export default function FactoryPage() {
   const t = useTranslations("factory");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selectedEquipment = FACTORY_LAYOUT.find((e) => e.id === selectedId);
+  const { setOpen } = useSidebar();
+
+  // Collapse sidebar on mount, restore on unmount
+  useEffect(() => {
+    setOpen(false);
+    return () => setOpen(true);
+  }, [setOpen]);
 
   return (
-    <div className="flex flex-col h-[calc(100svh-3.5rem)] -m-4 md:-m-6 overflow-hidden">
-      {/* 3D Viewport */}
-      <div className="flex-1 relative">
+    <div className="fixed inset-0 z-50 flex flex-col bg-background">
+      {/* Home button overlay */}
+      <div className="absolute top-3 left-3 z-10">
+        <Button variant="outline" size="sm" className="bg-background/80 backdrop-blur-sm" asChild>
+          <Link href="/dashboard">
+            <Home className="h-4 w-4 mr-1.5" />
+            {t("title")}
+          </Link>
+        </Button>
+      </div>
+
+      {/* Equipment count */}
+      <div className="absolute top-3 right-3 z-10">
+        <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm">
+          {FACTORY_LAYOUT.length} {t("equipment")}
+        </Badge>
+      </div>
+
+      {/* 3D Viewport — full screen */}
+      <div className="flex-1">
         <FactoryScene
           selectedEquipment={selectedId}
           onSelectEquipment={setSelectedId}
         />
-
-        {/* Title overlay */}
-        <div className="absolute top-4 left-4 pointer-events-none">
-          <h1 className="text-lg font-semibold text-foreground/80 bg-background/70 backdrop-blur-sm rounded-md px-3 py-1.5">
-            {t("title")}
-          </h1>
-        </div>
-
-        {/* Equipment count badge */}
-        <div className="absolute top-4 right-4 pointer-events-none">
-          <Badge variant="secondary" className="bg-background/70 backdrop-blur-sm">
-            {FACTORY_LAYOUT.length} {t("equipment")}
-          </Badge>
-        </div>
       </div>
 
-      {/* Bottom detail panel — shows when equipment selected */}
+      {/* Bottom detail panel */}
       {selectedEquipment && (
-        <div className="border-t bg-background p-4">
+        <div className="absolute bottom-0 left-0 right-0 z-10 border-t bg-background/90 backdrop-blur-sm p-4">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -69,7 +90,7 @@ export default function FactoryPage() {
                 </span>
               )}
             </div>
-            {selectedEquipment.parameters.length > 0 && (
+            {selectedEquipment.parameters.length > 0 ? (
               <div className="flex gap-3 flex-wrap">
                 {selectedEquipment.parameters.map((param) => (
                   <Card key={param.key} className="flex-1 min-w-[140px]">
@@ -85,8 +106,7 @@ export default function FactoryPage() {
                   </Card>
                 ))}
               </div>
-            )}
-            {selectedEquipment.parameters.length === 0 && (
+            ) : (
               <p className="text-sm text-muted-foreground">{t("noParameters")}</p>
             )}
           </div>

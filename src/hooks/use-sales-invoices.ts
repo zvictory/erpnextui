@@ -79,6 +79,7 @@ export function useCreateSalesInvoice() {
       frappe.createDoc<SalesInvoice>("Sales Invoice", {
         doctype: "Sales Invoice",
         update_stock: 1,
+        set_posting_time: 1,
         ...data,
         items: data.items.map((item) => ({
           doctype: "Sales Invoice Item",
@@ -105,6 +106,7 @@ export function useUpdateSalesInvoice() {
       return frappe.save<SalesInvoice>({
         ...(doc as unknown as Record<string, unknown>),
         ...data,
+        set_posting_time: 1,
         ...(data.items
           ? {
               items: data.items.map((item) => ({
