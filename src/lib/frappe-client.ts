@@ -6,25 +6,6 @@ import {
   type FrappeListResponse,
 } from "./frappe-types";
 
-function getAuthHeaders(hasBody: boolean): Record<string, string> {
-  const { apiKey, apiSecret, csrfToken } = useAuthStore.getState();
-  const headers: Record<string, string> = {};
-
-  if (hasBody) {
-    headers["Content-Type"] = "application/json";
-  }
-
-  if (apiKey && apiSecret) {
-    headers["Authorization"] = `token ${apiKey}:${apiSecret}`;
-  }
-
-  if (csrfToken) {
-    headers["X-Frappe-CSRF-Token"] = csrfToken;
-  }
-
-  return headers;
-}
-
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, "").trim();
 }
@@ -72,19 +53,63 @@ async function parseErrorResponse(resp: Response): Promise<FrappeAPIError> {
   return new FrappeAPIError(message, resp.status, excType, serverMessages);
 }
 
-export async function frappeCall<T>(
-  endpoint: string,
-  options?: RequestInit,
-): Promise<T> {
+/** Fetch a fresh CSRF token by loading the Frappe app shell and parsing it out. */
+export async function fetchCsrfToken(): Promise<void> {
+  const { siteUrl } = useAuthStore.getState();
+  if (!siteUrl) return;
+  try {
+    const resp = await fetch("/api/proxy/app", {
+      credentials: "include",
+      headers: { "X-Frappe-Site": siteUrl },
+    });
+    if (!resp.ok) return;
+    const html = await resp.text();
+    const m = html.match(/csrf_token\s*=\s*"([a-f0-9]+)"/);
+    if (m?.[1]) useAuthStore.getState().setCsrfToken(m[1]);
+  } catch {
+    // silently degrade
+  }
+}
+
+export async function frappeCall<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const hasBody = !!options?.body;
-  const resp = await fetch(endpoint, {
+  const { siteUrl, csrfToken } = useAuthStore.getState();
+
+  // Route through the local Next.js proxy so CORS is never an issue.
+  // The proxy reads X-Frappe-Site to know which Frappe server to call.
+  const fullEndpoint = endpoint.startsWith("/") ? `/api/proxy${endpoint}` : endpoint;
+
+  function buildHeaders(token: string | null): Record<string, string> {
+    const h: Record<string, string> = {};
+    if (hasBody) h["Content-Type"] = "application/json";
+    if (token) h["X-Frappe-CSRF-Token"] = token;
+    if (siteUrl) h["X-Frappe-Site"] = siteUrl;
+    return h;
+  }
+
+  const resp = await fetch(fullEndpoint, {
     credentials: "include",
     ...options,
-    headers: {
-      ...getAuthHeaders(hasBody),
-      ...options?.headers,
-    },
+    headers: { ...buildHeaders(csrfToken), ...options?.headers },
   });
+
+  // On CSRF error (Frappe returns 400, not 403), refresh the token and retry once.
+  if (resp.status === 400 || resp.status === 403) {
+    const bodyText = await resp.text();
+    if (bodyText.includes("CSRFTokenError")) {
+      await fetchCsrfToken();
+      const { csrfToken: newToken } = useAuthStore.getState();
+      const retry = await fetch(fullEndpoint, {
+        credentials: "include",
+        ...options,
+        headers: { ...buildHeaders(newToken), ...options?.headers },
+      });
+      if (!retry.ok) throw await parseErrorResponse(retry);
+      return retry.json();
+    }
+    // Re-parse the already-consumed body as an error
+    throw new FrappeAPIError(bodyText, resp.status);
+  }
 
   if (!resp.ok) {
     throw await parseErrorResponse(resp);
@@ -95,16 +120,15 @@ export async function frappeCall<T>(
 
 interface GetListOptions {
   filters?: unknown[];
-  fields?: string[];
+  fields?: (string | Record<string, string>)[];
   orderBy?: string;
+  groupBy?: string;
   limitPageLength?: number;
+  limitStart?: number;
 }
 
 export const frappe = {
-  async getList<T>(
-    doctype: string,
-    options?: GetListOptions,
-  ): Promise<T[]> {
+  async getList<T>(doctype: string, options?: GetListOptions): Promise<T[]> {
     const params = new URLSearchParams();
     if (options?.filters) {
       params.set("filters", JSON.stringify(options.filters));
@@ -115,10 +139,13 @@ export const frappe = {
     if (options?.orderBy) {
       params.set("order_by", options.orderBy);
     }
-    params.set(
-      "limit_page_length",
-      String(options?.limitPageLength ?? 0),
-    );
+    if (options?.groupBy) {
+      params.set("group_by", options.groupBy);
+    }
+    params.set("limit_page_length", String(options?.limitPageLength ?? 100));
+    if (options?.limitStart) {
+      params.set("limit_start", String(options.limitStart));
+    }
 
     const result = await frappeCall<FrappeListResponse<T>>(
       `/api/resource/${encodeURIComponent(doctype)}?${params}`,
@@ -145,42 +172,48 @@ export const frappe = {
   },
 
   async deleteDoc(doctype: string, name: string): Promise<void> {
-    await frappeCall(
+    await frappeCall(`/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`, {
+      method: "DELETE",
+    });
+  },
+
+  async updateDoc<T>(doctype: string, name: string, data: Record<string, unknown>): Promise<T> {
+    const result = await frappeCall<FrappeDocResponse<T>>(
       `/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`,
-      { method: "DELETE" },
+      { method: "PUT", body: JSON.stringify(data) },
     );
+    return result.data;
   },
 
   async call<T>(method: string, body?: Record<string, unknown>): Promise<T> {
     const result = await frappeCall<FrappeCallResponse<T>>(
       `/api/method/${method}`,
-      body
-        ? { method: "POST", body: JSON.stringify(body) }
-        : undefined,
+      body ? { method: "POST", body: JSON.stringify(body) } : undefined,
     );
     return result.message;
   },
 
   async save<T>(doc: Record<string, unknown>): Promise<T> {
-    const result = await frappeCall<FrappeCallResponse<T>>(
-      "/api/method/frappe.client.save",
-      {
-        method: "POST",
-        body: JSON.stringify({ doc: JSON.stringify(doc) }),
-      },
-    );
+    const result = await frappeCall<FrappeCallResponse<T>>("/api/method/frappe.client.save", {
+      method: "POST",
+      body: JSON.stringify({ doc: JSON.stringify(doc) }),
+    });
     return result.message;
   },
 
   async submit<T>(doc: Record<string, unknown>): Promise<T> {
-    const result = await frappeCall<FrappeCallResponse<T>>(
-      "/api/method/frappe.client.submit",
-      {
-        method: "POST",
-        body: JSON.stringify({ doc: JSON.stringify(doc) }),
-      },
-    );
+    const result = await frappeCall<FrappeCallResponse<T>>("/api/method/frappe.client.submit", {
+      method: "POST",
+      body: JSON.stringify({ doc: JSON.stringify(doc) }),
+    });
     return result.message;
+  },
+
+  async getCount(doctype: string, filters?: unknown[]): Promise<number> {
+    return frappe.call<number>("frappe.client.get_count", {
+      doctype,
+      ...(filters?.length ? { filters } : {}),
+    });
   },
 
   async cancel(doctype: string, name: string): Promise<void> {

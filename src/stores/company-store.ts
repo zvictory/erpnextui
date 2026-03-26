@@ -5,8 +5,9 @@ interface CompanyState {
   company: string;
   currencySymbol: string;
   symbolOnRight: boolean;
+  currencyCode: string;
   setCompany: (company: string) => void;
-  setCurrency: (symbol: string, onRight: boolean) => void;
+  setCurrency: (symbol: string, onRight: boolean, code: string) => void;
 }
 
 export const useCompanyStore = create<CompanyState>()(
@@ -15,9 +16,10 @@ export const useCompanyStore = create<CompanyState>()(
       company: "",
       currencySymbol: "$",
       symbolOnRight: false,
+      currencyCode: "",
       setCompany: (company) => set({ company }),
-      setCurrency: (currencySymbol, symbolOnRight) =>
-        set({ currencySymbol, symbolOnRight }),
+      setCurrency: (currencySymbol, symbolOnRight, currencyCode) =>
+        set({ currencySymbol, symbolOnRight, currencyCode }),
     }),
     {
       name: "erpnext-company",

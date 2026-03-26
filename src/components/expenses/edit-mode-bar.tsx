@@ -8,17 +8,11 @@ interface EditModeBarProps {
   onCancel: () => void;
 }
 
-export function EditModeBar({
-  editingName,
-  editingDocstatus,
-  onCancel,
-}: EditModeBarProps) {
+export function EditModeBar({ editingName, editingDocstatus, onCancel }: EditModeBarProps) {
   if (!editingName) return null;
 
   const label =
-    editingDocstatus === 1
-      ? `Amending: ${editingName}`
-      : `Editing draft: ${editingName}`;
+    editingDocstatus === 1 ? `Amending: ${editingName}` : `Editing draft: ${editingName}`;
 
   return (
     <div className="flex items-center justify-between rounded-md bg-yellow-50 px-4 py-2 text-sm text-yellow-800 dark:bg-yellow-950/30 dark:text-yellow-400">

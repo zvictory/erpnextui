@@ -24,7 +24,6 @@ export const FEATURE_DOCTYPES = {
   "stock-entries": "Stock Entry",
   employees: "Employee",
   "employee-advances": "Employee Advance",
-  "serial-numbers": "Serial No",
 } as const;
 
 export const MANAGED_DOCTYPES = Object.values(FEATURE_DOCTYPES);

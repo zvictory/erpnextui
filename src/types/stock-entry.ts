@@ -40,6 +40,7 @@ export interface StockEntryListItem {
 export interface StockLedgerEntry {
   name: string;
   item_code: string;
+  item_name?: string;
   warehouse: string;
   posting_date: string;
   actual_qty: number;
@@ -52,6 +53,7 @@ export interface StockLedgerEntry {
 
 export interface BinEntry {
   item_code: string;
+  item_name?: string;
   warehouse: string;
   actual_qty: number;
   stock_value: number;

@@ -14,6 +14,7 @@ export function useCompanies() {
       frappe.getList<Company>("Company", {
         fields: ["name", "default_currency"],
       }),
+    staleTime: 10 * 60 * 1000,
   });
 }
 
@@ -28,9 +29,9 @@ export function useCurrencyLookup(currencyCode: string) {
 
   useEffect(() => {
     if (query.data) {
-      setCurrency(query.data.symbol, !!query.data.symbol_on_right);
+      setCurrency(query.data.symbol, !!query.data.symbol_on_right, currencyCode);
     }
-  }, [query.data, setCurrency]);
+  }, [query.data, setCurrency, currencyCode]);
 
   return query;
 }

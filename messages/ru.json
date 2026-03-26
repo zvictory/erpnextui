@@ -27,16 +27,22 @@
     "warehouses": "Склады",
     "stockEntries": "Складские операции",
     "stockLedger": "Складской реестр",
-    "serialNumbers": "Серийные номера",
     "groups": {
       "main": "Главное",
       "masterData": "Справочники",
       "transactions": "Транзакции",
       "stock": "Склад",
-      "serialTracking": "Серийный учёт",
       "accounting": "Бухгалтерия",
-      "reports": "Отчёты"
+      "reports": "Отчёты",
+      "manufacturing": "Производство"
     },
+    "mfgDashboard": "Панель OEE",
+    "production": "Производство",
+    "downtime": "Простои",
+    "energy": "Энергия",
+    "mfgProducts": "Продукты",
+    "mfgLines": "Линии",
+    "mfgSettings": "Настройки",
     "autoCollapse": "Автосвёртка",
     "autoCollapseTooltip": "Автоматически сворачивать боковое меню на страницах деталей"
   },
@@ -104,6 +110,7 @@
     "loading": "Загрузка...",
     "noData": "Нет данных",
     "search": "Поиск",
+    "page": "Страница",
     "previous": "Назад",
     "next": "Далее",
     "new": "Новый",
@@ -129,6 +136,7 @@
     "balance": "Баланс",
     "asOfToday": "на сегодня",
     "newInvoice": "Новый счёт",
+    "newOrder": "Новый заказ",
     "noTransactions": "Транзакции не найдены.",
     "removeRow": "Удалить строку",
     "sort": "Сортировка",
@@ -241,6 +249,11 @@
     "status": "Статус",
     "items": "Позиции",
     "addItem": "Добавить позицию",
+    "addServiceLine": "Добавить услугу",
+    "serviceDescription": "напр. Аренда, Интернет",
+    "expenseAccount": "Счёт расходов",
+    "selectAccount": "Выберите счёт",
+    "description": "Описание",
     "item": "Товар",
     "qty": "Кол-во",
     "rate": "Цена",
@@ -379,7 +392,18 @@
     "delete": "Удалить",
     "saving": "Сохранение...",
     "update": "Обновить",
-    "create": "Создать"
+    "create": "Создать",
+    "trackSerialNumbers": "Учёт серийных номеров",
+    "serialNumbersSection": "Серийные номера ({count} ед.)",
+    "searchSerials": "Поиск серийных номеров...",
+    "serialNo": "Серийный номер",
+    "imei1": "IMEI 1",
+    "imei2": "IMEI 2",
+    "imeiSaved": "IMEI сохранён",
+    "saveImei": "Сохранить",
+    "noSerials": "Серийные номера не найдены",
+    "warehouse": "Склад",
+    "serialStatus": "Статус"
   },
   "reports": {
     "sales": "Отчёт о продажах",
@@ -625,7 +649,10 @@
     "cancelled": "Платёж отменён",
     "deleted": "Платёж удалён",
     "submitted": "Платёж успешно проведён",
-    "outstandingBalance": "Задолженность"
+    "outstandingBalance": "Задолженность",
+    "currency": "Валюта",
+    "submit": "Провести",
+    "amend": "Исправить"
   },
   "orders": {
     "salesOrders": "Заказы на продажу",
@@ -814,6 +841,19 @@
     "selectExpenseAccount": "Выберите счёт расходов...",
     "missingExpenseAccount": "У всех выбранных сотрудников должен быть указан счёт расходов"
   },
+  "receipt": {
+    "invoice": "Счёт",
+    "date": "Дата",
+    "due": "Срок",
+    "customer": "Покупатель",
+    "item": "Товар",
+    "amount": "Сумма",
+    "subtotal": "Подитог",
+    "discount": "Скидка",
+    "total": "ИТОГО",
+    "balance": "Баланс",
+    "thankYou": "Спасибо за покупку!"
+  },
   "stock": {
     "warehouses": "Склады",
     "newWarehouse": "Новый склад",
@@ -852,20 +892,5 @@
     "itemStock": "Запасы по товару",
     "warehouseStock": "Запасы на складе",
     "noStock": "Данные о запасах не найдены."
-  },
-  "serialNumbers": {
-    "title": "Серийные номера",
-    "searchPlaceholder": "Поиск по серийному номеру, IMEI...",
-    "serialNo": "Серийный номер",
-    "item": "Товар",
-    "warehouse": "Склад",
-    "status": "Статус",
-    "edit": "Редактировать",
-    "imei1": "IMEI 1",
-    "imei2": "IMEI 2",
-    "save": "Сохранить",
-    "saved": "IMEI коды сохранены",
-    "detailTitle": "Детали серийного номера",
-    "imeiCodes": "IMEI коды"
   }
 }

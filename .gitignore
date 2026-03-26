@@ -33,6 +33,14 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# platform config (contains API keys)
+data/*.json
+
+# OEE SQLite database
+oee.db
+oee.db-wal
+oee.db-shm
+
 # vercel
 .vercel
 

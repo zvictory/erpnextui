@@ -27,16 +27,22 @@
     "warehouses": "Омборхоналар",
     "stockEntries": "Омбор операциялари",
     "stockLedger": "Омбор реестри",
-    "serialNumbers": "Серия рақамлари",
     "groups": {
       "main": "Асосий",
       "masterData": "Маълумотномалар",
       "transactions": "Трансакциялар",
       "stock": "Омбор",
-      "serialTracking": "Серия ҳисоби",
       "accounting": "Бухгалтерия",
-      "reports": "Ҳисоботлар"
+      "reports": "Ҳисоботлар",
+      "manufacturing": "Ишлаб чиқариш"
     },
+    "mfgDashboard": "OEE панел",
+    "production": "Ишлаб чиқариш",
+    "downtime": "Тўхташ",
+    "energy": "Энергия",
+    "mfgProducts": "Маҳсулотлар",
+    "mfgLines": "Линиялар",
+    "mfgSettings": "Созламалар",
     "autoCollapse": "Автойиғиш",
     "autoCollapseTooltip": "Тафсилот саҳифаларида ён панелни автоматик йиғиш"
   },
@@ -104,6 +110,7 @@
     "loading": "Юкланмоқда...",
     "noData": "Маълумот йўқ",
     "search": "Қидириш",
+    "page": "Саҳифа",
     "previous": "Олдинги",
     "next": "Кейинги",
     "new": "Янги",
@@ -129,6 +136,7 @@
     "balance": "Қолдиқ",
     "asOfToday": "бугун ҳолатига",
     "newInvoice": "Янги ҳисоб-фактура",
+    "newOrder": "Янги буюртма",
     "noTransactions": "Трансакциялар топилмади.",
     "removeRow": "Қаторни ўчириш",
     "sort": "Саралаш",
@@ -379,7 +387,18 @@
     "delete": "Ўчириш",
     "saving": "Сақланмоқда...",
     "update": "Янгилаш",
-    "create": "Яратиш"
+    "create": "Яратиш",
+    "trackSerialNumbers": "Серия рақамларини кузатиш",
+    "serialNumbersSection": "Серия рақамлари ({count} дона)",
+    "searchSerials": "Серия рақамларини қидириш...",
+    "serialNo": "Серия рақами",
+    "imei1": "IMEI 1",
+    "imei2": "IMEI 2",
+    "imeiSaved": "IMEI сақланди",
+    "saveImei": "Сақлаш",
+    "noSerials": "Серия рақамлари топилмади",
+    "warehouse": "Омбор",
+    "serialStatus": "Ҳолат"
   },
   "reports": {
     "sales": "Сотувлар ҳисоботи",
@@ -614,7 +633,10 @@
     "cancelled": "Тўлов бекор қилинди",
     "deleted": "Тўлов ўчирилди",
     "submitted": "Тўлов муваффақиятли юборилди",
-    "outstandingBalance": "Қолдиқ қарз"
+    "outstandingBalance": "Қолдиқ қарз",
+    "currency": "Валюта",
+    "submit": "Тасдиқлаш",
+    "amend": "Тузатиш"
   },
   "orders": {
     "salesOrders": "Сотиш буюртмалари",
@@ -803,6 +825,19 @@
     "selectExpenseAccount": "Харажат ҳисобини танланг...",
     "missingExpenseAccount": "Барча танланган ходимларда харажат ҳисоби кўрсатилиши керак"
   },
+  "receipt": {
+    "invoice": "Ҳисоб-фактура",
+    "date": "Сана",
+    "due": "Муддати",
+    "customer": "Мижоз",
+    "item": "Номи",
+    "amount": "Сумма",
+    "subtotal": "Жами",
+    "discount": "Чегирма",
+    "total": "ЖАМИ",
+    "balance": "Баланс",
+    "thankYou": "Харидингиз учун раҳмат!"
+  },
   "stock": {
     "warehouses": "Омборхоналар",
     "newWarehouse": "Янги омборхона",
@@ -841,20 +876,5 @@
     "itemStock": "Маҳсулот захираси",
     "warehouseStock": "Омборхона захираси",
     "noStock": "Захира маълумотлари топилмади."
-  },
-  "serialNumbers": {
-    "title": "Серия рақамлари",
-    "searchPlaceholder": "Серия рақами, IMEI бўйича қидириш...",
-    "serialNo": "Серия рақами",
-    "item": "Маҳсулот",
-    "warehouse": "Омбор",
-    "status": "Ҳолат",
-    "edit": "Таҳрирлаш",
-    "imei1": "IMEI 1",
-    "imei2": "IMEI 2",
-    "save": "Сақлаш",
-    "saved": "IMEI кодлари сақланди",
-    "detailTitle": "Серия рақами тафсилотлари",
-    "imeiCodes": "IMEI кодлари"
   }
 }

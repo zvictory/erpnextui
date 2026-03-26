@@ -27,16 +27,22 @@
     "warehouses": "Omborxonalar",
     "stockEntries": "Ombor operatsiyalari",
     "stockLedger": "Ombor reyestri",
-    "serialNumbers": "Seriya raqamlari",
     "groups": {
       "main": "Asosiy",
       "masterData": "Ma'lumotnomalar",
       "transactions": "Tranzaksiyalar",
       "stock": "Ombor",
-      "serialTracking": "Seriya hisobi",
       "accounting": "Buxgalteriya",
-      "reports": "Hisobotlar"
+      "reports": "Hisobotlar",
+      "manufacturing": "Ishlab chiqarish"
     },
+    "mfgDashboard": "OEE panel",
+    "production": "Ishlab chiqarish",
+    "downtime": "To'xtash",
+    "energy": "Energiya",
+    "mfgProducts": "Mahsulotlar",
+    "mfgLines": "Liniyalar",
+    "mfgSettings": "Sozlamalar",
     "autoCollapse": "Avtoyig'ish",
     "autoCollapseTooltip": "Tafsilot sahifalarida yon panelni avtomatik yig'ish"
   },
@@ -104,6 +110,7 @@
     "loading": "Yuklanmoqda...",
     "noData": "Ma'lumot yo'q",
     "search": "Qidirish",
+    "page": "Sahifa",
     "previous": "Oldingi",
     "next": "Keyingi",
     "new": "Yangi",
@@ -129,6 +136,7 @@
     "balance": "Qoldiq",
     "asOfToday": "bugun holatiga",
     "newInvoice": "Yangi hisob-faktura",
+    "newOrder": "Yangi buyurtma",
     "noTransactions": "Tranzaksiyalar topilmadi.",
     "removeRow": "Qatorni o'chirish",
     "sort": "Saralash",
@@ -379,7 +387,18 @@
     "delete": "O'chirish",
     "saving": "Saqlanmoqda...",
     "update": "Yangilash",
-    "create": "Yaratish"
+    "create": "Yaratish",
+    "trackSerialNumbers": "Seriya raqamlarini kuzatish",
+    "serialNumbersSection": "Seriya raqamlari ({count} dona)",
+    "searchSerials": "Seriya raqamlarini qidirish...",
+    "serialNo": "Seriya raqami",
+    "imei1": "IMEI 1",
+    "imei2": "IMEI 2",
+    "imeiSaved": "IMEI saqlandi",
+    "saveImei": "Saqlash",
+    "noSerials": "Seriya raqamlari topilmadi",
+    "warehouse": "Ombor",
+    "serialStatus": "Holat"
   },
   "reports": {
     "sales": "Sotuvlar hisoboti",
@@ -614,7 +633,10 @@
     "cancelled": "To'lov bekor qilindi",
     "deleted": "To'lov o'chirildi",
     "submitted": "To'lov muvaffaqiyatli yuborildi",
-    "outstandingBalance": "Qoldiq qarz"
+    "outstandingBalance": "Qoldiq qarz",
+    "currency": "Valyuta",
+    "submit": "Tasdiqlash",
+    "amend": "Tuzatish"
   },
   "orders": {
     "salesOrders": "Sotish buyurtmalari",
@@ -803,6 +825,19 @@
     "selectExpenseAccount": "Xarajat hisobini tanlang...",
     "missingExpenseAccount": "Barcha tanlangan xodimlarda xarajat hisobi ko'rsatilishi kerak"
   },
+  "receipt": {
+    "invoice": "Hisob-faktura",
+    "date": "Sana",
+    "due": "Muddati",
+    "customer": "Mijoz",
+    "item": "Nomi",
+    "amount": "Summa",
+    "subtotal": "Jami",
+    "discount": "Chegirma",
+    "total": "JAMI",
+    "balance": "Balans",
+    "thankYou": "Xaridingiz uchun rahmat!"
+  },
   "stock": {
     "warehouses": "Omborxonalar",
     "newWarehouse": "Yangi omborxona",
@@ -841,20 +876,5 @@
     "itemStock": "Mahsulot zaxirasi",
     "warehouseStock": "Omborxona zaxirasi",
     "noStock": "Zaxira ma'lumotlari topilmadi."
-  },
-  "serialNumbers": {
-    "title": "Seriya raqamlari",
-    "searchPlaceholder": "Seriya raqami, IMEI bo'yicha qidirish...",
-    "serialNo": "Seriya raqami",
-    "item": "Mahsulot",
-    "warehouse": "Ombor",
-    "status": "Holat",
-    "edit": "Tahrirlash",
-    "imei1": "IMEI 1",
-    "imei2": "IMEI 2",
-    "save": "Saqlash",
-    "saved": "IMEI kodlari saqlandi",
-    "detailTitle": "Seriya raqami tafsilotlari",
-    "imeiCodes": "IMEI kodlari"
   }
 }

@@ -236,10 +236,10 @@ export const queryKeys = {
     current: (siteUrl: string) => ["enabledModules", siteUrl] as const,
   },
   serialNumbers: {
-    list: (company: string, page: number, search: string, sort: string) =>
-      ["serialNumbers", "list", company, page, search, sort] as const,
-    count: (company: string, search: string) =>
-      ["serialNumbers", "count", company, search] as const,
+    listByItem: (itemCode: string, company: string, page: number, search: string, sort: string) =>
+      ["serialNumbers", "listByItem", itemCode, company, page, search, sort] as const,
+    countByItem: (itemCode: string, company: string, search: string) =>
+      ["serialNumbers", "countByItem", itemCode, company, search] as const,
     detail: (name: string) => ["serialNumbers", "detail", name] as const,
   },
 };

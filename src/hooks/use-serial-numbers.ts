@@ -17,13 +17,24 @@ const LIST_FIELDS: (keyof SerialNumberListItem)[] = [
   "custom_imei_2",
 ];
 
-export function useSerialNumberList(company: string, page: number, search: string, sort: string) {
+export function useSerialNumbersByItem(
+  itemCode: string,
+  company: string,
+  page: number,
+  search: string,
+  sort: string,
+) {
   return useQuery({
-    queryKey: queryKeys.serialNumbers.list(company, page, search, sort),
+    queryKey: queryKeys.serialNumbers.listByItem(itemCode, company, page, search, sort),
     queryFn: async () => {
+      const baseFilters: [string, string, string | number][] = [
+        ["company", "=", company],
+        ["item_code", "=", itemCode],
+      ];
+
       if (!search) {
         return frappe.getList<SerialNumberListItem>("Serial No", {
-          filters: [["company", "=", company]],
+          filters: baseFilters,
           fields: LIST_FIELDS as string[],
           orderBy: sort || "creation desc",
           limitPageLength: PAGE_SIZE,
@@ -34,29 +45,20 @@ export function useSerialNumberList(company: string, page: number, search: strin
       const likeFilter = `%${search}%`;
       const [byName, byImei1, byImei2] = await Promise.all([
         frappe.getList<SerialNumberListItem>("Serial No", {
-          filters: [
-            ["company", "=", company],
-            ["name", "like", likeFilter],
-          ],
+          filters: [...baseFilters, ["name", "like", likeFilter]],
           fields: LIST_FIELDS as string[],
           orderBy: sort || "creation desc",
           limitPageLength: PAGE_SIZE,
           limitStart: (page - 1) * PAGE_SIZE,
         }),
         frappe.getList<SerialNumberListItem>("Serial No", {
-          filters: [
-            ["company", "=", company],
-            ["custom_imei_1", "like", likeFilter],
-          ],
+          filters: [...baseFilters, ["custom_imei_1", "like", likeFilter]],
           fields: LIST_FIELDS as string[],
           orderBy: sort || "creation desc",
           limitPageLength: PAGE_SIZE,
         }),
         frappe.getList<SerialNumberListItem>("Serial No", {
-          filters: [
-            ["company", "=", company],
-            ["custom_imei_2", "like", likeFilter],
-          ],
+          filters: [...baseFilters, ["custom_imei_2", "like", likeFilter]],
           fields: LIST_FIELDS as string[],
           orderBy: sort || "creation desc",
           limitPageLength: PAGE_SIZE,
@@ -73,63 +75,31 @@ export function useSerialNumberList(company: string, page: number, search: strin
       }
       return merged.slice(0, PAGE_SIZE);
     },
-    enabled: !!company,
+    enabled: !!company && !!itemCode,
   });
 }
 
-export function useSerialNumberCount(company: string, search: string) {
+export function useSerialNumberCountByItem(itemCode: string, company: string, search: string) {
   return useQuery({
-    queryKey: queryKeys.serialNumbers.count(company, search),
+    queryKey: queryKeys.serialNumbers.countByItem(itemCode, company, search),
     queryFn: async () => {
+      const baseFilters: [string, string, string | number][] = [
+        ["company", "=", company],
+        ["item_code", "=", itemCode],
+      ];
+
       if (!search) {
-        return frappe.getCount("Serial No", [["company", "=", company]]);
+        return frappe.getCount("Serial No", baseFilters);
       }
       const likeFilter = `%${search}%`;
       const [c1, c2, c3] = await Promise.all([
-        frappe.getCount("Serial No", [
-          ["company", "=", company],
-          ["name", "like", likeFilter],
-        ]),
-        frappe.getCount("Serial No", [
-          ["company", "=", company],
-          ["custom_imei_1", "like", likeFilter],
-        ]),
-        frappe.getCount("Serial No", [
-          ["company", "=", company],
-          ["custom_imei_2", "like", likeFilter],
-        ]),
+        frappe.getCount("Serial No", [...baseFilters, ["name", "like", likeFilter]]),
+        frappe.getCount("Serial No", [...baseFilters, ["custom_imei_1", "like", likeFilter]]),
+        frappe.getCount("Serial No", [...baseFilters, ["custom_imei_2", "like", likeFilter]]),
       ]);
       return c1 + c2 + c3;
     },
-    enabled: !!company,
-  });
-}
-
-export function useSerialNumber(name: string) {
-  return useQuery({
-    queryKey: queryKeys.serialNumbers.detail(name),
-    queryFn: () => frappe.getDoc<SerialNumber>("Serial No", name),
-    enabled: !!name,
-  });
-}
-
-export function useCreateSerialNumber() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data: {
-      serial_no: string;
-      item_code: string;
-      company: string;
-      custom_imei_1?: string;
-      custom_imei_2?: string;
-    }) =>
-      frappe.createDoc<SerialNumber>("Serial No", {
-        doctype: "Serial No",
-        ...data,
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["serialNumbers"] });
-    },
+    enabled: !!company && !!itemCode,
   });
 }
 

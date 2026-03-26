@@ -3,9 +3,9 @@ export type ModuleGroupKey =
   | "master-data"
   | "transactions"
   | "stock"
-  | "serial-tracking"
   | "accounting"
-  | "reports";
+  | "reports"
+  | "manufacturing";
 
 export interface ModuleGroup {
   label: string;
@@ -44,11 +44,6 @@ export const MODULE_GROUPS: Record<ModuleGroupKey, ModuleGroup> = {
     description: "Warehouses, Stock Entries, Stock Ledger",
     routes: ["/warehouses", "/stock-entries", "/stock-ledger"],
   },
-  "serial-tracking": {
-    label: "Serial Tracking",
-    description: "Serial Numbers, IMEI Codes",
-    routes: ["/serial-numbers"],
-  },
   accounting: {
     label: "Accounting",
     description: "Banks, Chart of Accounts",
@@ -58,6 +53,11 @@ export const MODULE_GROUPS: Record<ModuleGroupKey, ModuleGroup> = {
     label: "Reports",
     description: "Sales, P&L, Balance Sheet, Trial Balance, Cash Flow, AR, AP, General Ledger",
     routes: ["/reports"],
+  },
+  manufacturing: {
+    label: "Manufacturing",
+    description: "OEE Dashboard, Production, Downtime, Energy",
+    routes: ["/manufacturing"],
   },
 };
 
@@ -89,9 +89,9 @@ export function isSidebarGroupEnabled(
     masterData: "master-data",
     transactions: "transactions",
     stock: "stock",
-    serialTracking: "serial-tracking",
     accounting: "accounting",
     reports: "reports",
+    manufacturing: "manufacturing",
   };
 
   const key = labelToKey[sidebarLabelKey];

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { RefreshCw } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { RefreshCw, ReceiptText } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -15,7 +16,8 @@ import {
 } from "@/hooks/use-journal-entries";
 
 interface HistoryPanelProps {
-  onEdit: (name: string) => void;
+  onEdit?: (name: string) => void;
+  voucherType?: string;
 }
 
 type ConfirmAction = "submit" | "cancel" | "delete";
@@ -58,23 +60,22 @@ const CONFIRM_CONFIG: Record<
   },
 };
 
-export function HistoryPanel({ onEdit }: HistoryPanelProps) {
+export function HistoryPanel({ onEdit, voucherType }: HistoryPanelProps) {
+  const t = useTranslations("expenses");
   const { company, currencySymbol, symbolOnRight } = useCompanyStore();
   const {
     data: entries,
     isLoading,
     refetch,
     isRefetching,
-  } = useJournalEntryList(company);
+  } = useJournalEntryList(company, voucherType);
 
   const submitMutation = useSubmitJournalEntry();
   const cancelMutation = useCancelJournalEntry();
   const deleteMutation = useDeleteJournalEntry();
 
   const anyMutationPending =
-    submitMutation.isPending ||
-    cancelMutation.isPending ||
-    deleteMutation.isPending;
+    submitMutation.isPending || cancelMutation.isPending || deleteMutation.isPending;
 
   const [confirm, setConfirm] = useState<ConfirmState>({
     open: false,
@@ -142,49 +143,72 @@ export function HistoryPanel({ onEdit }: HistoryPanelProps) {
     (confirm.action === "delete" && deleteMutation.isPending);
 
   return (
-    <div className="space-y-3">
+    <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Recent Journal Entries</h3>
+      <div className="flex items-center justify-between pb-3 shrink-0">
+        <div className="flex items-center gap-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {t("history")}
+          </h3>
+          {entries && entries.length > 0 && (
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">
+              {entries.length}
+            </span>
+          )}
+        </div>
         <Button
           size="icon-xs"
           variant="ghost"
           onClick={() => refetch()}
           disabled={isRefetching}
+          aria-label="Refresh entries"
+          className="h-6 w-6"
         >
-          <RefreshCw
-            className={isRefetching ? "animate-spin" : undefined}
-          />
+          <RefreshCw className={`h-3 w-3 ${isRefetching ? "animate-spin" : ""}`} />
         </Button>
       </div>
 
       {/* Content */}
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground py-4 text-center">
-          Loading...
-        </p>
-      ) : !entries || entries.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-4 text-center">
-          No journal entries found.
-        </p>
-      ) : (
-        <div className="space-y-0.5">
-          {entries.map((entry) => (
-            <HistoryRow
-              key={entry.name}
-              entry={entry}
-              currencySymbol={currencySymbol}
-              symbolOnRight={symbolOnRight}
-              onSubmit={(name) => openConfirm("submit", name)}
-              onEdit={onEdit}
-              onAmend={onEdit}
-              onCancel={(name) => openConfirm("cancel", name)}
-              onDelete={(name) => openConfirm("delete", name)}
-              disabled={anyMutationPending}
-            />
-          ))}
-        </div>
-      )}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        {isLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="animate-pulse rounded-lg border bg-card px-3 py-2.5 space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="h-3.5 w-20 rounded bg-muted" />
+                  <div className="h-4 w-12 rounded-full bg-muted" />
+                </div>
+                <div className="h-3 w-28 rounded bg-muted" />
+              </div>
+            ))}
+          </div>
+        ) : !entries || entries.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-14 text-center">
+            <ReceiptText className="size-8 text-muted-foreground/30 mb-3" />
+            <p className="text-sm font-medium text-muted-foreground">{t("noHistory")}</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {entries.map((entry) => (
+              <HistoryRow
+                key={entry.name}
+                entry={entry}
+                currencySymbol={currencySymbol}
+                symbolOnRight={symbolOnRight}
+                onSubmit={(name) => openConfirm("submit", name)}
+                onEdit={onEdit ?? undefined}
+                onAmend={onEdit ?? undefined}
+                onCancel={(name) => openConfirm("cancel", name)}
+                onDelete={(name) => openConfirm("delete", name)}
+                disabled={anyMutationPending}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Confirm dialog */}
       <ConfirmDialog

@@ -31,7 +31,11 @@ import {
   FileCheck,
   PackageCheck,
   UserCheck,
-  Barcode,
+  Factory,
+  Clock,
+  Zap,
+  GitBranch,
+  Settings,
 } from "lucide-react";
 import {
   Sidebar,
@@ -93,13 +97,19 @@ const stockNav = [
   { tKey: "stockLedger", href: "/stock-ledger", icon: ScrollText },
 ];
 
-const serialTrackingNav = [
-  { tKey: "serialNumbers", href: "/serial-numbers", icon: Barcode, doctype: "Serial No" },
-];
-
 const accountingNav = [
   { tKey: "banks", href: "/banks", icon: Landmark, doctype: "Account" },
   { tKey: "chartOfAccounts", href: "/chart-of-accounts", icon: BookOpen, doctype: "Account" },
+];
+
+const manufacturingNav = [
+  { tKey: "mfgDashboard", href: "/manufacturing", icon: BarChart3 },
+  { tKey: "production", href: "/manufacturing/production", icon: Factory },
+  { tKey: "downtime", href: "/manufacturing/downtime", icon: Clock },
+  { tKey: "energy", href: "/manufacturing/energy", icon: Zap },
+  { tKey: "mfgProducts", href: "/manufacturing/products", icon: Package },
+  { tKey: "mfgLines", href: "/manufacturing/lines", icon: GitBranch },
+  { tKey: "mfgSettings", href: "/manufacturing/settings", icon: Settings },
 ];
 
 const reportNav = [
@@ -230,11 +240,11 @@ export function AppSidebar() {
         {isSidebarGroupEnabled("stock", enabledModules) && (
           <NavGroup labelKey="stock" items={stockNav} />
         )}
-        {isSidebarGroupEnabled("serialTracking", enabledModules) && (
-          <NavGroup labelKey="serialTracking" items={serialTrackingNav} />
-        )}
         {isSidebarGroupEnabled("accounting", enabledModules) && (
           <NavGroup labelKey="accounting" items={accountingNav} />
+        )}
+        {isSidebarGroupEnabled("manufacturing", enabledModules) && (
+          <NavGroup labelKey="manufacturing" items={manufacturingNav} />
         )}
         {isSidebarGroupEnabled("reports", enabledModules) && (
           <NavGroup labelKey="reports" items={reportNav} />

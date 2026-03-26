@@ -25,11 +25,7 @@ interface CreateAccountDialogProps {
   company: string;
 }
 
-export function CreateAccountDialog({
-  open,
-  onOpenChange,
-  company,
-}: CreateAccountDialogProps) {
+export function CreateAccountDialog({ open, onOpenChange, company }: CreateAccountDialogProps) {
   const queryClient = useQueryClient();
   const { data: expenseGroups = [] } = useExpenseGroups(company);
 
@@ -83,8 +79,7 @@ export function CreateAccountDialog({
       resetForm();
       onOpenChange(false);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to create account";
+      const message = err instanceof Error ? err.message : "Failed to create account";
       setError(message);
     } finally {
       setIsCreating(false);
@@ -138,7 +133,7 @@ export function CreateAccountDialog({
               className={cn(
                 "h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs",
                 "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none",
-                !parentAccount && "text-muted-foreground"
+                !parentAccount && "text-muted-foreground",
               )}
             >
               <option value="">Select parent group</option>
@@ -158,7 +153,7 @@ export function CreateAccountDialog({
               onChange={(e) => setAccountType(e.target.value)}
               className={cn(
                 "h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs",
-                "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none"
+                "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none",
               )}
             >
               <option value="Expense Account">Expense Account</option>
@@ -166,9 +161,7 @@ export function CreateAccountDialog({
             </select>
           </div>
 
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
 
         <DialogFooter>
@@ -180,11 +173,7 @@ export function CreateAccountDialog({
           >
             Cancel
           </Button>
-          <Button
-            type="button"
-            onClick={handleCreate}
-            disabled={isCreating}
-          >
+          <Button type="button" onClick={handleCreate} disabled={isCreating}>
             {isCreating ? "Creating..." : "Create"}
           </Button>
         </DialogFooter>

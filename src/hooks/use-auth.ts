@@ -1,50 +1,35 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { frappeCall } from "@/lib/frappe-client";
+import { frappeCall, fetchCsrfToken } from "@/lib/frappe-client";
 import { useAuthStore } from "@/stores/auth-store";
 import { queryKeys } from "@/hooks/query-keys";
 import { FrappeAPIError } from "@/lib/frappe-types";
+import { clearTenantState } from "@/lib/clear-tenant-state";
 
 interface LoginCredentials {
+  siteUrl: string;
   usr: string;
   pwd: string;
 }
 
 interface LoginResponse {
   message: string;
-  home_page: string;
-  full_name: string;
+  home_page?: string;
+  full_name?: string;
 }
 
 interface SessionResponse {
   message: string;
 }
 
-export async function fetchCsrfToken(): Promise<void> {
-  // First check if the CSRF token is already available in cookies
-  const cookieMatch = document.cookie.match(/csrf_token=([^;]+)/);
-  if (cookieMatch?.[1]) {
-    useAuthStore.getState().setCsrfToken(cookieMatch[1]);
-    return;
-  }
-
-  // Otherwise, fetch the /app page and parse the CSRF token from the HTML
-  const resp = await fetch("/app", { credentials: "include" });
-  const html = await resp.text();
-  const tokenMatch = html.match(/csrf_token\s*=\s*"([a-f0-9]+)"/);
-  if (tokenMatch?.[1]) {
-    useAuthStore.getState().setCsrfToken(tokenMatch[1]);
-  }
-}
+export { fetchCsrfToken } from "@/lib/frappe-client";
 
 export function useSessionCheck() {
   return useQuery({
     queryKey: queryKeys.auth.session,
     queryFn: async () => {
-      const data = await frappeCall<SessionResponse>(
-        "/api/method/frappe.auth.get_logged_user",
-      );
+      const data = await frappeCall<SessionResponse>("/api/method/frappe.auth.get_logged_user");
       return data.message;
     },
     retry: false,
@@ -52,24 +37,46 @@ export function useSessionCheck() {
   });
 }
 
+export function useFullName(email: string | null) {
+  return useQuery({
+    queryKey: queryKeys.auth.fullName(email ?? ""),
+    queryFn: async () => {
+      const data = await frappeCall<{ message: { full_name?: string } }>(
+        "/api/method/frappe.client.get_value",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            doctype: "User",
+            filters: { name: email },
+            fieldname: "full_name",
+          }),
+        },
+      );
+      return data.message?.full_name || email || "";
+    },
+    enabled: !!email,
+    staleTime: Infinity,
+  });
+}
+
 export function useLogin() {
   const setUser = useAuthStore((s) => s.setUser);
+  const setSiteUrl = useAuthStore((s) => s.setSiteUrl);
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (credentials: LoginCredentials) => {
-      const resp = await fetch("/api/method/login", {
+    mutationFn: async ({ siteUrl, usr, pwd }: LoginCredentials) => {
+      const resp = await fetch("/api/proxy/api/method/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(credentials),
+        headers: { "Content-Type": "application/json", "X-Frappe-Site": siteUrl },
+        body: JSON.stringify({ usr, pwd }),
       });
 
       if (!resp.ok) {
-        const body = await resp.text();
-        let message = "Login failed";
+        let message = "Invalid credentials";
         try {
-          const json = JSON.parse(body);
+          const json = await resp.json();
           message = json.message || json.exc || message;
         } catch {
           // body wasn't JSON
@@ -78,10 +85,15 @@ export function useLogin() {
       }
 
       const data: LoginResponse = await resp.json();
-      return data;
+      return { ...data, siteUrl };
     },
     onSuccess: async (data) => {
-      setUser(data.full_name || data.message);
+      clearTenantState();
+      setSiteUrl(data.siteUrl);
+      setUser(data.message); // email
+      if (data.full_name) {
+        useAuthStore.getState().setFullName(data.full_name);
+      }
       await fetchCsrfToken();
       queryClient.invalidateQueries({ queryKey: queryKeys.auth.session });
     },

@@ -15,12 +15,7 @@ export class FrappeAPIError extends Error {
   excType?: string;
   serverMessages?: string[];
 
-  constructor(
-    message: string,
-    status: number,
-    excType?: string,
-    serverMessages?: string[],
-  ) {
+  constructor(message: string, status: number, excType?: string, serverMessages?: string[]) {
     super(message);
     this.name = "FrappeAPIError";
     this.status = status;

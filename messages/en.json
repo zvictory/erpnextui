@@ -27,16 +27,22 @@
     "warehouses": "Warehouses",
     "stockEntries": "Stock Entries",
     "stockLedger": "Stock Ledger",
-    "serialNumbers": "Serial Numbers",
     "groups": {
       "main": "Main",
       "masterData": "Master Data",
       "transactions": "Transactions",
       "stock": "Stock",
-      "serialTracking": "Serial Tracking",
       "accounting": "Accounting",
-      "reports": "Reports"
+      "reports": "Reports",
+      "manufacturing": "Manufacturing"
     },
+    "mfgDashboard": "OEE Dashboard",
+    "production": "Production",
+    "downtime": "Downtime",
+    "energy": "Energy",
+    "mfgProducts": "Products",
+    "mfgLines": "Lines",
+    "mfgSettings": "Settings",
     "autoCollapse": "Auto-collapse",
     "autoCollapseTooltip": "Auto-collapse sidebar on detail pages"
   },
@@ -104,6 +110,7 @@
     "loading": "Loading...",
     "noData": "No data",
     "search": "Search",
+    "page": "Page",
     "previous": "Previous",
     "next": "Next",
     "new": "New",
@@ -129,6 +136,7 @@
     "balance": "Balance",
     "asOfToday": "as of today",
     "newInvoice": "New Invoice",
+    "newOrder": "New Order",
     "noTransactions": "No transactions found.",
     "removeRow": "Remove row",
     "sort": "Sort",
@@ -241,6 +249,11 @@
     "status": "Status",
     "items": "Items",
     "addItem": "Add Item",
+    "addServiceLine": "Add Service Line",
+    "serviceDescription": "e.g. Office Rent, Internet",
+    "expenseAccount": "Expense Account",
+    "selectAccount": "Select account",
+    "description": "Description",
     "item": "Item",
     "qty": "Qty",
     "rate": "Rate",
@@ -379,7 +392,18 @@
     "delete": "Delete",
     "saving": "Saving...",
     "update": "Update",
-    "create": "Create"
+    "create": "Create",
+    "trackSerialNumbers": "Track Serial Numbers",
+    "serialNumbersSection": "Serial Numbers ({count} units)",
+    "searchSerials": "Search serials...",
+    "serialNo": "Serial No",
+    "imei1": "IMEI 1",
+    "imei2": "IMEI 2",
+    "imeiSaved": "IMEI saved",
+    "saveImei": "Save",
+    "noSerials": "No serial numbers found",
+    "warehouse": "Warehouse",
+    "serialStatus": "Status"
   },
   "reports": {
     "sales": "Sales Report",
@@ -625,7 +649,22 @@
     "cancelled": "Payment cancelled",
     "deleted": "Payment deleted",
     "submitted": "Payment submitted successfully",
-    "outstandingBalance": "Outstanding Balance"
+    "outstandingBalance": "Outstanding Balance",
+    "paymentEntry": "Payment Entry",
+    "notFound": "Not Found",
+    "partyType": "Party Type",
+    "paidAmount": "Paid Amount",
+    "paidFrom": "Paid From",
+    "paidTo": "Paid To",
+    "modeOfPayment": "Mode of Payment",
+    "allocatedInvoices": "Allocated Invoices",
+    "invoiceNo": "Invoice #",
+    "totalAmount": "Total Amount",
+    "allocated": "Allocated",
+    "cancelPaymentDesc": "Are you sure you want to cancel this payment? This action cannot be undone.",
+    "currency": "Currency",
+    "submit": "Submit",
+    "amend": "Amend"
   },
   "orders": {
     "salesOrders": "Sales Orders",
@@ -814,6 +853,19 @@
     "selectExpenseAccount": "Select expense account...",
     "missingExpenseAccount": "All selected employees must have an expense account"
   },
+  "receipt": {
+    "invoice": "Invoice",
+    "date": "Date",
+    "due": "Due",
+    "customer": "Customer",
+    "item": "Item",
+    "amount": "Amount",
+    "subtotal": "Subtotal",
+    "discount": "Discount",
+    "total": "TOTAL",
+    "balance": "Balance",
+    "thankYou": "Thank you for your business!"
+  },
   "stock": {
     "warehouses": "Warehouses",
     "newWarehouse": "New Warehouse",
@@ -852,20 +904,5 @@
     "itemStock": "Item Stock",
     "warehouseStock": "Warehouse Stock",
     "noStock": "No stock data found."
-  },
-  "serialNumbers": {
-    "title": "Serial Numbers",
-    "searchPlaceholder": "Search by serial no, IMEI...",
-    "serialNo": "Serial No",
-    "item": "Item",
-    "warehouse": "Warehouse",
-    "status": "Status",
-    "edit": "Edit",
-    "imei1": "IMEI 1",
-    "imei2": "IMEI 2",
-    "save": "Save",
-    "saved": "IMEI codes saved",
-    "detailTitle": "Serial Number Details",
-    "imeiCodes": "IMEI Codes"
   }
 }

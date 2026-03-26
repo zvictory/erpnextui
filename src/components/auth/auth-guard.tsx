@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { useSessionCheck, fetchCsrfToken } from "@/hooks/use-auth";
+import { useSessionCheck, useFullName, fetchCsrfToken } from "@/hooks/use-auth";
 import { useAuthStore } from "@/stores/auth-store";
 import { FrappeAPIError } from "@/lib/frappe-types";
 
@@ -14,13 +14,13 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const router = useRouter();
   const { data: user, isLoading, isError, error } = useSessionCheck();
   const storedUser = useAuthStore((s) => s.user);
+  const csrfToken = useAuthStore((s) => s.csrfToken);
+  const [csrfReady, setCsrfReady] = useState(!!csrfToken);
 
   useEffect(() => {
     if (isError) {
-      const is401 =
-        error instanceof FrappeAPIError && error.status === 401;
-      const isForbidden =
-        error instanceof FrappeAPIError && error.status === 403;
+      const is401 = error instanceof FrappeAPIError && error.status === 401;
+      const isForbidden = error instanceof FrappeAPIError && error.status === 403;
 
       if (is401 || isForbidden || isError) {
         useAuthStore.getState().setUser(null);
@@ -29,18 +29,29 @@ export function AuthGuard({ children }: AuthGuardProps) {
     }
   }, [isError, error, router]);
 
+  const { data: fullName } = useFullName(user ?? null);
+
   useEffect(() => {
     if (user && !storedUser) {
       useAuthStore.getState().setUser(user);
     }
-    if (user) {
-      fetchCsrfToken().catch(() => {
-        // CSRF fetch failure is non-critical for API key auth
-      });
-    }
   }, [user, storedUser]);
 
-  if (isLoading) {
+  useEffect(() => {
+    if (fullName) {
+      useAuthStore.getState().setFullName(fullName);
+    }
+  }, [fullName]);
+
+  useEffect(() => {
+    if (user && !csrfReady) {
+      fetchCsrfToken()
+        .catch(() => {})
+        .finally(() => setCsrfReady(true));
+    }
+  }, [user, csrfReady]);
+
+  if (isLoading || (user && !csrfReady)) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-3">

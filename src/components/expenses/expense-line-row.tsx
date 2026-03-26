@@ -1,12 +1,13 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import type { AccountWithCurrency } from "@/types/account";
 
 interface ExpenseLineRowProps {
   id: string;
   account: string;
   amount: string;
-  expenseAccounts: string[];
+  expenseAccounts: AccountWithCurrency[];
   onAccountChange: (id: string, value: string) => void;
   onAmountChange: (id: string, value: string) => void;
   onRemove: (id: string) => void;
@@ -32,13 +33,13 @@ export function ExpenseLineRow({
           "h-9 flex-1 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs",
           "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none",
           "disabled:cursor-not-allowed disabled:opacity-50",
-          !account && "text-muted-foreground"
+          !account && "text-muted-foreground",
         )}
       >
         <option value="">Select expense account</option>
         {expenseAccounts.map((acc) => (
-          <option key={acc} value={acc}>
-            {acc}
+          <option key={acc.name} value={acc.name}>
+            {acc.name} ({acc.account_currency})
           </option>
         ))}
       </select>
@@ -53,7 +54,7 @@ export function ExpenseLineRow({
         className={cn(
           "h-9 w-32 rounded-md border border-input bg-transparent px-3 py-1 text-sm font-mono shadow-xs text-right",
           "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none",
-          "disabled:cursor-not-allowed disabled:opacity-50"
+          "disabled:cursor-not-allowed disabled:opacity-50",
         )}
       />
 
@@ -65,7 +66,7 @@ export function ExpenseLineRow({
           "flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors",
           canRemove
             ? "hover:bg-destructive/10 hover:text-destructive cursor-pointer"
-            : "opacity-30 cursor-not-allowed"
+            : "opacity-30 cursor-not-allowed",
         )}
         aria-label="Remove line"
       >

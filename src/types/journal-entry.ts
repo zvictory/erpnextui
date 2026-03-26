@@ -1,8 +1,12 @@
 export interface JournalEntryAccount {
   doctype: "Journal Entry Account";
   account: string;
+  party_type?: string;
+  party?: string;
   debit_in_account_currency?: number;
   credit_in_account_currency?: number;
+  account_currency?: string;
+  exchange_rate?: number;
 }
 
 export interface JournalEntry {

@@ -2,87 +2,203 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useLogin } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { FrappeAPIError } from "@/lib/frappe-types";
 
+interface TenantMatch {
+  name: string;
+  siteUrl: string;
+}
+
 export function LoginForm() {
+  const t = useTranslations("auth");
   const router = useRouter();
-  const [usr, setUsr] = useState("");
-  const [pwd, setPwd] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isResolving, setIsResolving] = useState(false);
+  const [resolveError, setResolveError] = useState<string | null>(null);
+  const [matchedTenants, setMatchedTenants] = useState<TenantMatch[] | null>(null);
+  const [selectedSiteUrl, setSelectedSiteUrl] = useState<string | null>(null);
   const loginMutation = useLogin();
 
-  const errorMessage = loginMutation.error
-    ? loginMutation.error instanceof FrappeAPIError
-      ? loginMutation.error.serverMessages?.[0] ?? loginMutation.error.message
-      : "An unexpected error occurred. Please try again."
-    : null;
+  const isBusy = isResolving || loginMutation.isPending;
 
-  function handleSubmit(e: FormEvent) {
+  const errorMessage = resolveError
+    ? resolveError
+    : loginMutation.error
+      ? loginMutation.error instanceof FrappeAPIError
+        ? (loginMutation.error.serverMessages?.[0] ?? loginMutation.error.message)
+        : t("signIn.unexpectedError")
+      : null;
+
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!usr.trim() || !pwd) return;
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) return;
+
+    setResolveError(null);
+    loginMutation.reset();
+    setIsResolving(true);
+
+    try {
+      const resp = await fetch("/api/resolve-tenant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmedEmail }),
+      });
+
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        setResolveError((data as { error?: string }).error || t("signIn.accountNotFound"));
+        return;
+      }
+
+      const { tenants } = (await resp.json()) as { tenants: TenantMatch[] };
+
+      if (tenants.length === 1) {
+        // Single tenant — auto-login (unchanged UX)
+        loginMutation.mutate(
+          { siteUrl: tenants[0].siteUrl, usr: trimmedEmail, pwd: password },
+          { onSuccess: () => router.replace("/dashboard") },
+        );
+      } else {
+        // Multiple tenants — show selector
+        setMatchedTenants(tenants);
+        setSelectedSiteUrl(tenants[0].siteUrl);
+      }
+    } catch {
+      setResolveError(t("signIn.networkError"));
+    } finally {
+      setIsResolving(false);
+    }
+  }
+
+  function handleTenantConfirm() {
+    if (!selectedSiteUrl) return;
     loginMutation.mutate(
-      { usr: usr.trim(), pwd },
-      { onSuccess: () => router.replace("/expenses/new") },
+      { siteUrl: selectedSiteUrl, usr: email.trim(), pwd: password },
+      { onSuccess: () => router.replace("/dashboard") },
     );
   }
 
-  return (
-    <Card className="w-full max-w-sm">
-      <CardHeader>
-        <CardTitle className="text-xl">Stable ERP</CardTitle>
-        <CardDescription>
-          Enter your credentials to access your account
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="login-email">Email or Username</Label>
-            <Input
-              id="login-email"
-              type="text"
-              placeholder="user@example.com"
-              value={usr}
-              onChange={(e) => setUsr(e.target.value)}
-              autoComplete="username"
-              autoFocus
+  // Tenant selector view
+  if (matchedTenants && matchedTenants.length > 1) {
+    return (
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">{t("signIn.selectCompany")}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {t("signIn.multipleCompanies")}
+        </p>
+
+        <div className="mt-6 flex flex-col gap-2">
+          {matchedTenants.map((tenant) => (
+            <button
+              key={tenant.siteUrl}
+              type="button"
+              onClick={() => setSelectedSiteUrl(tenant.siteUrl)}
               disabled={loginMutation.isPending}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="login-password">Password</Label>
-            <Input
-              id="login-password"
-              type="password"
-              placeholder="Password"
-              value={pwd}
-              onChange={(e) => setPwd(e.target.value)}
-              autoComplete="current-password"
-              disabled={loginMutation.isPending}
-            />
-          </div>
-          {errorMessage && (
-            <p className="text-sm text-destructive">{errorMessage}</p>
-          )}
+              className={`w-full rounded-lg border px-4 py-3 text-left text-sm font-medium transition-colors ${
+                selectedSiteUrl === tenant.siteUrl
+                  ? "border-primary bg-primary/5 ring-2 ring-primary"
+                  : "border-border hover:border-primary/50 hover:bg-muted/50"
+              } disabled:opacity-50`}
+            >
+              {tenant.name}
+            </button>
+          ))}
+        </div>
+
+        {errorMessage && <p className="mt-4 text-sm text-destructive">{errorMessage}</p>}
+
+        <div className="mt-6 flex gap-3">
           <Button
-            type="submit"
-            className="w-full"
-            disabled={loginMutation.isPending || !usr.trim() || !pwd}
+            variant="outline"
+            className="flex-1"
+            onClick={() => {
+              setMatchedTenants(null);
+              setSelectedSiteUrl(null);
+              loginMutation.reset();
+            }}
+            disabled={loginMutation.isPending}
           >
-            {loginMutation.isPending ? "Signing in..." : "Sign In"}
+            {t("signIn.back")}
           </Button>
-        </form>
-      </CardContent>
-    </Card>
+          <Button
+            className="flex-1"
+            onClick={handleTenantConfirm}
+            disabled={!selectedSiteUrl || loginMutation.isPending}
+          >
+            {loginMutation.isPending ? t("signIn.signingIn") : t("signIn.continue")}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Credentials view (default)
+  return (
+    <div>
+      <h2 className="text-2xl font-bold tracking-tight">{t("signIn.title")}</h2>
+      <p className="mt-2 text-sm text-muted-foreground">{t("signIn.subtitle")}</p>
+
+      <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="you@company.com"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setResolveError(null);
+              setMatchedTenants(null);
+            }}
+            autoComplete="username"
+            autoFocus
+            disabled={isBusy}
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="password">{t("signIn.password")}</Label>
+          <Input
+            id="password"
+            type="password"
+            placeholder={t("signIn.passwordPlaceholder")}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            disabled={isBusy}
+          />
+        </div>
+        {errorMessage && <p className="text-sm text-destructive">{errorMessage}</p>}
+        <Button
+          type="submit"
+          className="mt-2 w-full"
+          disabled={isBusy || !email.trim() || !password.trim()}
+        >
+          {isResolving
+            ? t("signIn.searching")
+            : loginMutation.isPending
+              ? t("signIn.signingIn")
+              : t("signIn.signInButton")}
+        </Button>
+      </form>
+
+      <p className="mt-4 text-center text-sm text-muted-foreground">
+        {t("signIn.noAccount")}{" "}
+        <Link
+          href="/register"
+          className="text-primary underline underline-offset-4 hover:text-primary/80"
+        >
+          {t("signIn.register")}
+        </Link>
+      </p>
+    </div>
   );
 }
