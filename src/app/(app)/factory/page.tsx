@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useSidebar } from "@/components/ui/sidebar";
 import { FACTORY_LAYOUT } from "@/config/factory-layout";
+import { useActiveWorkOrders, useRecentStockEntries } from "@/hooks/use-factory-twin";
+import { useCompanyStore } from "@/stores/company-store";
 
 // Dynamic import — R3F Canvas cannot SSR
 const FactoryScene = dynamic(
@@ -32,6 +34,9 @@ export default function FactoryPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selectedEquipment = FACTORY_LAYOUT.find((e) => e.id === selectedId);
   const { setOpen } = useSidebar();
+  const { company } = useCompanyStore();
+  const { data: workOrders = [] } = useActiveWorkOrders(company);
+  const { data: recentEntries = [] } = useRecentStockEntries(company);
 
   // Collapse sidebar on mount, restore on unmount
   useEffect(() => {
@@ -51,8 +56,13 @@ export default function FactoryPage() {
         </Button>
       </div>
 
-      {/* Equipment count */}
-      <div className="absolute top-3 right-3 z-10">
+      {/* Status badges */}
+      <div className="absolute top-3 right-3 z-10 flex gap-2">
+        {workOrders.length > 0 && (
+          <Badge className="bg-green-600/90 text-white backdrop-blur-sm">
+            {workOrders.filter((w) => w.status === "In Process").length} active
+          </Badge>
+        )}
         <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm">
           {FACTORY_LAYOUT.length} {t("equipment")}
         </Badge>
@@ -63,55 +73,101 @@ export default function FactoryPage() {
         <FactoryScene
           selectedEquipment={selectedId}
           onSelectEquipment={setSelectedId}
+          workOrders={workOrders}
         />
       </div>
 
       {/* Bottom detail panel */}
-      {selectedEquipment && (
-        <div className="absolute bottom-0 left-0 right-0 z-10 border-t bg-background/90 backdrop-blur-sm p-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-bold">{selectedEquipment.id}</span>
-                <span className="text-muted-foreground">—</span>
-                <span className="font-medium">{selectedEquipment.label}</span>
-                <Badge variant="outline" className="text-xs">
-                  {selectedEquipment.type}
-                </Badge>
+      {selectedEquipment && (() => {
+        const activeWO = workOrders.find((w) => w.workstation === selectedEquipment.linkedWorkstation);
+        const relatedEntries = recentEntries.filter(
+          (e) => e.from_warehouse === selectedEquipment.linkedWarehouse || e.to_warehouse === selectedEquipment.linkedWarehouse || e.work_order === activeWO?.name,
+        );
+        return (
+          <div className="absolute bottom-0 left-0 right-0 z-10 border-t bg-background/90 backdrop-blur-sm p-4">
+            <div className="max-w-5xl mx-auto">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-lg">{selectedEquipment.id}</span>
+                  <span className="text-muted-foreground">—</span>
+                  <span className="font-medium">{selectedEquipment.label}</span>
+                  <Badge variant="outline" className="text-xs">{selectedEquipment.type}</Badge>
+                  {activeWO && (
+                    <Badge className="bg-green-600 text-white text-xs">
+                      {activeWO.status}
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex gap-3 text-xs text-muted-foreground">
+                  {selectedEquipment.linkedWorkstation && (
+                    <span>{t("workstation")}: {selectedEquipment.linkedWorkstation}</span>
+                  )}
+                  {selectedEquipment.linkedWarehouse && (
+                    <span>{t("warehouse")}: {selectedEquipment.linkedWarehouse}</span>
+                  )}
+                </div>
               </div>
-              {selectedEquipment.linkedWorkstation && (
-                <span className="text-xs text-muted-foreground">
-                  {t("workstation")}: {selectedEquipment.linkedWorkstation}
-                </span>
-              )}
-              {selectedEquipment.linkedWarehouse && (
-                <span className="text-xs text-muted-foreground">
-                  {t("warehouse")}: {selectedEquipment.linkedWarehouse}
-                </span>
-              )}
-            </div>
-            {selectedEquipment.parameters.length > 0 ? (
+
               <div className="flex gap-3 flex-wrap">
+                {/* Active Work Order card */}
+                {activeWO && (
+                  <Card className="flex-1 min-w-[200px] border-green-500/30">
+                    <CardContent className="p-3">
+                      <p className="text-xs text-muted-foreground">Work Order</p>
+                      <p className="text-sm font-mono font-medium">{activeWO.name}</p>
+                      <p className="text-sm font-medium mt-1">{activeWO.item_name || activeWO.production_item}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-green-500 rounded-full transition-all"
+                            style={{ width: `${activeWO.qty > 0 ? (activeWO.produced_qty / activeWO.qty) * 100 : 0}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-mono tabular-nums">
+                          {activeWO.produced_qty}/{activeWO.qty}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Parameter cards */}
                 {selectedEquipment.parameters.map((param) => (
-                  <Card key={param.key} className="flex-1 min-w-[140px]">
+                  <Card key={param.key} className="min-w-[130px]">
                     <CardContent className="p-3">
                       <p className="text-xs text-muted-foreground">{param.label}</p>
-                      <p className="text-lg font-bold tabular-nums text-muted-foreground/50">
-                        — {param.unit}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {param.min}–{param.max} {param.unit}
-                      </p>
+                      <p className="text-lg font-bold tabular-nums text-muted-foreground/50">— {param.unit}</p>
+                      <p className="text-[10px] text-muted-foreground">{param.min}–{param.max} {param.unit}</p>
                     </CardContent>
                   </Card>
                 ))}
+
+                {/* Recent activity */}
+                {relatedEntries.length > 0 && (
+                  <Card className="min-w-[180px]">
+                    <CardContent className="p-3">
+                      <p className="text-xs text-muted-foreground">Recent Activity</p>
+                      <div className="space-y-1 mt-1">
+                        {relatedEntries.slice(0, 3).map((e) => (
+                          <div key={e.name} className="text-xs">
+                            <span className="font-mono text-muted-foreground">{e.posting_time?.slice(0, 5)}</span>
+                            {" "}
+                            <span>{e.purpose}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">{t("noParameters")}</p>
-            )}
+
+              {!activeWO && selectedEquipment.parameters.length === 0 && relatedEntries.length === 0 && (
+                <p className="text-sm text-muted-foreground">{t("noParameters")}</p>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
