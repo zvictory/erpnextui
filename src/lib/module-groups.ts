@@ -5,6 +5,7 @@ export type ModuleGroupKey =
   | "stock"
   | "accounting"
   | "reports"
+  | "warehouse"
   | "manufacturing";
 
 export interface ModuleGroup {
@@ -54,6 +55,11 @@ export const MODULE_GROUPS: Record<ModuleGroupKey, ModuleGroup> = {
     description: "Sales, P&L, Balance Sheet, Trial Balance, Cash Flow, AR, AP, General Ledger",
     routes: ["/reports"],
   },
+  warehouse: {
+    label: "Warehouse",
+    description: "Sales approval pipeline, picking, packing, delivery",
+    routes: ["/warehouse"],
+  },
   manufacturing: {
     label: "Manufacturing",
     description: "OEE Dashboard, Production, Downtime, Energy",
@@ -91,6 +97,7 @@ export function isSidebarGroupEnabled(
     stock: "stock",
     accounting: "accounting",
     reports: "reports",
+    warehouse: "warehouse",
     manufacturing: "manufacturing",
   };
 

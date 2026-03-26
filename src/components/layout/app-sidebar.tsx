@@ -102,6 +102,14 @@ const accountingNav = [
   { tKey: "chartOfAccounts", href: "/chart-of-accounts", icon: BookOpen, doctype: "Account" },
 ];
 
+const warehouseNav = [
+  { tKey: "whDashboard", href: "/warehouse", icon: BarChart3 },
+  { tKey: "whApprovals", href: "/warehouse/approvals", icon: FileCheck },
+  { tKey: "whPicking", href: "/warehouse/picking", icon: Package },
+  { tKey: "whPacking", href: "/warehouse/packing", icon: PackageCheck },
+  { tKey: "whDelivery", href: "/warehouse/delivery", icon: Truck },
+];
+
 const manufacturingNav = [
   { tKey: "mfgDashboard", href: "/manufacturing", icon: BarChart3 },
   { tKey: "production", href: "/manufacturing/production", icon: Factory },
@@ -242,6 +250,9 @@ export function AppSidebar() {
         )}
         {isSidebarGroupEnabled("accounting", enabledModules) && (
           <NavGroup labelKey="accounting" items={accountingNav} />
+        )}
+        {isSidebarGroupEnabled("warehouse", enabledModules) && (
+          <NavGroup labelKey="warehouse" items={warehouseNav} />
         )}
         {isSidebarGroupEnabled("manufacturing", enabledModules) && (
           <NavGroup labelKey="manufacturing" items={manufacturingNav} />

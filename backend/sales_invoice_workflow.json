@@ -1,0 +1,130 @@
+{
+  "doctype": "Workflow",
+  "name": "Sales Invoice Approval",
+  "document_type": "Sales Invoice",
+  "is_active": 1,
+  "override_status": 0,
+  "send_email_alert": 1,
+  "workflow_state_field": "workflow_state",
+  "states": [
+    {
+      "state": "Draft",
+      "style": "",
+      "doc_status": "0",
+      "allow_edit": "Sales User"
+    },
+    {
+      "state": "Pending Approval",
+      "style": "Warning",
+      "doc_status": "1",
+      "allow_edit": "Sales User"
+    },
+    {
+      "state": "Approved",
+      "style": "Success",
+      "doc_status": "1",
+      "allow_edit": "Stock Manager"
+    },
+    {
+      "state": "Rejected",
+      "style": "Danger",
+      "doc_status": "1",
+      "allow_edit": "Stock Manager"
+    },
+    {
+      "state": "Ready for Pickup",
+      "style": "Info",
+      "doc_status": "1",
+      "allow_edit": "Stock Manager"
+    },
+    {
+      "state": "Picked",
+      "style": "Info",
+      "doc_status": "1",
+      "allow_edit": "Stock User"
+    },
+    {
+      "state": "Packed",
+      "style": "Info",
+      "doc_status": "1",
+      "allow_edit": "Stock User"
+    },
+    {
+      "state": "Delivered",
+      "style": "Success",
+      "doc_status": "1",
+      "allow_edit": "Stock User"
+    },
+    {
+      "state": "Completed",
+      "style": "Success",
+      "doc_status": "1",
+      "allow_edit": "Stock Manager"
+    }
+  ],
+  "transitions": [
+    {
+      "state": "Draft",
+      "action": "Submit for Approval",
+      "next_state": "Pending Approval",
+      "allowed": "Sales User",
+      "allow_self_approval": 1
+    },
+    {
+      "state": "Pending Approval",
+      "action": "Approve",
+      "next_state": "Approved",
+      "allowed": "Stock Manager",
+      "allow_self_approval": 1
+    },
+    {
+      "state": "Pending Approval",
+      "action": "Reject",
+      "next_state": "Rejected",
+      "allowed": "Stock Manager",
+      "allow_self_approval": 1
+    },
+    {
+      "state": "Rejected",
+      "action": "Resubmit",
+      "next_state": "Pending Approval",
+      "allowed": "Sales User",
+      "allow_self_approval": 1
+    },
+    {
+      "state": "Approved",
+      "action": "Send to Warehouse",
+      "next_state": "Ready for Pickup",
+      "allowed": "Stock Manager",
+      "allow_self_approval": 1
+    },
+    {
+      "state": "Ready for Pickup",
+      "action": "Mark as Picked",
+      "next_state": "Picked",
+      "allowed": "Stock User",
+      "allow_self_approval": 1
+    },
+    {
+      "state": "Picked",
+      "action": "Mark as Packed",
+      "next_state": "Packed",
+      "allowed": "Stock User",
+      "allow_self_approval": 1
+    },
+    {
+      "state": "Packed",
+      "action": "Mark as Delivered",
+      "next_state": "Delivered",
+      "allowed": "Stock User",
+      "allow_self_approval": 1
+    },
+    {
+      "state": "Delivered",
+      "action": "Complete",
+      "next_state": "Completed",
+      "allowed": "Stock Manager",
+      "allow_self_approval": 1
+    }
+  ]
+}
