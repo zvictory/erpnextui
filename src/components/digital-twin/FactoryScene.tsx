@@ -6,7 +6,7 @@ import { OrbitControls, Html } from "@react-three/drei";
 import { FACTORY_LAYOUT, PIPE_NETWORK } from "@/config/factory-layout";
 import { PipeNetwork } from "./scene/PipeNetwork";
 import { ProductFlowParticles } from "./scene/ProductFlowParticles";
-import type { Equipment } from "@/types/factory-twin";
+import type { Equipment, FactorySnapshot } from "@/types/factory-twin";
 import type { ActiveWorkOrder } from "@/hooks/use-factory-twin";
 
 /* ── Simple equipment geometry per type ──────────────────────── */
@@ -184,17 +184,21 @@ interface FactorySceneProps {
   workOrders?: ActiveWorkOrder[];
   showPipes?: boolean;
   showFlow?: boolean;
+  playbackSnapshot?: FactorySnapshot | null;
 }
 
-export function FactoryScene({ onSelectEquipment, selectedEquipment, workOrders = [], showPipes = true, showFlow = true }: FactorySceneProps) {
-  // Build a map: linkedWorkstation → work order
+export function FactoryScene({ onSelectEquipment, selectedEquipment, workOrders = [], showPipes = true, showFlow = true, playbackSnapshot }: FactorySceneProps) {
+  // Build a map: linkedWorkstation → work order (live mode)
   const woByWorkstation = new Map<string, ActiveWorkOrder>();
   for (const wo of workOrders) {
     if (wo.workstation) woByWorkstation.set(wo.workstation, wo);
   }
 
-  // Compute active pipe flows — a pipe is active if its "from" equipment has an active WO
+  // Compute active pipe flows
+  // In playback mode: use snapshot. In live mode: derive from work orders.
   const activeFlows = useMemo(() => {
+    if (playbackSnapshot) return playbackSnapshot.activeFlows;
+
     const set = new Set<string>();
     for (const pipe of PIPE_NETWORK) {
       const fromEq = FACTORY_LAYOUT.find((e) => e.id === pipe.from);
@@ -202,13 +206,12 @@ export function FactoryScene({ onSelectEquipment, selectedEquipment, workOrders 
         set.add(pipe.id);
       }
     }
-    // If any pump feeds the line and line has active WO, activate line→warehouse too
     const lineEq = FACTORY_LAYOUT.find((e) => e.id === "L-101");
     if (lineEq?.linkedWorkstation && woByWorkstation.has(lineEq.linkedWorkstation)) {
       set.add("pipe-L101-WH01");
     }
     return set;
-  }, [woByWorkstation]);
+  }, [woByWorkstation, playbackSnapshot]);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 

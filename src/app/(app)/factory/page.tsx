@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -13,6 +13,10 @@ import { FACTORY_LAYOUT } from "@/config/factory-layout";
 import { useActiveWorkOrders, useRecentStockEntries } from "@/hooks/use-factory-twin";
 import { useCompanyStore } from "@/stores/company-store";
 import { useFactoryTwinStore } from "@/stores/factory-twin-store";
+import { buildTimeline } from "@/lib/playback/build-timeline";
+import { PlaybackModeToggle } from "@/components/digital-twin/panels/PlaybackModeToggle";
+import { TimelineControl } from "@/components/digital-twin/panels/TimelineControl";
+import { EventLog } from "@/components/digital-twin/panels/EventLog";
 
 // Dynamic import — R3F Canvas cannot SSR
 const FactoryScene = dynamic(
@@ -38,7 +42,18 @@ export default function FactoryPage() {
   const { company } = useCompanyStore();
   const { data: workOrders = [] } = useActiveWorkOrders(company);
   const { data: recentEntries = [] } = useRecentStockEntries(company);
-  const { showPipes, showFlow, togglePipes, toggleFlow } = useFactoryTwinStore();
+  const { showPipes, showFlow, togglePipes, toggleFlow, mode, snapshot, setTimeline } =
+    useFactoryTwinStore();
+
+  // Build timeline when switching to playback or when data changes
+  useEffect(() => {
+    if (workOrders.length > 0 || recentEntries.length > 0) {
+      const events = buildTimeline(workOrders, recentEntries);
+      const now = Date.now();
+      const start = events.length > 0 ? events[0].timestamp : now - 2 * 3600_000;
+      setTimeline(start, now, events);
+    }
+  }, [workOrders, recentEntries, setTimeline]);
 
   // Collapse sidebar on mount, restore on unmount
   useEffect(() => {
@@ -48,15 +63,31 @@ export default function FactoryPage() {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
-      {/* Home button overlay */}
-      <div className="absolute top-3 left-3 z-10">
+      {/* Top bar: Home + Mode toggle */}
+      <div className="absolute top-3 left-3 z-10 flex gap-2">
         <Button variant="outline" size="sm" className="bg-background/80 backdrop-blur-sm" asChild>
           <Link href="/dashboard">
             <Home className="h-4 w-4 mr-1.5" />
             {t("title")}
           </Link>
         </Button>
+        <PlaybackModeToggle />
       </div>
+
+      {/* Playback: Timeline control */}
+      {mode === "playback" && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 w-[min(90%,700px)]">
+          <TimelineControl />
+        </div>
+      )}
+
+      {/* Playback: Event log */}
+      {mode === "playback" && (
+        <div className="absolute top-14 right-3 z-10 w-64 bg-black/70 backdrop-blur-sm rounded-lg p-2">
+          <div className="text-xs text-white/60 font-semibold mb-1 px-2">Events</div>
+          <EventLog />
+        </div>
+      )}
 
       {/* Layer toggles */}
       <div className="absolute bottom-4 left-3 z-10 flex flex-col gap-1.5">
@@ -98,9 +129,10 @@ export default function FactoryPage() {
         <FactoryScene
           selectedEquipment={selectedId}
           onSelectEquipment={setSelectedId}
-          workOrders={workOrders}
+          workOrders={mode === "live" ? workOrders : []}
           showPipes={showPipes}
           showFlow={showFlow}
+          playbackSnapshot={mode === "playback" ? snapshot : null}
         />
       </div>
 
