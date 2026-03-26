@@ -1,9 +1,11 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Html } from "@react-three/drei";
-import { FACTORY_LAYOUT } from "@/config/factory-layout";
+import { FACTORY_LAYOUT, PIPE_NETWORK } from "@/config/factory-layout";
+import { PipeNetwork } from "./scene/PipeNetwork";
+import { ProductFlowParticles } from "./scene/ProductFlowParticles";
 import type { Equipment } from "@/types/factory-twin";
 import type { ActiveWorkOrder } from "@/hooks/use-factory-twin";
 
@@ -180,14 +182,33 @@ interface FactorySceneProps {
   onSelectEquipment?: (id: string | null) => void;
   selectedEquipment?: string | null;
   workOrders?: ActiveWorkOrder[];
+  showPipes?: boolean;
+  showFlow?: boolean;
 }
 
-export function FactoryScene({ onSelectEquipment, selectedEquipment, workOrders = [] }: FactorySceneProps) {
+export function FactoryScene({ onSelectEquipment, selectedEquipment, workOrders = [], showPipes = true, showFlow = true }: FactorySceneProps) {
   // Build a map: linkedWorkstation → work order
   const woByWorkstation = new Map<string, ActiveWorkOrder>();
   for (const wo of workOrders) {
     if (wo.workstation) woByWorkstation.set(wo.workstation, wo);
   }
+
+  // Compute active pipe flows — a pipe is active if its "from" equipment has an active WO
+  const activeFlows = useMemo(() => {
+    const set = new Set<string>();
+    for (const pipe of PIPE_NETWORK) {
+      const fromEq = FACTORY_LAYOUT.find((e) => e.id === pipe.from);
+      if (fromEq?.linkedWorkstation && woByWorkstation.has(fromEq.linkedWorkstation)) {
+        set.add(pipe.id);
+      }
+    }
+    // If any pump feeds the line and line has active WO, activate line→warehouse too
+    const lineEq = FACTORY_LAYOUT.find((e) => e.id === "L-101");
+    if (lineEq?.linkedWorkstation && woByWorkstation.has(lineEq.linkedWorkstation)) {
+      set.add("pipe-L101-WH01");
+    }
+    return set;
+  }, [woByWorkstation]);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -221,6 +242,14 @@ export function FactoryScene({ onSelectEquipment, selectedEquipment, workOrders 
       </mesh>
       {/* Grid lines */}
       <gridHelper args={[50, 50, "#9ca3af", "#d1d5db"]} />
+
+      {/* Pipes */}
+      {showPipes && <PipeNetwork activeFlows={activeFlows} />}
+
+      {/* Flow particles */}
+      {showFlow && showPipes && activeFlows.size > 0 && (
+        <ProductFlowParticles activeFlows={activeFlows} />
+      )}
 
       {/* Equipment + SCADA cards */}
       {FACTORY_LAYOUT.map((eq) => {

@@ -8,6 +8,15 @@ export interface ParameterConfig {
   source: "erpnext" | "mqtt" | "simulated";
 }
 
+export interface PipeConfig {
+  id: string;
+  from: string;
+  to: string;
+  waypoints: [number, number, number][];
+  color?: string;
+  radius?: number;
+}
+
 export interface Equipment {
   id: string;
   type: "tank" | "pump" | "line" | "compressor" | "generator" | "warehouse";

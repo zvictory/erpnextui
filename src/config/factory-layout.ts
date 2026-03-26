@@ -1,4 +1,4 @@
-import type { Equipment } from "@/types/factory-twin";
+import type { Equipment, PipeConfig } from "@/types/factory-twin";
 
 // Zavod layouti — Surprise muzqaymoq ishlab chiqarish sexi
 // Coordinate system: X = left-right, Y = up, Z = front-back
@@ -103,5 +103,50 @@ export const FACTORY_LAYOUT: Equipment[] = [
     linkedWarehouse: "Main Warehouse",
     color: "#a4b0be",
     parameters: [],
+  },
+];
+
+// Pipe connections between equipment
+// Waypoints route pipes with vertical drops and horizontal runs
+// Y=0.5 is the standard pipe height; tanks connect from Y≈0.5, pumps at Y≈0.4
+export const PIPE_NETWORK: PipeConfig[] = [
+  // Tanks → Pumps
+  {
+    id: "pipe-T501-P101",
+    from: "T-501",
+    to: "P-101",
+    waypoints: [[-6, 0.5, -2.5], [-3, 0.5, -1]],
+  },
+  {
+    id: "pipe-T502-P101",
+    from: "T-502",
+    to: "P-101",
+    waypoints: [[0, 0.5, -2.5], [-1.5, 0.5, -1], [-3, 0.5, -0.5]],
+  },
+  {
+    id: "pipe-T503-P102",
+    from: "T-503",
+    to: "P-102",
+    waypoints: [[6, 0.5, -2.5], [3, 0.5, -0.5]],
+  },
+  // Pumps → Production Line
+  {
+    id: "pipe-P101-L101",
+    from: "P-101",
+    to: "L-101",
+    waypoints: [[-3, 0.5, 1.5], [-1.5, 0.5, 3], [0, 0.5, 3.5]],
+  },
+  {
+    id: "pipe-P102-L101",
+    from: "P-102",
+    to: "L-101",
+    waypoints: [[3, 0.5, 1.5], [1.5, 0.5, 3], [0, 0.5, 3.5]],
+  },
+  // Production Line → Warehouse
+  {
+    id: "pipe-L101-WH01",
+    from: "L-101",
+    to: "WH-01",
+    waypoints: [[0, 0.5, 6], [0, 0.5, 8]],
   },
 ];

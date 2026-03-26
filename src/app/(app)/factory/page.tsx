@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Home } from "lucide-react";
+import { Home, GitBranch, Droplets } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { FACTORY_LAYOUT } from "@/config/factory-layout";
 import { useActiveWorkOrders, useRecentStockEntries } from "@/hooks/use-factory-twin";
 import { useCompanyStore } from "@/stores/company-store";
+import { useFactoryTwinStore } from "@/stores/factory-twin-store";
 
 // Dynamic import — R3F Canvas cannot SSR
 const FactoryScene = dynamic(
@@ -37,6 +38,7 @@ export default function FactoryPage() {
   const { company } = useCompanyStore();
   const { data: workOrders = [] } = useActiveWorkOrders(company);
   const { data: recentEntries = [] } = useRecentStockEntries(company);
+  const { showPipes, showFlow, togglePipes, toggleFlow } = useFactoryTwinStore();
 
   // Collapse sidebar on mount, restore on unmount
   useEffect(() => {
@@ -53,6 +55,29 @@ export default function FactoryPage() {
             <Home className="h-4 w-4 mr-1.5" />
             {t("title")}
           </Link>
+        </Button>
+      </div>
+
+      {/* Layer toggles */}
+      <div className="absolute bottom-4 left-3 z-10 flex flex-col gap-1.5">
+        <Button
+          variant={showPipes ? "default" : "outline"}
+          size="sm"
+          className="bg-background/80 backdrop-blur-sm h-8 text-xs"
+          onClick={togglePipes}
+        >
+          <GitBranch className="h-3.5 w-3.5 mr-1" />
+          Pipes
+        </Button>
+        <Button
+          variant={showFlow ? "default" : "outline"}
+          size="sm"
+          className="bg-background/80 backdrop-blur-sm h-8 text-xs"
+          onClick={toggleFlow}
+          disabled={!showPipes}
+        >
+          <Droplets className="h-3.5 w-3.5 mr-1" />
+          Flow
         </Button>
       </div>
 
@@ -74,6 +99,8 @@ export default function FactoryPage() {
           selectedEquipment={selectedId}
           onSelectEquipment={setSelectedId}
           workOrders={workOrders}
+          showPipes={showPipes}
+          showFlow={showFlow}
         />
       </div>
 
