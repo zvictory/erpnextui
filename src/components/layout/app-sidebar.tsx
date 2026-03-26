@@ -36,6 +36,7 @@ import {
   Zap,
   GitBranch,
   Settings,
+  Box,
 } from "lucide-react";
 import {
   Sidebar,
@@ -108,6 +109,10 @@ const warehouseNav = [
   { tKey: "whPicking", href: "/warehouse/picking", icon: Package },
   { tKey: "whPacking", href: "/warehouse/packing", icon: PackageCheck },
   { tKey: "whDelivery", href: "/warehouse/delivery", icon: Truck },
+];
+
+const factoryNav = [
+  { tKey: "digitalTwin", href: "/factory", icon: Box },
 ];
 
 const manufacturingNav = [
@@ -253,6 +258,9 @@ export function AppSidebar() {
         )}
         {isSidebarGroupEnabled("warehouse", enabledModules) && (
           <NavGroup labelKey="warehouse" items={warehouseNav} />
+        )}
+        {isSidebarGroupEnabled("factory", enabledModules) && (
+          <NavGroup labelKey="factory" items={factoryNav} />
         )}
         {isSidebarGroupEnabled("manufacturing", enabledModules) && (
           <NavGroup labelKey="manufacturing" items={manufacturingNav} />

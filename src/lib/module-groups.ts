@@ -6,7 +6,8 @@ export type ModuleGroupKey =
   | "accounting"
   | "reports"
   | "warehouse"
-  | "manufacturing";
+  | "manufacturing"
+  | "factory";
 
 export interface ModuleGroup {
   label: string;
@@ -60,6 +61,11 @@ export const MODULE_GROUPS: Record<ModuleGroupKey, ModuleGroup> = {
     description: "Sales approval pipeline, picking, packing, delivery",
     routes: ["/warehouse"],
   },
+  factory: {
+    label: "Factory",
+    description: "3D Digital Twin — Factory Visualization",
+    routes: ["/factory"],
+  },
   manufacturing: {
     label: "Manufacturing",
     description: "OEE Dashboard, Production, Downtime, Energy",
@@ -98,6 +104,7 @@ export function isSidebarGroupEnabled(
     accounting: "accounting",
     reports: "reports",
     warehouse: "warehouse",
+    factory: "factory",
     manufacturing: "manufacturing",
   };
 

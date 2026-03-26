@@ -35,8 +35,10 @@
       "accounting": "Бухгалтерия",
       "reports": "Ҳисоботлар",
       "manufacturing": "Ишлаб чиқариш",
-      "warehouse": "Склад"
+      "warehouse": "Склад",
+      "factory": "Завод"
     },
+    "digitalTwin": "Рақамли эгизак",
     "whDashboard": "Жараён",
     "whApprovals": "Тасдиқлаш",
     "whPicking": "Йиғиш",
@@ -913,5 +915,12 @@
     "noItems": "Бу навбатда элемент йўқ",
     "rejectReason": "Рад этиш сабаби",
     "warehouseWorkflow": "Склад жараёни"
+  },
+  "factory": {
+    "title": "Рақамли эгизак — Завод",
+    "equipment": "ускуна",
+    "workstation": "Иш станцияси",
+    "warehouse": "Склад",
+    "noParameters": "Бу ускуна учун параметрлар созланмаган."
   }
 }

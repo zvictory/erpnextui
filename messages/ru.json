@@ -35,8 +35,10 @@
       "accounting": "Бухгалтерия",
       "reports": "Отчёты",
       "manufacturing": "Производство",
-      "warehouse": "Склад"
+      "warehouse": "Склад",
+      "factory": "Завод"
     },
+    "digitalTwin": "Цифровой двойник",
     "whDashboard": "Воронка",
     "whApprovals": "Одобрение",
     "whPicking": "Сборка",
@@ -929,5 +931,12 @@
     "noItems": "Нет элементов в очереди",
     "rejectReason": "Причина отклонения",
     "warehouseWorkflow": "Складской процесс"
+  },
+  "factory": {
+    "title": "Цифровой двойник — Завод",
+    "equipment": "оборудование",
+    "workstation": "Рабочая станция",
+    "warehouse": "Склад",
+    "noParameters": "Для этого оборудования параметры не настроены."
   }
 }

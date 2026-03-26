@@ -35,8 +35,10 @@
       "accounting": "Accounting",
       "reports": "Reports",
       "manufacturing": "Manufacturing",
-      "warehouse": "Warehouse"
+      "warehouse": "Warehouse",
+      "factory": "Factory"
     },
+    "digitalTwin": "Digital Twin",
     "whDashboard": "Pipeline",
     "whApprovals": "Approvals",
     "whPicking": "Picking",
@@ -941,5 +943,12 @@
     "noItems": "No items in this queue",
     "rejectReason": "Reason for rejection",
     "warehouseWorkflow": "Warehouse Workflow"
+  },
+  "factory": {
+    "title": "Digital Twin — Factory",
+    "equipment": "equipment",
+    "workstation": "Workstation",
+    "warehouse": "Warehouse",
+    "noParameters": "No parameters configured for this equipment."
   }
 }

@@ -35,8 +35,10 @@
       "accounting": "Buxgalteriya",
       "reports": "Hisobotlar",
       "manufacturing": "Ishlab chiqarish",
-      "warehouse": "Sklad"
+      "warehouse": "Sklad",
+      "factory": "Zavod"
     },
+    "digitalTwin": "Raqamli egizak",
     "whDashboard": "Jarayon",
     "whApprovals": "Tasdiqlash",
     "whPicking": "Yig'ish",
@@ -913,5 +915,12 @@
     "noItems": "Bu navbatda element yo'q",
     "rejectReason": "Rad etish sababi",
     "warehouseWorkflow": "Sklad jarayoni"
+  },
+  "factory": {
+    "title": "Raqamli egizak — Zavod",
+    "equipment": "uskuna",
+    "workstation": "Ish stantsiyasi",
+    "warehouse": "Sklad",
+    "noParameters": "Bu uskuna uchun parametrlar sozlanmagan."
   }
 }
