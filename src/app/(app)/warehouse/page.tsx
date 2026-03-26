@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useWorkflowStateCounts } from "@/hooks/use-workflow";
 import { useCompanyStore } from "@/stores/company-store";
+import { PipelineChart } from "@/components/shared/pipeline-chart";
 import type { WorkflowState } from "@/hooks/use-workflow";
 
 interface PipelineStage {
@@ -120,6 +121,9 @@ export default function WarehousePipelinePage() {
       <h1 className="text-2xl font-semibold tracking-tight">
         {t("warehouseWorkflow")}
       </h1>
+
+      {/* Pipeline bar chart */}
+      {!isLoading && counts && <PipelineChart counts={counts} className="mb-4" />}
 
       {isLoading ? (
         <PipelineSkeleton />

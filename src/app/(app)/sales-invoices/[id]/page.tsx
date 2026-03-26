@@ -4,9 +4,12 @@ import { use } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 import { FormPageLayout } from "@/components/shared/form-page-layout";
 import { PermissionGuard } from "@/components/shared/permission-guard";
 import { SalesInvoiceForm } from "@/components/sales-invoices/sales-invoice-form";
+import { WorkflowTimeline } from "@/components/shared/workflow-timeline";
+import { WorkflowActions } from "@/components/shared/workflow-actions";
 import {
   useSalesInvoice,
   useUpdateSalesInvoice,
@@ -23,11 +26,13 @@ export default function EditSalesInvoicePage({ params }: { params: Promise<{ id:
   const name = decodeURIComponent(id);
   const router = useRouter();
   const t = useTranslations("invoices");
-  const { data: invoice, isLoading } = useSalesInvoice(name);
+  const { data: invoice, isLoading, refetch } = useSalesInvoice(name);
   const { canSubmit, canCancel } = usePermissions();
   const updateInvoice = useUpdateSalesInvoice();
   const submitInvoice = useSubmitSalesInvoice();
   const cancelInvoice = useCancelSalesInvoice();
+
+  const workflowState = (invoice as Record<string, unknown>)?.workflow_state as string | undefined;
 
   function handleSubmit(data: SalesInvoiceSubmitValues) {
     updateInvoice.mutate(
@@ -82,13 +87,27 @@ export default function EditSalesInvoicePage({ params }: { params: Promise<{ id:
   return (
     <PermissionGuard doctype="Sales Invoice" action="read">
       <FormPageLayout title={invoice.name} backHref="/sales-invoices">
+        {/* Workflow timeline + actions (only show if workflow is active) */}
+        {workflowState && (
+          <div className="space-y-3 mb-4">
+            <WorkflowTimeline currentState={workflowState} />
+            <WorkflowActions
+              doctype="Sales Invoice"
+              docname={invoice.name}
+              currentState={workflowState}
+              onTransition={() => refetch()}
+            />
+            <Separator />
+          </div>
+        )}
+
         <SalesInvoiceForm
           defaultValues={invoice}
           onSubmit={handleSubmit}
           isSubmitting={updateInvoice.isPending}
           isEdit
-          onSubmitDoc={canSubmit("Sales Invoice") ? handleSubmitDoc : undefined}
-          onCancelDoc={canCancel("Sales Invoice") ? handleCancelDoc : undefined}
+          onSubmitDoc={canSubmit("Sales Invoice") && !workflowState ? handleSubmitDoc : undefined}
+          onCancelDoc={canCancel("Sales Invoice") && !workflowState ? handleCancelDoc : undefined}
           isSubmittingDoc={submitInvoice.isPending}
           isCancellingDoc={cancelInvoice.isPending}
           onCreateReturn={

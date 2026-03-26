@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WorkflowActions } from "@/components/shared/workflow-actions";
+import { ImeiScanner } from "@/components/shared/imei-scanner";
 import { useWarehouseQueue } from "@/hooks/use-workflow";
 import { useCompanyStore } from "@/stores/company-store";
 import { useCurrencyMap } from "@/hooks/use-accounts";
@@ -71,6 +72,12 @@ export default function PickingPage() {
                       info,
                     )}
                   </p>
+                  <ImeiScanner
+                    onScan={(imei) => {
+                      // TODO: validate IMEI against SI items in ERPNext
+                      console.log(`Scanned ${imei} for ${inv.name}`);
+                    }}
+                  />
                   <WorkflowActions
                     doctype="Sales Invoice"
                     docname={inv.name}
