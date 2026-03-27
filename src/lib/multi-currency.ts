@@ -4,6 +4,7 @@ import { FrappeAPIError } from "./frappe-types";
 interface CompanyDoc {
   name: string;
   enable_multi_currency: 0 | 1;
+  default_currency: string;
 }
 
 /**
@@ -16,10 +17,16 @@ export async function ensureMultiCurrencyEnabled(
   companyName: string,
   accountCurrencies: string[],
 ): Promise<boolean> {
-  const unique = [...new Set(accountCurrencies.filter(Boolean))];
-  if (unique.length <= 1) return false;
+  const filtered = accountCurrencies.filter(Boolean);
+  if (filtered.length === 0) return false;
 
   const company = await frappe.getDoc<CompanyDoc>("Company", companyName);
+
+  // Include company default currency — ERPNext requires multi_currency
+  // when ANY account currency differs from company currency
+  const allCurrencies = new Set([...filtered, company.default_currency]);
+  if (allCurrencies.size <= 1) return false;
+
   if (company.enable_multi_currency === 1) return true;
 
   try {
