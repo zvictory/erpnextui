@@ -73,19 +73,37 @@ export function useSalesInvoice(name: string) {
 export function useCreateSalesInvoice() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (
+    mutationFn: async (
       data: SalesInvoiceSubmitValues & { company: string; is_return?: 1; return_against?: string },
-    ) =>
-      frappe.createDoc<SalesInvoice>("Sales Invoice", {
+    ) => {
+      // Find the receivable account matching the invoice currency
+      let debitTo: string | undefined;
+      if (data.currency) {
+        const accounts = await frappe.getList<{ name: string }>("Account", {
+          filters: [
+            ["account_type", "=", "Receivable"],
+            ["company", "=", data.company],
+            ["account_currency", "=", data.currency],
+            ["is_group", "=", 0],
+          ],
+          fields: ["name"],
+          limitPageLength: 1,
+        });
+        if (accounts.length > 0) debitTo = accounts[0].name;
+      }
+
+      return frappe.createDoc<SalesInvoice>("Sales Invoice", {
         doctype: "Sales Invoice",
         update_stock: 1,
         set_posting_time: 1,
         ...data,
+        ...(debitTo ? { debit_to: debitTo } : {}),
         items: data.items.map((item) => ({
           doctype: "Sales Invoice Item",
           ...item,
         })),
-      }),
+      });
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["salesInvoices"] });
     },

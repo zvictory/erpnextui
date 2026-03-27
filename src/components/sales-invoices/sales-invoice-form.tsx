@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useForm, FormProvider, Controller } from "react-hook-form";
+import { useForm, useWatch, FormProvider, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Printer, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -123,8 +123,9 @@ export function SalesInvoiceForm({
 
   const postingDate = watch("posting_date");
   const dueDate = watch("due_date");
-  const items = watch("items");
   const watchedCustomer = watch("customer");
+  // useWatch triggers re-render on deep field changes (unlike watch)
+  const items = useWatch({ control: form.control, name: "items" });
 
   // Fetch customer doc to get their default_currency
   const { data: customerDoc } = useCustomer(watchedCustomer);
@@ -138,9 +139,8 @@ export function SalesInvoiceForm({
   const currencySymbol = currInfo?.symbol ?? companyCurrencySymbol;
   const symbolOnRight = currInfo?.onRight ?? companySymbolOnRight;
 
-  const subtotal = useMemo(() => {
-    return items.reduce((sum, item) => sum + (item.amount || 0), 0);
-  }, [items]);
+  // Compute subtotal directly — no useMemo (items reference doesn't change on field updates)
+  const subtotal = items.reduce((sum, item) => sum + (item.amount || 0), 0);
 
   useEffect(() => {
     if (postingDate && dueDate && dueDate < postingDate) {
