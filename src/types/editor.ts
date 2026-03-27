@@ -6,11 +6,25 @@ export type EquipmentType = Equipment["type"];
 
 export interface CatalogItem {
   type: EquipmentType;
+  subtype: string;
   label: string;
   icon: string;
   defaultColor: string;
   defaultScale: number;
   defaultParams: ParameterConfig[];
+  idPrefix: string;
+}
+
+export interface LineTemplateStage {
+  subtype: string;
+  label: string;
+}
+
+export interface ProductionLineTemplate {
+  id: string;
+  name: string;
+  description: string;
+  stages: LineTemplateStage[];
 }
 
 export interface CatalogCategory {
