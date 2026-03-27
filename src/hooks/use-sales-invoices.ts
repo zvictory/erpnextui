@@ -78,18 +78,28 @@ export function useCreateSalesInvoice() {
     ) => {
       // Find the receivable account matching the invoice currency
       let debitTo: string | undefined;
-      if (data.currency) {
-        const accounts = await frappe.getList<{ name: string }>("Account", {
-          filters: [
-            ["account_type", "=", "Receivable"],
-            ["company", "=", data.company],
-            ["account_currency", "=", data.currency],
-            ["is_group", "=", 0],
-          ],
-          fields: ["name"],
-          limitPageLength: 1,
-        });
-        if (accounts.length > 0) debitTo = accounts[0].name;
+      if (data.currency && data.customer) {
+        try {
+          // Use ERPNext's built-in party account resolution
+          const result = await frappe.call<string>(
+            "erpnext.accounts.party.get_party_account",
+            { party_type: "Customer", party: data.customer, company: data.company },
+          );
+          if (result) debitTo = result;
+        } catch {
+          // Fallback: query by currency
+          const accounts = await frappe.getList<{ name: string }>("Account", {
+            filters: [
+              ["account_type", "=", "Receivable"],
+              ["company", "=", data.company],
+              ["account_currency", "=", data.currency],
+              ["is_group", "=", 0],
+            ],
+            fields: ["name"],
+            limitPageLength: 1,
+          });
+          if (accounts.length > 0) debitTo = accounts[0].name;
+        }
       }
 
       return frappe.createDoc<SalesInvoice>("Sales Invoice", {
