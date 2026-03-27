@@ -207,10 +207,6 @@ export function FactoryScene({ onSelectEquipment, selectedEquipment, workOrders 
         set.add(pipe.id);
       }
     }
-    const lineEq = FACTORY_LAYOUT.find((e) => e.id === "L-101");
-    if (lineEq?.linkedWorkstation && woByWorkstation.has(lineEq.linkedWorkstation)) {
-      set.add("pipe-L101-WH01");
-    }
     return set;
   }, [woByWorkstation, playbackSnapshot]);
   const [mounted, setMounted] = useState(false);
@@ -222,7 +218,7 @@ export function FactoryScene({ onSelectEquipment, selectedEquipment, workOrders 
     <Canvas
       shadows
       camera={{
-        position: viewMode === "2d" ? [0, 40, 0.01] : [25, 18, 25],
+        position: viewMode === "2d" ? [0, 40, 0.01] : [28, 22, 28],
         fov: viewMode === "2d" ? 35 : 45,
         near: 0.1,
         far: 500,
@@ -234,8 +230,8 @@ export function FactoryScene({ onSelectEquipment, selectedEquipment, workOrders 
       <ambientLight intensity={0.6} />
       <directionalLight position={[15, 20, 10]} intensity={1.5} castShadow
         shadow-mapSize-width={2048} shadow-mapSize-height={2048}
-        shadow-camera-far={50} shadow-camera-left={-20} shadow-camera-right={20}
-        shadow-camera-top={20} shadow-camera-bottom={-20}
+        shadow-camera-far={60} shadow-camera-left={-25} shadow-camera-right={25}
+        shadow-camera-top={25} shadow-camera-bottom={-25}
       />
       <directionalLight position={[-10, 10, -5]} intensity={0.4} />
       <color attach="background" args={["#e5e7eb"]} />
@@ -243,7 +239,7 @@ export function FactoryScene({ onSelectEquipment, selectedEquipment, workOrders 
       {/* Controls */}
       <OrbitControls
         enableDamping dampingFactor={0.1}
-        target={[0, 0, 2]}
+        target={[0, 0, 1]}
         minDistance={viewMode === "2d" ? 20 : 8}
         maxDistance={viewMode === "2d" ? 80 : 60}
         maxPolarAngle={viewMode === "2d" ? 0.01 : Math.PI / 2.2}
@@ -253,7 +249,7 @@ export function FactoryScene({ onSelectEquipment, selectedEquipment, workOrders 
 
       {/* Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
-        <planeGeometry args={[50, 40]} />
+        <planeGeometry args={[50, 46]} />
         <meshStandardMaterial color="#d1d5db" />
       </mesh>
       {/* Grid lines */}

@@ -37,6 +37,7 @@ import {
   GitBranch,
   Settings,
   Box,
+  PenTool,
 } from "lucide-react";
 import {
   Sidebar,
@@ -112,7 +113,8 @@ const warehouseNav = [
 ];
 
 const factoryNav = [
-  { tKey: "digitalTwin", href: "/factory", icon: Box },
+  { tKey: "oeeDashboard", href: "/factory", icon: Box },
+  { tKey: "layoutEditor", href: "/factory/editor", icon: PenTool },
 ];
 
 const manufacturingNav = [

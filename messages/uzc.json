@@ -38,7 +38,8 @@
       "warehouse": "Склад",
       "factory": "Завод"
     },
-    "digitalTwin": "Рақамли эгизак",
+    "oeeDashboard": "OEE панел",
+    "layoutEditor": "Layout таҳрирлаш",
     "whDashboard": "Жараён",
     "whApprovals": "Тасдиқлаш",
     "whPicking": "Йиғиш",
@@ -299,7 +300,10 @@
     "creditNote": "Кредит-нота",
     "debitNote": "Дебет-нота",
     "returnAgainst": "Қайтариш бўйича",
-    "returnInvoice": "Қайтариш ҳисоб-фактураси"
+    "returnInvoice": "Қайтариш ҳисоб-фактураси",
+    "stockTotal": "Омборда: {qty}",
+    "stockOut": "Мавжуд эмас",
+    "stockByWarehouse": "Омборлар бўйича қолдиқ"
   },
   "customers": {
     "title": "Мижозлар",

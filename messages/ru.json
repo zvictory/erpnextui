@@ -38,7 +38,8 @@
       "warehouse": "Склад",
       "factory": "Завод"
     },
-    "digitalTwin": "Цифровой двойник",
+    "oeeDashboard": "Панель OEE",
+    "layoutEditor": "Редактор макета",
     "whDashboard": "Воронка",
     "whApprovals": "Одобрение",
     "whPicking": "Сборка",
@@ -304,7 +305,10 @@
     "creditNote": "Кредит-нота",
     "debitNote": "Дебет-нота",
     "returnAgainst": "Возврат по",
-    "returnInvoice": "Возвратная накладная"
+    "returnInvoice": "Возвратная накладная",
+    "stockTotal": "На складе: {qty}",
+    "stockOut": "Нет в наличии",
+    "stockByWarehouse": "Остатки по складам"
   },
   "customers": {
     "title": "Клиенты",

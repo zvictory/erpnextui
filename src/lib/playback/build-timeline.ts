@@ -68,8 +68,8 @@ export function buildTimeline(
     }
 
     if (se.purpose === "Material Transfer") {
-      const fromEq = equipmentForWarehouse(se.from_warehouse) || "WH-01";
-      const toEq = equipmentForWarehouse(se.to_warehouse) || "WH-01";
+      const fromEq = equipmentForWarehouse(se.from_warehouse) || "WH-FIN";
+      const toEq = equipmentForWarehouse(se.to_warehouse) || "WH-FIN";
       const pipeId = findPipe(fromEq, toEq);
       events.push({
         timestamp: ts,

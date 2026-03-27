@@ -14,17 +14,17 @@ import { useActiveWorkOrders, useRecentStockEntries } from "@/hooks/use-factory-
 import { useCompanyStore } from "@/stores/company-store";
 import { useFactoryTwinStore } from "@/stores/factory-twin-store";
 import { buildTimeline } from "@/lib/playback/build-timeline";
-import { PlaybackModeToggle } from "@/components/digital-twin/panels/PlaybackModeToggle";
-import { TimelineControl } from "@/components/digital-twin/panels/TimelineControl";
-import { EventLog } from "@/components/digital-twin/panels/EventLog";
-import { EquipmentDetail } from "@/components/digital-twin/panels/EquipmentDetail";
-import { ViewModeToggle } from "@/components/digital-twin/controls/ViewModeToggle";
+import { PlaybackModeToggle } from "@/components/oee-dashboard/panels/PlaybackModeToggle";
+import { TimelineControl } from "@/components/oee-dashboard/panels/TimelineControl";
+import { EventLog } from "@/components/oee-dashboard/panels/EventLog";
+import { EquipmentDetail } from "@/components/oee-dashboard/panels/EquipmentDetail";
+import { ViewModeToggle } from "@/components/oee-dashboard/controls/ViewModeToggle";
 import { useFactoryShortcuts } from "@/hooks/use-factory-shortcuts";
 
 // Dynamic import — R3F Canvas cannot SSR
 const FactoryScene = dynamic(
   () =>
-    import("@/components/digital-twin/FactoryScene").then((mod) => ({
+    import("@/components/oee-dashboard/FactoryScene").then((mod) => ({
       default: mod.FactoryScene,
     })),
   {

@@ -63,8 +63,8 @@ export const MODULE_GROUPS: Record<ModuleGroupKey, ModuleGroup> = {
   },
   factory: {
     label: "Factory",
-    description: "3D Digital Twin — Factory Visualization",
-    routes: ["/factory"],
+    description: "OEE Dashboard — Factory Visualization",
+    routes: ["/factory", "/factory/editor"],
   },
   manufacturing: {
     label: "Manufacturing",

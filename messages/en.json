@@ -38,7 +38,8 @@
       "warehouse": "Warehouse",
       "factory": "Factory"
     },
-    "digitalTwin": "Digital Twin",
+    "oeeDashboard": "OEE Dashboard",
+    "layoutEditor": "Layout Editor",
     "whDashboard": "Pipeline",
     "whApprovals": "Approvals",
     "whPicking": "Picking",
@@ -304,7 +305,10 @@
     "creditNote": "Credit Note",
     "debitNote": "Debit Note",
     "returnAgainst": "Return Against",
-    "returnInvoice": "Return Invoice"
+    "returnInvoice": "Return Invoice",
+    "stockTotal": "In stock: {qty}",
+    "stockOut": "Out of stock",
+    "stockByWarehouse": "Stock by warehouse"
   },
   "customers": {
     "title": "Customers",
