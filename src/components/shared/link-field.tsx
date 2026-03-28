@@ -26,6 +26,8 @@ interface LinkFieldProps {
   filters?: unknown[];
   /** Fetch this field alongside `name` and display it as a secondary label. */
   descriptionField?: string;
+  /** Fallback display text when the value isn't found in the options list. */
+  displayValue?: string;
 }
 
 export function LinkField({
@@ -37,6 +39,7 @@ export function LinkField({
   className,
   filters,
   descriptionField,
+  displayValue,
 }: LinkFieldProps) {
   const [open, setOpen] = useState(false);
   const { data: options = [], isLoading } = useLinkOptions(doctype, filters, descriptionField);
@@ -59,10 +62,8 @@ export function LinkField({
         >
           <span className="truncate">
             {selected
-              ? selected.description
-                ? selected.description
-                : selected.value
-              : value || placeholder}
+              ? selected.description || selected.value
+              : displayValue || value || placeholder}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>

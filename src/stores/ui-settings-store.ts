@@ -77,8 +77,8 @@ export const useUISettingsStore = create<UISettingsState>()(
       locale: "ru",
       setLocale: (locale) => set({ locale }),
       invoiceShowUom: true,
-      invoiceShowDiscountPercent: false,
-      invoiceShowDiscountAmount: false,
+      invoiceShowDiscountPercent: true,
+      invoiceShowDiscountAmount: true,
       setInvoiceShowUom: (invoiceShowUom) => set({ invoiceShowUom }),
       setInvoiceShowDiscountPercent: (invoiceShowDiscountPercent) =>
         set({ invoiceShowDiscountPercent }),

@@ -21,6 +21,7 @@ import { useCompanies } from "@/hooks/use-companies";
 import { useUISettingsStore } from "@/stores/ui-settings-store";
 import { useItem } from "@/hooks/use-items";
 import { useItemPrice } from "@/hooks/use-item-price";
+import { StockAvailabilityIndicator } from "@/components/shared/stock-availability-indicator";
 import { useTranslations } from "next-intl";
 
 interface InvoiceItemsEditorProps {
@@ -37,6 +38,8 @@ interface InvoiceItemsEditorProps {
   symbolOnRight?: boolean;
   /** Show "+ Add Service Line" for account-based lines (no Item master). */
   allowServiceLines?: boolean;
+  /** Show per-item stock availability below the item selector (selling contexts only). */
+  showStockAvailability?: boolean;
 }
 
 function buildGridTemplate(showUom: boolean, showDiscPct: boolean, showDiscAmt: boolean): string {
@@ -59,6 +62,7 @@ function ItemRow({
   showUom,
   showDiscPct,
   showDiscAmt,
+  showStockAvailability,
   onRemove,
 }: {
   index: number;
@@ -68,6 +72,7 @@ function ItemRow({
   showUom: boolean;
   showDiscPct: boolean;
   showDiscAmt: boolean;
+  showStockAvailability: boolean;
   onRemove?: () => void;
 }) {
   const t = useTranslations("invoices");
@@ -111,11 +116,13 @@ function ItemRow({
   }, [itemCode, itemDoc, index, prefix, setValue]);
 
   // When price list rate resolves or UOM changes: set rate
-  const prevRateRef = useRef<number | null>(null);
+  const prevRateRef = useRef<number | null>(parseFloat(rate) || null);
   useEffect(() => {
     if (!itemCode || !itemDoc) return;
     const newRate = priceListRate ?? itemDoc.standard_rate ?? 0;
     if (newRate === prevRateRef.current) return;
+    // Don't overwrite an existing rate with 0 from item master (protects edit mode)
+    if (prevRateRef.current !== null && newRate === 0) return;
     prevRateRef.current = newRate;
     setValue(`${prefix}.${index}.rate`, newRate, { shouldValidate: true });
   }, [priceListRate, itemDoc, itemCode, uom, index, prefix, setValue]);
@@ -135,7 +142,7 @@ function ItemRow({
   const gridTemplate = buildGridTemplate(showUom, showDiscPct, showDiscAmt);
 
   return (
-    <div className="grid items-end gap-2 min-w-0" style={{ gridTemplateColumns: gridTemplate }}>
+    <div className="grid items-start gap-2 min-w-0" style={{ gridTemplateColumns: gridTemplate }}>
       <div className="space-y-1 min-w-0">
         {index === 0 && <Label className="text-xs">{t("item")}</Label>}
         <LinkField
@@ -145,7 +152,14 @@ function ItemRow({
           placeholder="Select item..."
           disabled={disabled}
           descriptionField="item_name"
+          displayValue={itemDoc?.item_name}
         />
+        {showStockAvailability && itemCode && (
+          <StockAvailabilityIndicator
+            itemCode={itemCode}
+            isStockItem={itemDoc?.is_stock_item === 1}
+          />
+        )}
       </div>
       {showUom && (
         <div className="space-y-1">
@@ -272,7 +286,7 @@ function ServiceLineRow({
   const gridTemplate = "1fr 1fr 80px 100px 100px 40px";
 
   return (
-    <div className="grid items-end gap-2 min-w-0" style={{ gridTemplateColumns: gridTemplate }}>
+    <div className="grid items-start gap-2 min-w-0" style={{ gridTemplateColumns: gridTemplate }}>
       <div className="space-y-1 min-w-0">
         {index === 0 && <Label className="text-xs">{t("expenseAccount")}</Label>}
         <select
@@ -355,6 +369,7 @@ export function InvoiceItemsEditor({
   currencySymbol: currencySymbolProp,
   symbolOnRight: symbolOnRightProp,
   allowServiceLines = false,
+  showStockAvailability = false,
 }: InvoiceItemsEditorProps) {
   const t = useTranslations("invoices");
   const tCommon = useTranslations("common");
@@ -427,6 +442,7 @@ export function InvoiceItemsEditor({
                 showUom={showUom}
                 showDiscPct={showDiscPct}
                 showDiscAmt={showDiscAmt}
+                showStockAvailability={showStockAvailability}
                 onRemove={!disabled && fields.length > 1 ? () => remove(index) : undefined}
               />
             );

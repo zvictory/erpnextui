@@ -56,14 +56,14 @@ export function DashboardFilters({ lines }: { lines: Line[] }) {
     }
 
     const queryString = params.toString();
-    router.push(queryString ? `/?${queryString}` : "/");
+    router.push(queryString ? `/manufacturing?${queryString}` : "/manufacturing");
   }, [dateFrom, dateTo, selectedLineIds, router]);
 
   const handleReset = useCallback(() => {
     setDateFrom(undefined);
     setDateTo(undefined);
     setSelectedLineIds([]);
-    router.push("/");
+    router.push("/manufacturing");
   }, [router]);
 
   return (

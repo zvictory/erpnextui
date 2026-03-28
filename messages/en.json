@@ -269,6 +269,7 @@
     "uom": "UOM",
     "total": "Total",
     "subtotal": "Subtotal",
+    "netTotal": "Net Total",
     "tax": "Tax",
     "grandTotal": "Grand Total",
     "notes": "Notes",
@@ -946,7 +947,8 @@
     "pipeline": "Pipeline",
     "noItems": "No items in this queue",
     "rejectReason": "Reason for rejection",
-    "warehouseWorkflow": "Warehouse Workflow"
+    "warehouseWorkflow": "Warehouse Workflow",
+    "cancel": "Cancel"
   },
   "factory": {
     "title": "Digital Twin — Factory",

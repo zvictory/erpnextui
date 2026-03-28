@@ -264,6 +264,7 @@
     "uom": "Ўлчов бирлиги",
     "total": "Жами",
     "subtotal": "Оралиқ жами",
+    "netTotal": "Соф жами",
     "tax": "Солиқ",
     "grandTotal": "Умумий сумма",
     "notes": "Изоҳлар",
@@ -918,7 +919,8 @@
     "pipeline": "Жараён",
     "noItems": "Бу навбатда элемент йўқ",
     "rejectReason": "Рад этиш сабаби",
-    "warehouseWorkflow": "Склад жараёни"
+    "warehouseWorkflow": "Склад жараёни",
+    "cancel": "Бекор қилиш"
   },
   "factory": {
     "title": "Рақамли эгизак — Завод",

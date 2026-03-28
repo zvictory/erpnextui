@@ -92,20 +92,25 @@ export function SalesInvoiceForm({
     resolver: zodResolver(salesInvoiceSchema),
     mode: "onChange",
     defaultValues: defaultValues
-      ? {
-          customer: defaultValues.customer,
-          posting_date: defaultValues.posting_date,
-          due_date: defaultValues.due_date ?? defaultValues.posting_date,
-          items: defaultValues.items.map((item) => ({
-            item_code: item.item_code,
-            qty: item.qty,
-            rate: item.rate,
-            amount: item.amount,
-            uom: item.uom,
-            discount_percentage: item.discount_percentage,
-            discount_amount: item.discount_amount,
-          })),
-        }
+      ? (() => {
+          // If ERPNext has an invoice-level discount, show it as per-item discount_percentage
+          const invoiceDiscPct = (defaultValues as Record<string, unknown>)
+            .additional_discount_percentage as number | undefined;
+          return {
+            customer: defaultValues.customer,
+            posting_date: defaultValues.posting_date,
+            due_date: defaultValues.due_date ?? defaultValues.posting_date,
+            items: defaultValues.items.map((item) => ({
+              item_code: item.item_code,
+              qty: item.qty,
+              rate: item.rate,
+              amount: item.amount,
+              uom: item.uom,
+              discount_percentage: item.discount_percentage || invoiceDiscPct || 0,
+              discount_amount: item.discount_amount,
+            })),
+          };
+        })()
       : {
           customer: "",
           posting_date: "",
@@ -279,6 +284,7 @@ export function SalesInvoiceForm({
           priceList={selectedPriceList}
           currencySymbol={currencySymbol}
           symbolOnRight={symbolOnRight}
+          showStockAvailability={!isReadOnly}
         />
 
         {errors.items && (

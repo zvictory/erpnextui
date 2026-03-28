@@ -264,6 +264,7 @@
     "uom": "O'lchov birligi",
     "total": "Jami",
     "subtotal": "Oraliq jami",
+    "netTotal": "Sof jami",
     "tax": "Soliq",
     "grandTotal": "Umumiy summa",
     "notes": "Izohlar",
@@ -918,7 +919,8 @@
     "pipeline": "Jarayon",
     "noItems": "Bu navbatda element yo'q",
     "rejectReason": "Rad etish sababi",
-    "warehouseWorkflow": "Sklad jarayoni"
+    "warehouseWorkflow": "Sklad jarayoni",
+    "cancel": "Bekor qilish"
   },
   "factory": {
     "title": "Raqamli egizak — Zavod",
