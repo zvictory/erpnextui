@@ -236,6 +236,8 @@ export default function ReceivePaymentPage() {
               value={customer}
               onChange={setCustomer}
               placeholder={t("party")}
+              descriptionField="customer_name"
+              displayValue={customerDoc?.customer_name}
             />
           </div>
 
