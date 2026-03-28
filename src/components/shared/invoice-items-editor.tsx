@@ -183,6 +183,11 @@ function ItemRow({
               ))}
             </SelectContent>
           </Select>
+          {uom && itemDoc?.stock_uom && uom !== itemDoc.stock_uom && (
+            <span className="text-[10px] text-muted-foreground">
+              1 {uom} = {getConversionFactor(uom)} {itemDoc.stock_uom}
+            </span>
+          )}
         </div>
       )}
       <div className="space-y-1">

@@ -85,9 +85,22 @@ export function useCreateSalesInvoice() {
             "erpnext.accounts.party.get_party_account",
             { party_type: "Customer", party: data.customer, company: data.company },
           );
-          if (result) debitTo = result;
+          if (result) {
+            // Verify the account currency matches the document currency
+            const acct = await frappe.getList<{ account_currency: string }>("Account", {
+              filters: [["name", "=", result]],
+              fields: ["account_currency"],
+              limitPageLength: 1,
+            });
+            if (acct[0]?.account_currency === data.currency) {
+              debitTo = result;
+            }
+          }
         } catch {
-          // Fallback: query by currency
+          // fall through to currency-based query
+        }
+        // Fallback: find a receivable account in the document currency
+        if (!debitTo) {
           const accounts = await frappe.getList<{ name: string }>("Account", {
             filters: [
               ["account_type", "=", "Receivable"],
@@ -138,8 +151,14 @@ export function useUpdateSalesInvoice() {
         ...(data.items
           ? {
               items: data.items.map((item) => ({
-                doctype: "Sales Invoice Item",
-                ...item,
+                doctype: "Sales Invoice Item" as const,
+                item_code: item.item_code,
+                qty: item.qty,
+                uom: item.uom,
+                conversion_factor: item.conversion_factor,
+                price_list_rate: item.rate,
+                discount_percentage: item.discount_percentage || 0,
+                discount_amount: item.discount_amount || 0,
               })),
             }
           : {}),

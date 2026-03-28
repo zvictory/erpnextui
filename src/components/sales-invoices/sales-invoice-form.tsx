@@ -100,23 +100,31 @@ export function SalesInvoiceForm({
             customer: defaultValues.customer,
             posting_date: defaultValues.posting_date,
             due_date: defaultValues.due_date ?? defaultValues.posting_date,
-            items: defaultValues.items.map((item) => ({
-              item_code: item.item_code,
-              qty: item.qty,
-              rate: item.rate,
-              amount: item.amount,
-              uom: item.uom,
-              discount_percentage: item.discount_percentage || invoiceDiscPct || 0,
-              discount_amount: item.discount_amount,
-            })),
+            items: defaultValues.items.map((item) => {
+              // Use price_list_rate (original) as the form rate — discount is shown separately
+              const plr = (item as Record<string, unknown>).price_list_rate as number | undefined;
+              const originalRate = plr && plr > 0 ? plr : item.rate;
+              return {
+                item_code: item.item_code,
+                qty: item.qty,
+                rate: originalRate,
+                amount: item.amount,
+                uom: item.uom,
+                discount_percentage: item.discount_percentage || invoiceDiscPct || 0,
+                discount_amount: item.discount_amount,
+              };
+            }),
           };
         })()
-      : {
-          customer: "",
-          posting_date: "",
-          due_date: "",
-          items: [{ item_code: "", qty: 1, rate: 0, amount: 0, uom: "" }],
-        },
+      : (() => {
+          const today = new Date().toISOString().slice(0, 10);
+          return {
+            customer: "",
+            posting_date: today,
+            due_date: today,
+            items: [{ item_code: "", qty: 1, rate: 0, amount: 0, uom: "" }],
+          };
+        })(),
   });
 
   const {
@@ -159,7 +167,16 @@ export function SalesInvoiceForm({
       posting_date: data.posting_date,
       due_date: data.due_date,
       currency: effectiveCurrency,
-      items: data.items,
+      // Send price_list_rate + discount — let ERPNext calculate rate and amount
+      items: data.items.map((item) => ({
+        item_code: item.item_code,
+        qty: item.qty,
+        uom: item.uom,
+        conversion_factor: item.conversion_factor,
+        price_list_rate: item.rate,
+        discount_percentage: item.discount_percentage || 0,
+        discount_amount: item.discount_amount || 0,
+      })),
     };
     if (taxTemplate) {
       submitData.taxes_and_charges = taxTemplate;

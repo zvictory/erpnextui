@@ -15,7 +15,12 @@ const DROP_REQ = new Set([
   "accept-encoding", // force upstream to send uncompressed; avoids ERR_CONTENT_DECODING_FAILED
 ]);
 
-const DROP_RESP = new Set(["connection", "transfer-encoding", "content-encoding"]);
+const DROP_RESP = new Set([
+  "connection",
+  "transfer-encoding",
+  "content-encoding",
+  "link", // ERPNext sends Link preload headers for its bundles; the browser would try to fetch them from localhost and 404
+]);
 
 /** Strip Domain; strip Secure and SameSite=None on HTTP so localhost works */
 function rewriteSetCookie(cookie: string, isHttps: boolean): string {
@@ -89,13 +94,16 @@ async function handle(req: NextRequest, path: string[]): Promise<NextResponse> {
 
   const upstreamBody = await upstream.arrayBuffer();
   if (upstream.status >= 400) {
-    console.error(
-      "[proxy] upstream error",
-      req.method,
-      targetUrl,
-      upstream.status,
-      new TextDecoder().decode(upstreamBody),
-    );
+    // 417 is expected when custom batch methods (stable_erp_api.*) aren't deployed — frontend has fallbacks
+    if (upstream.status !== 417) {
+      console.error(
+        "[proxy] upstream error",
+        req.method,
+        targetUrl,
+        upstream.status,
+        new TextDecoder().decode(upstreamBody),
+      );
+    }
   }
 
   // Add Cache-Control for successful GET responses

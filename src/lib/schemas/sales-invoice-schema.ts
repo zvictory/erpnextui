@@ -48,8 +48,9 @@ export interface SalesInvoiceSubmitValues {
   items: Array<{
     item_code: string;
     qty: number;
-    rate: number;
-    amount: number;
+    rate?: number;
+    amount?: number;
+    price_list_rate?: number;
     uom?: string;
     conversion_factor?: number;
     discount_percentage?: number;

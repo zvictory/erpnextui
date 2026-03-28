@@ -187,7 +187,20 @@ export function PartyListPanel({
                   )}
                 >
                   <Avatar className="h-8 w-8 flex-shrink-0">
-                    <AvatarFallback className="bg-muted text-muted-foreground text-xs font-medium">
+                    <AvatarFallback
+                      className={cn(
+                        "text-xs font-medium",
+                        party.currency === "USD"
+                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+                          : party.currency === "UZS"
+                            ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                            : party.currency === "EUR"
+                              ? "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
+                              : party.currency === "RUB"
+                                ? "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300"
+                                : "bg-muted text-muted-foreground",
+                      )}
+                    >
                       {party.currency ? party.currency.slice(0, 3) : getInitials(party.displayName)}
                     </AvatarFallback>
                   </Avatar>

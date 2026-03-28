@@ -42,12 +42,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { usePartyLedger, usePartyLedgerCount } from "@/hooks/use-party-balances";
 import type { GLEntry } from "@/types/gl-entry";
 import { useCurrencyMap } from "@/hooks/use-accounts";
 import { useCompanyStore } from "@/stores/company-store";
 import { formatCurrency, formatInvoiceCurrency, cn } from "@/lib/utils";
 import { formatDate } from "@/lib/formatters";
+import { frappe } from "@/lib/frappe-client";
 import { useCancelSalesInvoice } from "@/hooks/use-sales-invoices";
 import { useCancelPurchaseInvoice } from "@/hooks/use-purchase-invoices";
 import { useCancelPaymentEntry } from "@/hooks/use-payment-entries";
@@ -127,6 +129,30 @@ export function PartyDetailPanel({
   const [isCancelling, setIsCancelling] = useState(false);
   const { data: entries, isLoading } = usePartyLedger(partyType, partyName, company, ledgerPage);
   const { data: ledgerCount = 0 } = usePartyLedgerCount(partyType, partyName, company);
+
+  // Draft invoices for this party
+  const invoiceDoctype = partyType === "Customer" ? "Sales Invoice" : "Purchase Invoice";
+  const partyField = partyType === "Customer" ? "customer" : "supplier";
+  const { data: draftInvoices = [] } = useQuery({
+    queryKey: ["draftInvoices", invoiceDoctype, partyName, company],
+    queryFn: () =>
+      frappe.getList<{
+        name: string;
+        posting_date: string;
+        grand_total: number;
+        currency: string;
+      }>(invoiceDoctype, {
+        filters: [
+          [partyField, "=", partyName],
+          ["company", "=", company],
+          ["docstatus", "=", 0],
+        ],
+        fields: ["name", "posting_date", "grand_total", "currency"],
+        orderBy: "posting_date desc",
+        limitPageLength: 20,
+      }),
+    enabled: !!partyName && !!company,
+  });
   const totalPages = Math.max(1, Math.ceil(ledgerCount / 50));
 
   // Compute balance from GL entries as fallback when balanceMap data is zero/missing
@@ -396,6 +422,35 @@ export function PartyDetailPanel({
         </div>
 
         <Separator />
+
+        {/* Draft invoices */}
+        {draftInvoices.length > 0 && (
+          <div className="px-4 py-3 space-y-1.5">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Drafts ({draftInvoices.length})
+            </p>
+            {draftInvoices.map((d) => {
+              const info = currencyMap?.get(d.currency);
+              return (
+                <Link
+                  key={d.name}
+                  href={`/${partyType === "Customer" ? "sales-invoices" : "purchase-invoices"}/${encodeURIComponent(d.name)}`}
+                  className="flex items-center justify-between rounded-md px-2 py-1.5 text-xs hover:bg-accent/50 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-[10px] h-4 px-1.5">Draft</Badge>
+                    <span className="font-mono text-muted-foreground">{d.name}</span>
+                    <span className="text-muted-foreground">{formatDate(d.posting_date)}</span>
+                  </div>
+                  <span className="font-medium tabular-nums">
+                    {formatInvoiceCurrency(d.grand_total, d.currency, info)}
+                  </span>
+                </Link>
+              );
+            })}
+            <Separator />
+          </div>
+        )}
 
         {/* Ledger table */}
         <ScrollArea className="flex-1 px-4 pb-4">

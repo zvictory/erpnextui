@@ -102,7 +102,7 @@ export default function NewSalesInvoicePage() {
           docstatus: 0,
           customer: soDoc.customer,
           posting_date: new Date().toISOString().slice(0, 10),
-          due_date: "",
+          due_date: new Date().toISOString().slice(0, 10),
           company,
           currency: soDoc.currency as string | undefined,
           items: soDoc.items.map((item) => ({
@@ -121,6 +121,7 @@ export default function NewSalesInvoicePage() {
       : undefined;
 
   // Pre-fill customer from query param when not amending
+  const today = new Date().toISOString().slice(0, 10);
   const prefillDefaults: SalesInvoice | undefined =
     !amendDefaults && !soDefaults && customerParam
       ? ({
@@ -128,8 +129,8 @@ export default function NewSalesInvoicePage() {
           doctype: "Sales Invoice",
           docstatus: 0,
           customer: customerParam,
-          posting_date: "",
-          due_date: "",
+          posting_date: today,
+          due_date: today,
           company,
           items: [],
           total: 0,
