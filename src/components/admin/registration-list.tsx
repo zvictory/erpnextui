@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -38,7 +38,7 @@ export function RegistrationList() {
   const [actionId, setActionId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const registrations = data?.registrations ?? [];
+  const registrations = useMemo(() => data?.registrations ?? [], [data?.registrations]);
 
   // Track previous statuses to detect transitions from "provisioning" → "active"/"failed"
   const prevStatuses = useRef<Map<string, string>>(new Map());
@@ -116,7 +116,7 @@ export function RegistrationList() {
         <div className="rounded-lg border">
           <table className="w-full">
             <thead>
-              <tr className="border-b bg-muted/50 text-left text-sm font-medium text-muted-foreground">
+              <tr className="border-b text-left text-sm font-medium text-muted-foreground">
                 <th className="px-4 py-3">Company</th>
                 <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Phone</th>

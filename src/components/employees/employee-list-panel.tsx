@@ -157,7 +157,7 @@ export function EmployeeListPanel({
                   onClick={() => onSelect(emp)}
                   className={cn(
                     "w-full flex items-center gap-3 px-3 py-2 text-left transition-colors",
-                    "hover:bg-accent/50 even:bg-muted/40",
+                    "hover:bg-accent/50",
                     isSelected && "bg-accent",
                   )}
                 >

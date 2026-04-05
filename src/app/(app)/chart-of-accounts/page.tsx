@@ -305,7 +305,7 @@ function VirtualizedCOATable({
   return (
     <div className="rounded-lg border bg-card overflow-hidden">
       {/* Sticky header — shares same grid template as body rows */}
-      <div className={cn("grid border-b bg-muted/50", gridCols)}>
+      <div data-table-header className={cn("grid border-b", gridCols)}>
         <div className="py-2.5 px-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           Account
         </div>
@@ -326,10 +326,8 @@ function VirtualizedCOATable({
               <div
                 key={node.account.name}
                 className={cn(
-                  "grid group transition-colors",
+                  "grid group transition-colors border-b border-[hsl(220_13%_91%)] dark:border-[hsl(220_13%_20%)] hover:!bg-[var(--stripe-hover)]",
                   gridCols,
-                  virtualRow.index % 2 === 0 ? "bg-background" : "bg-muted",
-                  "hover:bg-accent/50",
                 )}
                 style={{
                   position: "absolute",
@@ -338,6 +336,7 @@ function VirtualizedCOATable({
                   width: "100%",
                   height: `${virtualRow.size}px`,
                   transform: `translateY(${virtualRow.start}px)`,
+                  backgroundColor: virtualRow.index % 2 === 0 ? "var(--stripe-even)" : undefined,
                 }}
               >
                 {/* Account name */}

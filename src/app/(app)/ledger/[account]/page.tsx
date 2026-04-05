@@ -14,9 +14,11 @@ import {
   Scale,
   TrendingDown,
   Filter,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { exportToExcel } from "@/lib/utils/export-excel";
 import {
   Table,
   TableBody,
@@ -190,13 +192,42 @@ export default function AccountLedgerPage() {
   const end = Math.min(page * PAGE_SIZE, totalCount);
   const showRunning = page === 1;
 
-  const accSymbol = getSymbol(account?.account_currency ?? "", currencyMap);
   const baseSymbol = getSymbol(companyCurrency, currencyMap);
 
   function handleApply() {
     setAppliedFrom(fromDate);
     setAppliedTo(toDate);
     setPage(1);
+  }
+
+  function handleExport() {
+    if (!enrichedEntries.length) return;
+    const columns = [
+      { header: "Date", key: "posting_date", width: 12 },
+      { header: "Voucher Type", key: "voucher_type", width: 18 },
+      { header: "Voucher No", key: "voucher_no", width: 22 },
+      { header: "Remarks", key: "remarks", width: 35 },
+      {
+        header: `Debit (${account?.account_currency || ""})`,
+        key: "debit_in_account_currency",
+        width: 18,
+      },
+      {
+        header: `Credit (${account?.account_currency || ""})`,
+        key: "credit_in_account_currency",
+        width: 18,
+      },
+      ...(isForeign
+        ? [
+            { header: `Debit (${companyCurrency})`, key: "debit", width: 18 },
+            { header: `Credit (${companyCurrency})`, key: "credit", width: 18 },
+          ]
+        : []),
+      { header: "Balance", key: "runningBalance", width: 18 },
+    ];
+    const data = enrichedEntries.map((e) => ({ ...e }) as Record<string, unknown>);
+    const name = (account?.account_name || accountName).replace(/[^a-zA-Z0-9]/g, "_");
+    exportToExcel(data, columns, `Ledger_${name}_${appliedFrom || "all"}`);
   }
 
   const rootCfg = ROOT_TYPE_CONFIG[account?.root_type ?? ""] ?? ROOT_TYPE_CONFIG.Asset;
@@ -295,6 +326,16 @@ export default function AccountLedgerPage() {
           <Filter className="h-3.5 w-3.5" />
           Apply
         </Button>
+        <Button
+          onClick={handleExport}
+          size="sm"
+          variant="outline"
+          className="gap-1.5"
+          disabled={!enrichedEntries.length}
+        >
+          <Download className="h-3.5 w-3.5" />
+          Excel
+        </Button>
       </div>
 
       {/* Table */}
@@ -302,7 +343,7 @@ export default function AccountLedgerPage() {
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-muted/50">
+              <TableRow>
                 <TableHead className="text-xs uppercase tracking-wider">
                   <button
                     className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
@@ -376,10 +417,10 @@ export default function AccountLedgerPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                enrichedEntries.map((entry, idx) => (
+                enrichedEntries.map((entry, _idx) => (
                   <TableRow
                     key={entry.name}
-                    className="even:bg-muted odd:bg-background hover:bg-accent/50 transition-colors"
+                    className="transition-colors"
                   >
                     {/* Date + Time */}
                     <TableCell className="whitespace-nowrap">

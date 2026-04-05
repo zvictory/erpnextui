@@ -15,11 +15,7 @@ import { CalendarIcon, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -35,7 +31,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { ProductionRunRow } from "./columns";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { ProductionRow } from "./columns";
 
 // --- Types ------------------------------------------------------------------
 
@@ -45,48 +42,40 @@ interface LineOption {
 }
 
 interface ProductionTableProps {
-  columns: ColumnDef<ProductionRunRow, unknown>[];
-  data: ProductionRunRow[];
+  columns: ColumnDef<ProductionRow, unknown>[];
+  data: ProductionRow[];
   lines: LineOption[];
+  isLoading: boolean;
 }
 
 // --- Component --------------------------------------------------------------
 
-export function ProductionTable({
-  columns,
-  data,
-  lines,
-}: ProductionTableProps) {
+export function ProductionTable({ columns, data, lines: _lines, isLoading }: ProductionTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
-  const [selectedLine, setSelectedLine] = useState<string>("all");
+  const [selectedSource, setSelectedSource] = useState<string>("all");
 
-  // Filter data based on date range and line
   const filteredData = useMemo(() => {
     return data.filter((row) => {
-      // Line filter
-      if (selectedLine !== "all" && row.lineId !== Number(selectedLine)) {
+      // Source filter
+      if (selectedSource !== "all" && row.source !== selectedSource) {
         return false;
       }
 
       // Date range filter
       if (dateFrom) {
         const rowDate = startOfDay(parseISO(row.date));
-        if (isBefore(rowDate, startOfDay(dateFrom))) {
-          return false;
-        }
+        if (isBefore(rowDate, startOfDay(dateFrom))) return false;
       }
       if (dateTo) {
         const rowDate = startOfDay(parseISO(row.date));
-        if (isAfter(rowDate, startOfDay(dateTo))) {
-          return false;
-        }
+        if (isAfter(rowDate, startOfDay(dateTo))) return false;
       }
 
       return true;
     });
-  }, [data, selectedLine, dateFrom, dateTo]);
+  }, [data, selectedSource, dateFrom, dateTo]);
 
   const table = useReactTable({
     data: filteredData,
@@ -98,7 +87,7 @@ export function ProductionTable({
     getFilteredRowModel: getFilteredRowModel(),
   });
 
-  const hasFilters = dateFrom || dateTo || selectedLine !== "all";
+  const hasFilters = dateFrom || dateTo || selectedSource !== "all";
 
   return (
     <div className="space-y-4">
@@ -107,49 +96,46 @@ export function ProductionTable({
         {/* Date from */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="w-[150px] justify-start text-left font-normal">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-[150px] justify-start text-left font-normal"
+            >
               <CalendarIcon className="mr-2 size-3.5" />
               {dateFrom ? format(dateFrom, "dd MMM yyyy") : "From date"}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={dateFrom}
-              onSelect={setDateFrom}
-            />
+            <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} />
           </PopoverContent>
         </Popover>
 
         {/* Date to */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="w-[150px] justify-start text-left font-normal">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-[150px] justify-start text-left font-normal"
+            >
               <CalendarIcon className="mr-2 size-3.5" />
               {dateTo ? format(dateTo, "dd MMM yyyy") : "To date"}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={dateTo}
-              onSelect={setDateTo}
-            />
+            <Calendar mode="single" selected={dateTo} onSelect={setDateTo} />
           </PopoverContent>
         </Popover>
 
-        {/* Line filter */}
-        <Select value={selectedLine} onValueChange={setSelectedLine}>
+        {/* Source filter */}
+        <Select value={selectedSource} onValueChange={setSelectedSource}>
           <SelectTrigger className="w-[160px]" size="sm">
-            <SelectValue placeholder="All lines" />
+            <SelectValue placeholder="All sources" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All lines</SelectItem>
-            {lines.map((line) => (
-              <SelectItem key={line.id} value={String(line.id)}>
-                {line.name}
-              </SelectItem>
-            ))}
+            <SelectItem value="all">All sources</SelectItem>
+            <SelectItem value="local">Manual</SelectItem>
+            <SelectItem value="work-order">Work Order</SelectItem>
           </SelectContent>
         </Select>
 
@@ -161,7 +147,7 @@ export function ProductionTable({
             onClick={() => {
               setDateFrom(undefined);
               setDateTo(undefined);
-              setSelectedLine("all");
+              setSelectedSource("all");
             }}
           >
             <X className="mr-1 size-3" />
@@ -170,31 +156,23 @@ export function ProductionTable({
         )}
 
         <span className="text-xs text-muted-foreground ml-auto">
-          {filteredData.length} run{filteredData.length !== 1 ? "s" : ""}
+          {filteredData.length} entr{filteredData.length !== 1 ? "ies" : "y"}
         </span>
       </div>
 
       {/* Table */}
       <div className="rounded-md border">
         <Table>
-          <TableHeader className="sticky top-0 z-10 bg-background">
+          <TableHeader className="sticky top-0 z-10">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
-                  const meta = header.column.columnDef.meta as
-                    | { className?: string }
-                    | undefined;
+                  const meta = header.column.columnDef.meta as { className?: string } | undefined;
                   return (
-                    <TableHead
-                      key={header.id}
-                      className={meta?.className}
-                    >
+                    <TableHead key={header.id} className={meta?.className}>
                       {header.isPlaceholder
                         ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                        : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   );
                 })}
@@ -202,22 +180,24 @@ export function ProductionTable({
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.length > 0 ? (
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  {columns.map((_, j) => (
+                    <TableCell key={j}>
+                      <Skeleton className="h-4 w-full" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => {
-                    const meta = cell.column.columnDef.meta as
-                      | { className?: string }
-                      | undefined;
+                    const meta = cell.column.columnDef.meta as { className?: string } | undefined;
                     return (
-                      <TableCell
-                        key={cell.id}
-                        className={meta?.className}
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
+                      <TableCell key={cell.id} className={meta?.className}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     );
                   })}
@@ -229,7 +209,7 @@ export function ProductionTable({
                   colSpan={columns.length}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  No production runs found.
+                  No production entries found.
                 </TableCell>
               </TableRow>
             )}

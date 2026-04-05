@@ -18,6 +18,8 @@ interface TaxSectionProps {
   onTaxesChange: (taxes: TaxRow[]) => void;
   subtotal: number;
   isEditable: boolean;
+  /** Invoice-level discount amount (applied after subtotal, before grand total). */
+  invoiceDiscountAmount?: number;
 }
 
 function computeTaxes(templateTaxes: TaxRow[], subtotal: number): TaxRow[] {
@@ -48,6 +50,7 @@ export function TaxSection({
   onTaxesChange,
   subtotal,
   isEditable,
+  invoiceDiscountAmount = 0,
 }: TaxSectionProps) {
   const t = useTranslations("invoices");
 
@@ -62,16 +65,18 @@ export function TaxSection({
       const computed = computeTaxes(templateDoc.taxes, subtotal);
       onTaxesChange(computed);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [templateDoc, subtotal]);
 
   useEffect(() => {
     if (!selectedTemplate) {
       onTaxesChange([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTemplate]);
 
   const taxTotal = taxes.reduce((sum, row) => sum + row.tax_amount, 0);
-  const grandTotal = subtotal + taxTotal;
+  const grandTotal = subtotal + taxTotal - invoiceDiscountAmount;
 
   return (
     <div className="space-y-3">
@@ -93,7 +98,7 @@ export function TaxSection({
         <div className="rounded-md border">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-muted/50">
+              <tr className="border-b">
                 <th className="px-3 py-2 text-left font-medium">{t("tax")}</th>
                 <th className="px-3 py-2 text-right font-medium">{t("taxRate")}</th>
                 <th className="px-3 py-2 text-right font-medium">{t("taxAmount")}</th>
@@ -121,6 +126,14 @@ export function TaxSection({
           <span className="text-muted-foreground">{t("subtotal")}</span>
           <span className="tabular-nums font-medium">{formatNumber(subtotal, 2)}</span>
         </div>
+        {invoiceDiscountAmount > 0 && (
+          <div className="flex gap-8">
+            <span className="text-red-600">{t("discount")}</span>
+            <span className="tabular-nums font-medium text-red-600">
+              -{formatNumber(invoiceDiscountAmount, 2)}
+            </span>
+          </div>
+        )}
         {taxTotal > 0 && (
           <div className="flex gap-8">
             <span className="text-muted-foreground">{t("taxTotal")}</span>

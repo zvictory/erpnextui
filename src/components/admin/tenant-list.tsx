@@ -89,7 +89,7 @@ export function TenantList() {
         <div className="rounded-lg border">
           <table className="w-full">
             <thead>
-              <tr className="border-b bg-muted/50 text-left text-sm font-medium text-muted-foreground">
+              <tr className="border-b text-left text-sm font-medium text-muted-foreground">
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">URL</th>
                 <th className="px-4 py-3">API Key</th>

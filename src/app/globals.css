@@ -88,6 +88,8 @@
   --sidebar-accent-foreground: oklch(0.269 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.704 0.14 182.503);
+  --stripe-even: hsl(220 14% 96%);
+  --stripe-hover: hsl(220 14% 92%);
 }
 
 /* Teal/Neutral — Dark */
@@ -124,6 +126,8 @@
   --sidebar-accent-foreground: oklch(0.97 0 0);
   --sidebar-border: oklch(0.371 0 0);
   --sidebar-ring: oklch(0.704 0.14 182.503);
+  --stripe-even: hsl(220 14% 14%);
+  --stripe-hover: hsl(220 14% 20%);
 }
 
 /* Flatpickr theme overrides */
@@ -217,6 +221,79 @@ span.flatpickr-weekday {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* ============================================
+   GLOBAL TABLE STRIPING STANDARD
+   Bootstrap table-striped uslubida
+   Barcha jadvallar uchun ishlaydi
+   ============================================ */
+
+/* Header qatori — aniq ajralib turadi */
+table thead tr,
+[data-table-header] {
+  background-color: hsl(220 14% 92%);
+  font-weight: 600;
+}
+
+:is(.dark, [data-theme="dark"]) table thead tr,
+:is(.dark, [data-theme="dark"]) [data-table-header] {
+  background-color: hsl(220 14% 18%);
+}
+
+/* Zebra stripe — har bir JUFT qator */
+table tbody tr:nth-child(even),
+[data-table-body] > [data-table-row]:nth-child(even),
+[role="rowgroup"] > [role="row"]:nth-child(even) {
+  background-color: hsl(220 14% 96%);
+}
+
+:is(.dark, [data-theme="dark"]) table tbody tr:nth-child(even),
+:is(.dark, [data-theme="dark"]) [data-table-body] > [data-table-row]:nth-child(even),
+:is(.dark, [data-theme="dark"]) [role="rowgroup"] > [role="row"]:nth-child(even) {
+  background-color: hsl(220 14% 14%);
+}
+
+/* TOQ qatorlar — toza fon */
+table tbody tr:nth-child(odd),
+[data-table-body] > [data-table-row]:nth-child(odd),
+[role="rowgroup"] > [role="row"]:nth-child(odd) {
+  background-color: transparent;
+}
+
+/* Hover — aniq ko'rinadigan */
+table tbody tr:hover,
+[data-table-body] > [data-table-row]:hover,
+[role="rowgroup"] > [role="row"]:hover {
+  background-color: hsl(220 14% 92%) !important;
+}
+
+:is(.dark, [data-theme="dark"]) table tbody tr:hover,
+:is(.dark, [data-theme="dark"]) [data-table-body] > [data-table-row]:hover,
+:is(.dark, [data-theme="dark"]) [role="rowgroup"] > [role="row"]:hover {
+  background-color: hsl(220 14% 20%) !important;
+}
+
+/* Selected qator */
+table tbody tr[data-state="selected"],
+[data-table-row][data-state="selected"] {
+  background-color: hsl(213 94% 95%) !important;
+}
+
+:is(.dark, [data-theme="dark"]) table tbody tr[data-state="selected"],
+:is(.dark, [data-theme="dark"]) [data-table-row][data-state="selected"] {
+  background-color: hsl(213 94% 15%) !important;
+}
+
+/* Qator orasidagi chiziq */
+table tbody tr,
+[data-table-row] {
+  border-bottom: 1px solid hsl(220 13% 91%);
+}
+
+:is(.dark, [data-theme="dark"]) table tbody tr,
+:is(.dark, [data-theme="dark"]) [data-table-row] {
+  border-bottom: 1px solid hsl(220 13% 20%);
 }
 
 /* Thermal receipt print styles */
