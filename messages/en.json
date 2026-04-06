@@ -1004,7 +1004,12 @@
     "invoiceCreated": "Invoice created successfully",
     "items": "items",
     "warehouseWorkflow": "Warehouse Workflow",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "confirmTitle": "Confirm: {action}",
+    "confirmDescription": "Are you sure you want to perform this action? This cannot be undone.",
+    "actionSuccess": "{action} completed successfully",
+    "actionFailed": "{action} failed",
+    "dismiss": "Dismiss"
   },
   "factory": {
     "title": "Digital Twin — Factory",

@@ -941,7 +941,12 @@
     "invoiceCreated": "Hisob-faktura muvaffaqiyatli yaratildi",
     "items": "ta mahsulot",
     "warehouseWorkflow": "Sklad jarayoni",
-    "cancel": "Bekor qilish"
+    "cancel": "Bekor qilish",
+    "confirmTitle": "Tasdiqlash: {action}",
+    "confirmDescription": "Haqiqatan ham bu amalni bajarmoqchimisiz? Buni qaytarib bo'lmaydi.",
+    "actionSuccess": "{action} muvaffaqiyatli bajarildi",
+    "actionFailed": "{action} bajarilmadi",
+    "dismiss": "Bekor qilish"
   },
   "factory": {
     "title": "Raqamli egizak — Zavod",

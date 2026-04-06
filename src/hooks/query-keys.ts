@@ -30,15 +30,32 @@ export const queryKeys = {
   },
   itemPrices: {
     forItem: (itemCode: string, priceList: string) => ["itemPrices", itemCode, priceList] as const,
+    list: (priceList: string, page: number, search: string, sort: string) =>
+      ["itemPrices", "list", priceList, page, search, sort] as const,
+    count: (priceList: string, search: string) =>
+      ["itemPrices", "count", priceList, search] as const,
   },
   priceLists: {
     selling: ["priceLists", "selling"] as const,
+    list: (page: number, search: string, sort: string, type: string) =>
+      ["priceLists", "list", page, search, sort, type] as const,
+    count: (search: string, type: string) => ["priceLists", "count", search, type] as const,
+    detail: (name: string) => ["priceLists", "detail", name] as const,
   },
   items: {
     list: (page: number, search: string, sort: string) =>
       ["items", "list", page, search, sort] as const,
     detail: (name: string) => ["items", "detail", name] as const,
     count: (search: string) => ["items", "count", search] as const,
+    purchaseHistory: (itemCode: string, page: number) =>
+      ["items", "purchaseHistory", itemCode, page] as const,
+    purchaseHistoryCount: (itemCode: string) =>
+      ["items", "purchaseHistoryCount", itemCode] as const,
+    salesHistory: (itemCode: string, page: number) =>
+      ["items", "salesHistory", itemCode, page] as const,
+    salesHistoryCount: (itemCode: string) => ["items", "salesHistoryCount", itemCode] as const,
+    workOrders: (itemCode: string) => ["items", "workOrders", itemCode] as const,
+    activeBom: (itemCode: string) => ["items", "activeBom", itemCode] as const,
   },
   customers: {
     list: (page: number, search: string, sort: string) =>
@@ -141,6 +158,8 @@ export const queryKeys = {
       ["reports", "cashFlow", company, from, to, periodicity] as const,
     accountsReceivable: (company: string, asOfDate: string) =>
       ["reports", "accountsReceivable", company, asOfDate] as const,
+    arInvoices: (company: string, filters: Record<string, string>) =>
+      ["reports", "arInvoices", company, filters] as const,
     accountsPayable: (company: string, asOfDate: string) =>
       ["reports", "accountsPayable", company, asOfDate] as const,
     generalLedger: (company: string, from: string, to: string, account?: string, party?: string) =>
@@ -235,11 +254,61 @@ export const queryKeys = {
   enabledModules: {
     current: (siteUrl: string) => ["enabledModules", siteUrl] as const,
   },
+  billing: {
+    status: (siteUrl: string) => ["billing", "status", siteUrl] as const,
+  },
+  manufacturing: {
+    workOrders: {
+      list: (company: string, page: number, search: string, sort: string) =>
+        ["manufacturing", "workOrders", "list", company, page, search, sort] as const,
+      count: (company: string, search: string) =>
+        ["manufacturing", "workOrders", "count", company, search] as const,
+      detail: (name: string) => ["manufacturing", "workOrders", "detail", name] as const,
+      active: (company: string) => ["manufacturing", "workOrders", "active", company] as const,
+    },
+    boms: {
+      list: (page: number, search: string, sort: string) =>
+        ["manufacturing", "boms", "list", page, search, sort] as const,
+      count: (search: string) => ["manufacturing", "boms", "count", search] as const,
+      detail: (name: string) => ["manufacturing", "boms", "detail", name] as const,
+    },
+    jobCards: {
+      list: (company: string, page: number, search: string, sort: string) =>
+        ["manufacturing", "jobCards", "list", company, page, search, sort] as const,
+      count: (company: string, search: string) =>
+        ["manufacturing", "jobCards", "count", company, search] as const,
+      detail: (name: string) => ["manufacturing", "jobCards", "detail", name] as const,
+    },
+    workstations: {
+      list: (page: number, search: string, sort: string) =>
+        ["manufacturing", "workstations", "list", page, search, sort] as const,
+      count: (search: string) => ["manufacturing", "workstations", "count", search] as const,
+      detail: (name: string) => ["manufacturing", "workstations", "detail", name] as const,
+    },
+    manufactureEntries: {
+      list: (company: string, page: number, search: string, sort: string) =>
+        ["manufacturing", "manufactureEntries", "list", company, page, search, sort] as const,
+      count: (company: string, search: string) =>
+        ["manufacturing", "manufactureEntries", "count", company, search] as const,
+    },
+    dashboard: {
+      metrics: (company: string) => ["manufacturing", "dashboard", "metrics", company] as const,
+      materialStatus: (company: string) =>
+        ["manufacturing", "dashboard", "materialStatus", company] as const,
+      workstationStatus: (company: string) =>
+        ["manufacturing", "dashboard", "workstationStatus", company] as const,
+    },
+  },
   serialNumbers: {
     listByItem: (itemCode: string, company: string, page: number, search: string, sort: string) =>
       ["serialNumbers", "listByItem", itemCode, company, page, search, sort] as const,
     countByItem: (itemCode: string, company: string, search: string) =>
       ["serialNumbers", "countByItem", itemCode, company, search] as const,
     detail: (name: string) => ["serialNumbers", "detail", name] as const,
+  },
+  workflow: {
+    active: (doctype: string) => ["workflow", "active", doctype] as const,
+    transitions: (doctype: string, docname: string) =>
+      ["workflow", "transitions", doctype, docname] as const,
   },
 };

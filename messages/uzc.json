@@ -941,7 +941,12 @@
     "invoiceCreated": "Ҳисоб-фактура муваффақиятли яратилди",
     "items": "та маҳсулот",
     "warehouseWorkflow": "Склад жараёни",
-    "cancel": "Бекор қилиш"
+    "cancel": "Бекор қилиш",
+    "confirmTitle": "Тасдиқлаш: {action}",
+    "confirmDescription": "Ҳақиқатан ҳам бу амални бажармоқчимисиз? Буни қайтариб бўлмайди.",
+    "actionSuccess": "{action} муваффақиятли бажарилди",
+    "actionFailed": "{action} бажарилмади",
+    "dismiss": "Бекор қилиш"
   },
   "factory": {
     "title": "Рақамли эгизак — Завод",

@@ -957,7 +957,12 @@
     "invoiceCreated": "Счёт успешно создан",
     "items": "позиций",
     "warehouseWorkflow": "Складской процесс",
-    "cancel": "Отмена"
+    "cancel": "Отмена",
+    "confirmTitle": "Подтвердить: {action}",
+    "confirmDescription": "Вы уверены, что хотите выполнить это действие? Это нельзя отменить.",
+    "actionSuccess": "{action} выполнено успешно",
+    "actionFailed": "{action} не удалось",
+    "dismiss": "Отмена"
   },
   "factory": {
     "title": "Цифровой двойник — Завод",

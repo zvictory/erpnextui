@@ -9,7 +9,8 @@ import { FormPageLayout } from "@/components/shared/form-page-layout";
 import { PermissionGuard } from "@/components/shared/permission-guard";
 import { SalesInvoiceForm } from "@/components/sales-invoices/sales-invoice-form";
 import { WorkflowTimeline } from "@/components/shared/workflow-timeline";
-import { WorkflowActions } from "@/components/shared/workflow-actions";
+import { DynamicWorkflowActions } from "@/components/shared/dynamic-workflow-actions";
+import { useActiveWorkflow } from "@/hooks/use-document-workflow";
 import {
   useSalesInvoice,
   useUpdateSalesInvoice,
@@ -20,6 +21,9 @@ import { usePermissions } from "@/hooks/use-permissions";
 import type { SalesInvoiceSubmitValues } from "@/lib/schemas/sales-invoice-schema";
 import { RelatedDocuments } from "@/components/shared/related-documents";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
+import { mapSalesInvoiceToYukXati } from "@/lib/utils/invoice-to-yukxati";
+import { YukXatiPreview } from "@/components/print/yuk-xati-preview";
 
 export default function EditSalesInvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -33,6 +37,8 @@ export default function EditSalesInvoicePage({ params }: { params: Promise<{ id:
   const cancelInvoice = useCancelSalesInvoice();
 
   const workflowState = (invoice as Record<string, unknown>)?.workflow_state as string | undefined;
+  const { hasWorkflow } = useActiveWorkflow("Sales Invoice");
+  const [yukXatiOpen, setYukXatiOpen] = useState(false);
 
   function handleSubmit(data: SalesInvoiceSubmitValues) {
     updateInvoice.mutate(
@@ -91,12 +97,15 @@ export default function EditSalesInvoicePage({ params }: { params: Promise<{ id:
         {workflowState && (
           <div className="space-y-3 mb-4">
             <WorkflowTimeline currentState={workflowState} />
-            <WorkflowActions
-              doctype="Sales Invoice"
-              docname={invoice.name}
-              currentState={workflowState}
-              onTransition={() => refetch()}
-            />
+            {hasWorkflow && (
+              <DynamicWorkflowActions
+                doctype="Sales Invoice"
+                docname={invoice.name}
+                currentState={workflowState}
+                onTransition={() => refetch()}
+                invalidateKeys={[["salesInvoices"]]}
+              />
+            )}
             <Separator />
           </div>
         )}
@@ -106,8 +115,8 @@ export default function EditSalesInvoicePage({ params }: { params: Promise<{ id:
           onSubmit={handleSubmit}
           isSubmitting={updateInvoice.isPending}
           isEdit
-          onSubmitDoc={canSubmit("Sales Invoice") && !workflowState ? handleSubmitDoc : undefined}
-          onCancelDoc={canCancel("Sales Invoice") && !workflowState ? handleCancelDoc : undefined}
+          onSubmitDoc={canSubmit("Sales Invoice") && !hasWorkflow ? handleSubmitDoc : undefined}
+          onCancelDoc={canCancel("Sales Invoice") && !hasWorkflow ? handleCancelDoc : undefined}
           isSubmittingDoc={submitInvoice.isPending}
           isCancellingDoc={cancelInvoice.isPending}
           onCreateReturn={
@@ -119,8 +128,25 @@ export default function EditSalesInvoicePage({ params }: { params: Promise<{ id:
               : undefined
           }
           returnLabel={t("createReturn")}
+          onPrintReceipt={() =>
+            window.open(`/sales-invoices/${encodeURIComponent(invoice.name)}/print`, "_blank")
+          }
+          onPrintYukXati={() => setYukXatiOpen(true)}
+          onReceivePayment={() =>
+            router.push(
+              `/payments/receive?customer=${encodeURIComponent(invoice.customer)}&amount=${invoice.grand_total}`,
+            )
+          }
         />
         <RelatedDocuments doctype="Sales Invoice" name={name} />
+
+        {invoice && (
+          <YukXatiPreview
+            open={yukXatiOpen}
+            onOpenChange={setYukXatiOpen}
+            data={mapSalesInvoiceToYukXati(invoice)}
+          />
+        )}
       </FormPageLayout>
     </PermissionGuard>
   );
