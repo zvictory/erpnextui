@@ -17,7 +17,6 @@ import {
   Scale,
   Landmark,
   BookOpen,
-  PanelLeftClose,
   FileSpreadsheet,
   Banknote,
   ArrowDownRight,
@@ -30,6 +29,7 @@ import {
   ScrollText,
   FileCheck,
   PackageCheck,
+  ClipboardCheck,
   UserCheck,
   Factory,
   Clock,
@@ -38,6 +38,12 @@ import {
   Settings,
   Box,
   PenTool,
+  Layers,
+  Timer,
+  Monitor,
+  Activity,
+  Handshake,
+  Tags,
 } from "lucide-react";
 import {
   Sidebar,
@@ -51,12 +57,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTranslations } from "next-intl";
 import { usePermissions } from "@/hooks/use-permissions";
-import { useSidebar } from "@/components/ui/sidebar";
-import { useUISettingsStore } from "@/stores/ui-settings-store";
 import { useEnabledModules } from "@/hooks/use-enabled-modules";
 import { isSidebarGroupEnabled } from "@/lib/module-groups";
 
@@ -70,7 +72,9 @@ const masterDataNav = [
   { tKey: "products", href: "/products", icon: Package, doctype: "Item" },
   { tKey: "customers", href: "/customers", icon: Users, doctype: "Customer" },
   { tKey: "vendors", href: "/vendors", icon: Truck, doctype: "Supplier" },
+  { tKey: "partners", href: "/partners", icon: Handshake, doctype: "Customer" },
   { tKey: "employees", href: "/employees", icon: UserCheck, doctype: "Employee" },
+  { tKey: "priceLists", href: "/price-lists", icon: Tags, doctype: "Price List" },
 ];
 
 const transactionNav = [
@@ -106,10 +110,10 @@ const accountingNav = [
 
 const warehouseNav = [
   { tKey: "whDashboard", href: "/warehouse", icon: BarChart3 },
-  { tKey: "whApprovals", href: "/warehouse/approvals", icon: FileCheck },
   { tKey: "whPicking", href: "/warehouse/picking", icon: Package },
+  { tKey: "whStockCheck", href: "/warehouse/stock-check", icon: ClipboardCheck },
   { tKey: "whPacking", href: "/warehouse/packing", icon: PackageCheck },
-  { tKey: "whDelivery", href: "/warehouse/delivery", icon: Truck },
+  { tKey: "whInvoicing", href: "/warehouse/invoicing", icon: FileText },
 ];
 
 const factoryNav = [
@@ -117,7 +121,7 @@ const factoryNav = [
   { tKey: "layoutEditor", href: "/factory/editor", icon: PenTool },
 ];
 
-const manufacturingNav = [
+const oeeNav = [
   { tKey: "mfgDashboard", href: "/manufacturing", icon: BarChart3 },
   { tKey: "production", href: "/manufacturing/production", icon: Factory },
   { tKey: "downtime", href: "/manufacturing/downtime", icon: Clock },
@@ -127,6 +131,14 @@ const manufacturingNav = [
   { tKey: "mfgSettings", href: "/manufacturing/settings", icon: Settings },
 ];
 
+const manufacturingNav = [
+  { tKey: "mfgErpDashboard", href: "/manufacturing/dashboard", icon: Activity },
+  { tKey: "workOrders", href: "/manufacturing/work-orders", icon: ClipboardList },
+  { tKey: "bom", href: "/manufacturing/bom", icon: Layers },
+  { tKey: "jobCards", href: "/manufacturing/job-cards", icon: Timer },
+  { tKey: "workstations", href: "/manufacturing/workstations", icon: Monitor },
+];
+
 const reportNav = [
   { tKey: "sales", href: "/reports/sales", icon: TrendingUp },
   { tKey: "profitLoss", href: "/reports/profit-loss", icon: BarChart3 },
@@ -134,6 +146,7 @@ const reportNav = [
   { tKey: "trialBalance", href: "/reports/trial-balance", icon: FileSpreadsheet },
   { tKey: "cashFlow", href: "/reports/cash-flow", icon: Banknote },
   { tKey: "accountsReceivable", href: "/reports/accounts-receivable", icon: ArrowDownRight },
+  { tKey: "customerBalanceSummary", href: "/reports/customer-balance-summary", icon: Users },
   { tKey: "accountsPayable", href: "/reports/accounts-payable", icon: ArrowUpRight },
   { tKey: "generalLedger", href: "/reports/general-ledger", icon: FileSearch },
 ];
@@ -189,38 +202,6 @@ function NavGroup({ labelKey, items }: { labelKey: string; items: NavItem[] }) {
   );
 }
 
-function AutoCollapseToggle() {
-  const t = useTranslations("nav");
-  const { state } = useSidebar();
-  const autoCollapse = useUISettingsStore((s) => s.autoCollapseSidebar);
-  const setAutoCollapse = useUISettingsStore((s) => s.setAutoCollapseSidebar);
-  const isCollapsed = state === "collapsed";
-
-  if (isCollapsed) {
-    return (
-      <SidebarMenuItem>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <SidebarMenuButton onClick={() => setAutoCollapse(!autoCollapse)}>
-              <PanelLeftClose className={autoCollapse ? "text-primary" : "text-muted-foreground"} />
-            </SidebarMenuButton>
-          </TooltipTrigger>
-          <TooltipContent side="right">{t("autoCollapseTooltip")}</TooltipContent>
-        </Tooltip>
-      </SidebarMenuItem>
-    );
-  }
-
-  return (
-    <SidebarMenuItem>
-      <div className="flex items-center justify-between px-2 py-1.5">
-        <span className="text-sm text-muted-foreground">{t("autoCollapse")}</span>
-        <Switch checked={autoCollapse} onCheckedChange={setAutoCollapse} />
-      </div>
-    </SidebarMenuItem>
-  );
-}
-
 export function AppSidebar() {
   const enabledModules = useEnabledModules();
 
@@ -265,18 +246,17 @@ export function AppSidebar() {
           <NavGroup labelKey="factory" items={factoryNav} />
         )}
         {isSidebarGroupEnabled("manufacturing", enabledModules) && (
-          <NavGroup labelKey="manufacturing" items={manufacturingNav} />
+          <>
+            <NavGroup labelKey="oee" items={oeeNav} />
+            <NavGroup labelKey="manufacturing" items={manufacturingNav} />
+          </>
         )}
         {isSidebarGroupEnabled("reports", enabledModules) && (
           <NavGroup labelKey="reports" items={reportNav} />
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-border/60">
-        <SidebarMenu>
-          <AutoCollapseToggle />
-        </SidebarMenu>
-      </SidebarFooter>
+      <SidebarFooter className="border-t border-border/60" />
     </Sidebar>
   );
 }
