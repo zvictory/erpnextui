@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -14,12 +14,14 @@ import { useListState } from "@/hooks/use-list-state";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useCompanyStore } from "@/stores/company-store";
 import type { CustomerWithBalance } from "@/types/customer";
+import type { CurrencyBalance } from "@/types/party-report";
 
 function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.innerWidth < 768,
+  );
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
-    check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
@@ -41,9 +43,22 @@ export default function CustomersPage() {
 
   const { balanceMap, isLoading: balancesLoading } = useReceivableBalances(company);
 
+  // Corrected balances from ledger PE fixes — overrides sidebar GL-based balances
+  const [correctedBalances, setCorrectedBalances] = useState<Map<string, CurrencyBalance[]>>(
+    new Map(),
+  );
+
   const customersWithBalance = useMemo<CustomerWithBalance[]>(
     () =>
       customers.map((c) => {
+        const corrected = correctedBalances.get(c.name);
+        if (corrected) {
+          return {
+            ...c,
+            outstanding_balance: corrected.reduce((s, b) => s + b.amount, 0),
+            currency_balances: corrected,
+          };
+        }
         const pb = balanceMap.get(c.name);
         return {
           ...c,
@@ -51,7 +66,7 @@ export default function CustomersPage() {
           currency_balances: pb?.balances ?? [],
         };
       }),
-    [customers, balanceMap],
+    [customers, balanceMap, correctedBalances],
   );
 
   const { canCreate } = usePermissions();
@@ -65,12 +80,21 @@ export default function CustomersPage() {
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [editingPartyName, setEditingPartyName] = useState<string | null>(null);
 
-  // Auto-select first item on load
-  useEffect(() => {
-    if (!selectedParty && customersWithBalance.length > 0) {
-      setSelectedParty(customersWithBalance[0]);
-    }
-  }, [customersWithBalance]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Derive effective selection — auto-pick first item if nothing is selected yet
+  const effectiveSelectedParty =
+    selectedParty ?? (customersWithBalance.length > 0 ? customersWithBalance[0] : null);
+
+  const handleBalanceUpdate = useCallback(
+    (balances: CurrencyBalance[]) => {
+      if (!effectiveSelectedParty) return;
+      setCorrectedBalances((prev) => {
+        const next = new Map(prev);
+        next.set(effectiveSelectedParty.name, balances);
+        return next;
+      });
+    },
+    [effectiveSelectedParty],
+  );
 
   const handleSelect = (party: CustomerWithBalance) => {
     setSelectedParty(party);
@@ -83,15 +107,15 @@ export default function CustomersPage() {
   };
 
   const handleEdit = () => {
-    if (selectedParty) {
-      setEditingPartyName(selectedParty.name);
+    if (effectiveSelectedParty) {
+      setEditingPartyName(effectiveSelectedParty.name);
       setFormDialogOpen(true);
     }
   };
 
   const handleDelete = () => {
-    if (selectedParty) {
-      setDeleteTarget(selectedParty.name);
+    if (effectiveSelectedParty) {
+      setDeleteTarget(effectiveSelectedParty.name);
     }
   };
 
@@ -108,6 +132,7 @@ export default function CustomersPage() {
     outstanding_balance: c.outstanding_balance,
     currency_balances: c.currency_balances,
     currency: c.default_currency,
+    disabled: c.disabled,
   }));
 
   return (
@@ -123,7 +148,7 @@ export default function CustomersPage() {
             balancesLoading={balancesLoading}
             search={listState.search}
             onSearchChange={listState.setSearch}
-            selectedName={selectedParty?.name ?? null}
+            selectedName={effectiveSelectedParty?.name ?? null}
             onSelect={(row) => {
               const full = customersWithBalance.find((c) => c.name === row.name);
               if (full) handleSelect(full);
@@ -140,17 +165,18 @@ export default function CustomersPage() {
 
         {/* RIGHT PANE — fills remaining (desktop only) */}
         <div className="hidden md:flex flex-1 overflow-hidden">
-          {selectedParty ? (
+          {effectiveSelectedParty ? (
             <PartyDetailPanel
               partyType="Customer"
-              partyName={selectedParty.name}
-              partyDisplayName={selectedParty.customer_name}
-              partyCurrency={selectedParty.default_currency}
-              outstandingBalance={selectedParty.outstanding_balance}
-              currencyBalances={selectedParty.currency_balances}
+              partyName={effectiveSelectedParty.name}
+              partyDisplayName={effectiveSelectedParty.customer_name}
+              partyCurrency={effectiveSelectedParty.default_currency}
+              outstandingBalance={effectiveSelectedParty.outstanding_balance}
+              currencyBalances={effectiveSelectedParty.currency_balances}
               className="w-full"
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onBalanceUpdate={handleBalanceUpdate}
             />
           ) : (
             <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
@@ -161,16 +187,16 @@ export default function CustomersPage() {
       </div>
 
       {/* MOBILE SHEET OVERLAY */}
-      {selectedParty && (
+      {effectiveSelectedParty && (
         <PartyTransactionsPane
           open={mobileSheetOpen}
           onOpenChange={setMobileSheetOpen}
           partyType="Customer"
-          partyName={selectedParty.name}
-          partyDisplayName={selectedParty.customer_name}
-          partyCurrency={selectedParty.default_currency}
-          outstandingBalance={selectedParty.outstanding_balance}
-          currencyBalances={selectedParty.currency_balances}
+          partyName={effectiveSelectedParty.name}
+          partyDisplayName={effectiveSelectedParty.customer_name}
+          partyCurrency={effectiveSelectedParty.default_currency}
+          outstandingBalance={effectiveSelectedParty.outstanding_balance}
+          currencyBalances={effectiveSelectedParty.currency_balances}
           onEdit={handleEdit}
           onDelete={handleDelete}
         />
@@ -198,7 +224,7 @@ export default function CustomersPage() {
             onSuccess: () => {
               toast.success(t("deleteSuccess"));
               setDeleteTarget(null);
-              if (selectedParty?.name === deleteTarget) {
+              if (effectiveSelectedParty?.name === deleteTarget) {
                 setSelectedParty(null);
               }
             },

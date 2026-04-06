@@ -4,59 +4,75 @@ import { queryKeys } from "@/hooks/query-keys";
 import type { GLEntry } from "@/types/gl-entry";
 import type { PartyBalances, CurrencyBalance } from "@/types/party-report";
 
-async function fetchBalancesFromGL(
+/**
+ * Fetch balances using the AR/AP Summary report with `in_party_currency: 1`.
+ * Returns amounts in each party's billing currency (not the account's currency).
+ */
+async function fetchBalancesFromReport(
   partyType: "Customer" | "Supplier",
   company: string,
 ): Promise<Map<string, PartyBalances>> {
-  const rows = await frappe.getList<{
-    party: string;
-    account_currency: string;
-    total_debit_ac: number;
-    total_credit_ac: number;
-    total_debit: number;
-    total_credit: number;
-  }>("GL Entry", {
-    filters: [
-      ["party_type", "=", partyType],
-      ["company", "=", company],
-      ["is_cancelled", "=", 0],
-    ],
-    fields: [
-      "party",
-      "account_currency",
-      { SUM: "debit_in_account_currency", as: "total_debit_ac" },
-      { SUM: "credit_in_account_currency", as: "total_credit_ac" },
-      { SUM: "debit", as: "total_debit" },
-      { SUM: "credit", as: "total_credit" },
-    ],
-    groupBy: "party, account_currency",
-    limitPageLength: 0,
+  const reportName =
+    partyType === "Customer" ? "Accounts Receivable Summary" : "Accounts Payable Summary";
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const report = await frappe.call<{
+    result: (Record<string, unknown> | unknown[])[];
+  }>("frappe.desk.query_report.run", {
+    report_name: reportName,
+    filters: {
+      company,
+      report_date: today,
+      ageing_based_on: "Posting Date",
+      range1: 30,
+      range2: 60,
+      range3: 90,
+      range4: 120,
+      in_party_currency: 1,
+    },
   });
 
-  const perParty = new Map<string, { byCurrency: Map<string, number>; baseTotal: number }>();
-  for (const r of rows) {
-    if (!perParty.has(r.party)) perParty.set(r.party, { byCurrency: new Map(), baseTotal: 0 });
-    const p = perParty.get(r.party)!;
-    p.byCurrency.set(r.account_currency, (r.total_debit_ac ?? 0) - (r.total_credit_ac ?? 0));
-    p.baseTotal += (r.total_debit ?? 0) - (r.total_credit ?? 0);
+  const perParty = new Map<string, Map<string, number>>();
+
+  for (const raw of report.result) {
+    if (Array.isArray(raw)) continue;
+    const row = raw as Record<string, unknown>;
+    if (!row.party) continue;
+
+    const party = String(row.party);
+    const outstanding = Number(row.total_outstanding_amount ?? row.outstanding ?? 0);
+    const currency = row.currency ? String(row.currency) : undefined;
+
+    if (!currency || Math.abs(outstanding) < 0.005) continue;
+
+    if (!perParty.has(party)) perParty.set(party, new Map());
+    const currMap = perParty.get(party)!;
+    currMap.set(currency, (currMap.get(currency) ?? 0) + outstanding);
   }
 
   const map = new Map<string, PartyBalances>();
-  for (const [party, data] of perParty) {
-    const balances: CurrencyBalance[] = Array.from(data.byCurrency.entries())
-      .map(([currency, amount]) => ({ currency, amount }))
+  for (const [party, currMap] of perParty) {
+    const balances: CurrencyBalance[] = Array.from(currMap.entries())
+      .map(([currency, amount]) => ({
+        currency,
+        amount: currency === "UZS" ? Math.round(amount) : amount,
+      }))
       .filter((b) => Math.abs(b.amount) > 0.005);
-    map.set(party, { balances, totalInBaseCurrency: data.baseTotal });
+
+    const totalInBaseCurrency = balances.reduce((sum, b) => sum + b.amount, 0);
+    map.set(party, { balances, totalInBaseCurrency });
   }
+
   return map;
 }
 
 export function useReceivableBalances(company: string) {
   const query = useQuery({
     queryKey: queryKeys.partyBalances.receivable(company),
-    queryFn: () => fetchBalancesFromGL("Customer", company),
+    queryFn: () => fetchBalancesFromReport("Customer", company),
     enabled: !!company,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
   });
 
   return {
@@ -68,9 +84,9 @@ export function useReceivableBalances(company: string) {
 export function usePayableBalances(company: string) {
   const query = useQuery({
     queryKey: queryKeys.partyBalances.payable(company),
-    queryFn: () => fetchBalancesFromGL("Supplier", company),
+    queryFn: () => fetchBalancesFromReport("Supplier", company),
     enabled: !!company,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
   });
 
   return {
