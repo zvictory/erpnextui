@@ -83,10 +83,15 @@ export function useCreatePurchaseInvoice() {
         items: data.items.map((item) => ({
           doctype: "Purchase Invoice Item",
           ...item,
-          // Service lines: use description as item_name for ERPNext
-          ...(!item.item_code && item.description
-            ? { item_name: item.description, item_code: undefined }
-            : {}),
+          // Ensure item_name is always set (mandatory in ERPNext)
+          ...(!item.item_code
+            ? {
+                item_name: item.description || item.expense_account || "Service",
+                item_code: undefined,
+              }
+            : item.item_name
+              ? {}
+              : { item_name: item.item_code }),
         })),
       }),
     onSuccess: () => {
@@ -116,9 +121,14 @@ export function useUpdatePurchaseInvoice() {
               items: data.items.map((item) => ({
                 doctype: "Purchase Invoice Item",
                 ...item,
-                ...(!item.item_code && item.description
-                  ? { item_name: item.description, item_code: undefined }
-                  : {}),
+                ...(!item.item_code
+                  ? {
+                      item_name: item.description || item.expense_account || "Service",
+                      item_code: undefined,
+                    }
+                  : item.item_name
+                    ? {}
+                    : { item_name: item.item_code }),
               })),
             }
           : {}),

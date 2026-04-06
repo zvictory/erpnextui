@@ -5,6 +5,7 @@ import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -19,7 +20,7 @@ import { useCompanyStore } from "@/stores/company-store";
 import { useCurrencyMap, useExpenseAccountsWithCurrency } from "@/hooks/use-accounts";
 import { useCompanies } from "@/hooks/use-companies";
 import { useUISettingsStore } from "@/stores/ui-settings-store";
-import { useItem } from "@/hooks/use-items";
+import { useItem, useWarehouseItemCodes } from "@/hooks/use-items";
 import { useItemPrice } from "@/hooks/use-item-price";
 import { StockAvailabilityIndicator } from "@/components/shared/stock-availability-indicator";
 import { useTranslations } from "next-intl";
@@ -40,6 +41,8 @@ interface InvoiceItemsEditorProps {
   allowServiceLines?: boolean;
   /** Show per-item stock availability below the item selector (selling contexts only). */
   showStockAvailability?: boolean;
+  /** Filter items to only those with stock in this warehouse. */
+  sellingWarehouse?: string;
 }
 
 function buildGridTemplate(showUom: boolean, showDiscPct: boolean, showDiscAmt: boolean): string {
@@ -63,6 +66,8 @@ function ItemRow({
   showDiscPct,
   showDiscAmt,
   showStockAvailability,
+  sellingWarehouse: _sellingWarehouse,
+  warehouseItemCodes,
   onRemove,
 }: {
   index: number;
@@ -73,10 +78,12 @@ function ItemRow({
   showDiscPct: boolean;
   showDiscAmt: boolean;
   showStockAvailability: boolean;
+  sellingWarehouse?: string;
+  warehouseItemCodes?: string[];
   onRemove?: () => void;
 }) {
   const t = useTranslations("invoices");
-  const { register, control, setValue } = useFormContext();
+  const { control, setValue } = useFormContext();
   const qty = useWatch({ control, name: `${prefix}.${index}.qty` });
   const rate = useWatch({ control, name: `${prefix}.${index}.rate` });
   const discPct = useWatch({ control, name: `${prefix}.${index}.discount_percentage` }) ?? 0;
@@ -85,6 +92,8 @@ function ItemRow({
   const uom = useWatch({ control, name: `${prefix}.${index}.uom` }) ?? "";
   const prevItemRef = useRef<string>(itemCode ?? "");
   const prevUomRef = useRef<string>(uom);
+  // Skip amount recalc on initial load — preserve ERPNext's stored amount
+  const isInitialMount = useRef(true);
 
   const { data: itemDoc } = useItem(itemCode ?? "");
   const { data: priceListRate } = useItemPrice(itemCode ?? "", priceList, uom);
@@ -102,17 +111,26 @@ function ItemRow({
     return match?.conversion_factor ?? 1;
   };
 
-  // When item changes: set UOM to stock_uom
+  // When item changes: set UOM to sales_uom (if available) or stock_uom
   useEffect(() => {
     if (!itemCode || itemCode === prevItemRef.current || !itemDoc) return;
 
     prevItemRef.current = itemCode;
-    prevUomRef.current = itemDoc.stock_uom ?? "";
+    // Store item_name so it's sent to ERPNext (mandatory on invoice items)
+    if (itemDoc.item_name) {
+      setValue(`${prefix}.${index}.item_name`, itemDoc.item_name);
+    }
+    const defaultUom =
+      ((itemDoc as Record<string, unknown>).sales_uom as string | undefined) ||
+      itemDoc.stock_uom ||
+      "";
+    prevUomRef.current = defaultUom;
 
-    setValue(`${prefix}.${index}.uom`, itemDoc.stock_uom ?? "", {
+    setValue(`${prefix}.${index}.uom`, defaultUom, {
       shouldValidate: true,
     });
-    setValue(`${prefix}.${index}.conversion_factor`, getConversionFactor(itemDoc.stock_uom ?? ""));
+    setValue(`${prefix}.${index}.conversion_factor`, getConversionFactor(defaultUom));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemCode, itemDoc, index, prefix, setValue]);
 
   // When price list rate resolves or UOM changes: set rate
@@ -128,7 +146,12 @@ function ItemRow({
   }, [priceListRate, itemDoc, itemCode, uom, index, prefix, setValue]);
 
   // Calculate amount (factoring in discounts)
+  // Skip on initial mount to preserve ERPNext's stored amount
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     const q = parseFloat(qty) || 0;
     const r = parseFloat(rate) || 0;
     const dp = parseFloat(discPct) || 0;
@@ -152,7 +175,9 @@ function ItemRow({
           placeholder="Select item..."
           disabled={disabled}
           descriptionField="item_name"
-          displayValue={itemDoc?.item_name}
+          displayValue={itemDoc ? `${itemCode} — ${itemDoc.item_name}` : undefined}
+          showValueWithDescription
+          filters={warehouseItemCodes?.length ? [["name", "in", warehouseItemCodes]] : undefined}
         />
         {showStockAvailability && itemCode && (
           <StockAvailabilityIndicator
@@ -192,33 +217,35 @@ function ItemRow({
       )}
       <div className="space-y-1">
         {index === 0 && <Label className="text-xs">{t("qty")}</Label>}
-        <Input
-          type="number"
-          step="any"
+        <NumberInput
+          value={qty}
+          onChange={(v) => setValue(`${prefix}.${index}.qty`, v, { shouldValidate: true })}
           min={0}
-          {...register(`${prefix}.${index}.qty`, { valueAsNumber: true })}
+          decimals={2}
           disabled={disabled}
         />
       </div>
       <div className="space-y-1">
         {index === 0 && <Label className="text-xs">{t("rate")}</Label>}
-        <Input
-          type="number"
-          step="any"
+        <NumberInput
+          value={rate}
+          onChange={(v) => setValue(`${prefix}.${index}.rate`, v, { shouldValidate: true })}
           min={0}
-          {...register(`${prefix}.${index}.rate`, { valueAsNumber: true })}
+          decimals={2}
           disabled={disabled}
         />
       </div>
       {showDiscPct && (
         <div className="space-y-1">
           {index === 0 && <Label className="text-xs">%</Label>}
-          <Input
-            type="number"
-            step="any"
+          <NumberInput
+            value={discPct}
+            onChange={(v) =>
+              setValue(`${prefix}.${index}.discount_percentage`, v, { shouldValidate: true })
+            }
             min={0}
             max={100}
-            {...register(`${prefix}.${index}.discount_percentage`, { valueAsNumber: true })}
+            decimals={2}
             disabled={disabled}
           />
         </div>
@@ -226,22 +253,25 @@ function ItemRow({
       {showDiscAmt && (
         <div className="space-y-1">
           {index === 0 && <Label className="text-xs">{t("discount")}</Label>}
-          <Input
-            type="number"
-            step="any"
+          <NumberInput
+            value={discAmt}
+            onChange={(v) =>
+              setValue(`${prefix}.${index}.discount_amount`, v, { shouldValidate: true })
+            }
             min={0}
-            {...register(`${prefix}.${index}.discount_amount`, { valueAsNumber: true })}
+            decimals={2}
             disabled={disabled}
           />
         </div>
       )}
       <div className="space-y-1">
         {index === 0 && <Label className="text-xs">{t("amount")}</Label>}
-        <Input
-          type="number"
+        <NumberInput
+          value={useWatch({ control, name: `${prefix}.${index}.amount` })}
+          onChange={() => {}}
           readOnly
           tabIndex={-1}
-          {...register(`${prefix}.${index}.amount`, { valueAsNumber: true })}
+          decimals={2}
           className="bg-muted"
         />
       </div>
@@ -320,31 +350,32 @@ function ServiceLineRow({
       </div>
       <div className="space-y-1">
         {index === 0 && <Label className="text-xs">{t("qty")}</Label>}
-        <Input
-          type="number"
-          step="any"
+        <NumberInput
+          value={qty}
+          onChange={(v) => setValue(`${prefix}.${index}.qty`, v, { shouldValidate: true })}
           min={0}
-          {...register(`${prefix}.${index}.qty`, { valueAsNumber: true })}
+          decimals={2}
           disabled={disabled}
         />
       </div>
       <div className="space-y-1">
         {index === 0 && <Label className="text-xs">{t("rate")}</Label>}
-        <Input
-          type="number"
-          step="any"
+        <NumberInput
+          value={rate}
+          onChange={(v) => setValue(`${prefix}.${index}.rate`, v, { shouldValidate: true })}
           min={0}
-          {...register(`${prefix}.${index}.rate`, { valueAsNumber: true })}
+          decimals={2}
           disabled={disabled}
         />
       </div>
       <div className="space-y-1">
         {index === 0 && <Label className="text-xs">{t("amount")}</Label>}
-        <Input
-          type="number"
+        <NumberInput
+          value={useWatch({ control, name: `${prefix}.${index}.amount` })}
+          onChange={() => {}}
           readOnly
           tabIndex={-1}
-          {...register(`${prefix}.${index}.amount`, { valueAsNumber: true })}
+          decimals={2}
           className="bg-muted"
         />
       </div>
@@ -375,21 +406,24 @@ export function InvoiceItemsEditor({
   symbolOnRight: symbolOnRightProp,
   allowServiceLines = false,
   showStockAvailability = false,
+  sellingWarehouse,
 }: InvoiceItemsEditorProps) {
   const t = useTranslations("invoices");
-  const tCommon = useTranslations("common");
   const { control, getValues } = useFormContext();
   const { fields, append, remove } = useFieldArray({ control, name: fieldPrefix });
   const items = useWatch({ control, name: fieldPrefix });
   const companyStore = useCompanyStore();
   const { data: currencyMap } = useCurrencyMap();
   const { data: companiesList } = useCompanies();
-  const companyDefaultCurrency =
-    companiesList?.find((c) => c.name === companyStore.company)?.default_currency;
+  const companyDefaultCurrency = companiesList?.find(
+    (c) => c.name === companyStore.company,
+  )?.default_currency;
   const effectiveCode = companyStore.currencyCode || companyDefaultCurrency;
   const mapInfo = effectiveCode ? currencyMap?.get(effectiveCode) : undefined;
   const currencySymbol = currencySymbolProp ?? mapInfo?.symbol ?? companyStore.currencySymbol;
   const symbolOnRight = symbolOnRightProp ?? mapInfo?.onRight ?? companyStore.symbolOnRight;
+
+  const { data: warehouseItemCodes } = useWarehouseItemCodes(sellingWarehouse ?? "");
 
   const showUom = useUISettingsStore((s) => s.invoiceShowUom);
   const settingDiscPct = useUISettingsStore((s) => s.invoiceShowDiscountPercent);
@@ -448,6 +482,8 @@ export function InvoiceItemsEditor({
                 showDiscPct={showDiscPct}
                 showDiscAmt={showDiscAmt}
                 showStockAvailability={showStockAvailability}
+                sellingWarehouse={sellingWarehouse}
+                warehouseItemCodes={warehouseItemCodes}
                 onRemove={!disabled && fields.length > 1 ? () => remove(index) : undefined}
               />
             );

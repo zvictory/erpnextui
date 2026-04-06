@@ -2,6 +2,7 @@ import { z } from "zod";
 
 const deliveryNoteItemSchema = z.object({
   item_code: z.string().min(1, "Item is required"),
+  item_name: z.string().optional(),
   qty: z.number().min(0.001, "Qty must be > 0"),
   rate: z.number().min(0, "Rate must be >= 0"),
   amount: z.number(),

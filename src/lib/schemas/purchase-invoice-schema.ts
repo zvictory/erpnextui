@@ -3,6 +3,7 @@ import { z } from "zod";
 const invoiceItemSchema = z
   .object({
     item_code: z.string().optional(),
+    item_name: z.string().optional(),
     expense_account: z.string().optional(),
     description: z.string().optional(),
     qty: z.number().refine((v) => v !== 0, "Qty must not be zero"),

@@ -16,6 +16,7 @@ const isoDateString = (label: string) =>
 
 const invoiceItemSchema = z.object({
   item_code: z.string().min(1, "Item is required"),
+  item_name: z.string().optional(),
   qty: z.number().refine((v) => v !== 0, "Qty must not be zero"),
   rate: z.number().min(0, "Rate must be >= 0"),
   amount: z.number(),
@@ -47,6 +48,7 @@ export interface SalesInvoiceSubmitValues {
   currency?: string;
   items: Array<{
     item_code: string;
+    item_name?: string;
     qty: number;
     rate?: number;
     amount?: number;

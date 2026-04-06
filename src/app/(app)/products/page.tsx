@@ -95,10 +95,8 @@ export default function ProductsPage() {
         orderBy: listState.sort || "item_code asc",
         limitPageLength: 0,
       });
-      // Fetch stock for all items
-      const codes = allItems.map((i) => i.item_code);
+      // Fetch all bins (no item_code filter to avoid 414 URI Too Large on large catalogs)
       const bins = await frappe.getList<{ item_code: string; actual_qty: number }>("Bin", {
-        filters: [["item_code", "in", codes]],
         fields: ["item_code", "actual_qty"],
         limitPageLength: 0,
       });
