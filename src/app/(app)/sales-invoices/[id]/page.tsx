@@ -8,7 +8,6 @@ import { Separator } from "@/components/ui/separator";
 import { FormPageLayout } from "@/components/shared/form-page-layout";
 import { PermissionGuard } from "@/components/shared/permission-guard";
 import { SalesInvoiceForm } from "@/components/sales-invoices/sales-invoice-form";
-import { WorkflowTimeline } from "@/components/shared/workflow-timeline";
 import { DynamicWorkflowActions } from "@/components/shared/dynamic-workflow-actions";
 import { useActiveWorkflow } from "@/hooks/use-document-workflow";
 import {
@@ -93,19 +92,16 @@ export default function EditSalesInvoicePage({ params }: { params: Promise<{ id:
   return (
     <PermissionGuard doctype="Sales Invoice" action="read">
       <FormPageLayout title={invoice.name} backHref="/sales-invoices">
-        {/* Workflow timeline + actions (only show if workflow is active) */}
-        {workflowState && (
+        {/* Workflow actions (only show if workflow is active) */}
+        {hasWorkflow && workflowState && (
           <div className="space-y-3 mb-4">
-            <WorkflowTimeline currentState={workflowState} />
-            {hasWorkflow && (
-              <DynamicWorkflowActions
-                doctype="Sales Invoice"
-                docname={invoice.name}
-                currentState={workflowState}
-                onTransition={() => refetch()}
-                invalidateKeys={[["salesInvoices"]]}
-              />
-            )}
+            <DynamicWorkflowActions
+              doctype="Sales Invoice"
+              docname={invoice.name}
+              currentState={workflowState}
+              onTransition={() => refetch()}
+              invalidateKeys={[["salesInvoices"]]}
+            />
             <Separator />
           </div>
         )}

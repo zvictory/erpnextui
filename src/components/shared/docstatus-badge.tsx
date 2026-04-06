@@ -25,6 +25,11 @@ export function DocstatusBadge({ docstatus, status }: DocstatusBadgeProps) {
     "Partly Claimed and Returned": "partlyClaimedAndReturned",
   };
 
+  // Cancelled takes absolute precedence — ignore computed status field
+  if (docstatus === 2) {
+    return <Badge variant="destructive">{t("cancelled")}</Badge>;
+  }
+
   // If Frappe provides a computed status (e.g., Paid, Overdue), use it
   if (status && docstatus === 1) {
     const variant = getStatusVariant(status);
