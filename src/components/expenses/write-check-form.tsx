@@ -357,6 +357,8 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
 
     if (isInsufficientBalance) return "Insufficient balance in payment account";
 
+    if (!memo.trim()) return "Memo is required";
+
     return null;
   };
 
@@ -578,13 +580,16 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
 
           {/* Memo */}
           <div className="space-y-1.5">
-            <Label htmlFor="memo">{t("description")}</Label>
+            <Label htmlFor="memo">
+              {t("description")} <span className="text-destructive">*</span>
+            </Label>
             <Textarea
               id="memo"
-              placeholder="Optional notes..."
+              placeholder="What is this expense for?"
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
               rows={1}
+              required
             />
           </div>
 
