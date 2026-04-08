@@ -33,6 +33,7 @@ import { useExchangeRate } from "@/hooks/use-exchange-rate";
 import { useCompanyStore } from "@/stores/company-store";
 import { useCompanies } from "@/hooks/use-companies";
 import { cn, formatCurrency } from "@/lib/utils";
+import { formatNumber } from "@/lib/formatters";
 import type { JournalEntry } from "@/types/journal-entry";
 
 export interface WriteCheckFormData {
@@ -72,13 +73,6 @@ function makeDefaultLine(): ExpenseLine {
   return { id: crypto.randomUUID(), account: "", amount: "" };
 }
 
-function formatNumber(n: number): string {
-  return n.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
 const WriteCheckFormInner: React.ForwardRefRenderFunction<
   WriteCheckFormHandle,
   WriteCheckFormProps
@@ -116,29 +110,31 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
   // Derived currency detection
   const paymentCurrency = bankAccounts.find((a) => a.name === paymentFrom)?.account_currency ?? "";
 
-  const expenseLineCurrencies = [
-    ...new Set(
-      expenseLines
-        .filter((l) => l.account)
-        .map((l) => expenseAccounts.find((a) => a.name === l.account)?.account_currency ?? "")
-        .filter(Boolean),
-    ),
-  ];
-  const isMixedExpense = expenseLineCurrencies.length > 1;
-  const expenseCurrency = expenseLineCurrencies.length === 1 ? expenseLineCurrencies[0] : null;
+  // Multi-currency when payee account currency differs from company default
+  const isMultiCurrency =
+    paymentCurrency !== "" && companyCurrency !== "" && paymentCurrency !== companyCurrency;
 
-  const isExchange =
-    !isMixedExpense &&
-    expenseCurrency !== null &&
-    paymentCurrency !== "" &&
-    expenseCurrency !== paymentCurrency &&
-    (expenseCurrency === companyCurrency || paymentCurrency === companyCurrency);
+  const foreignCurrency = isMultiCurrency ? paymentCurrency : null;
 
-  const foreignCurrency = isExchange
-    ? paymentCurrency === companyCurrency
-      ? expenseCurrency
-      : paymentCurrency
-    : null;
+  // Filter expense accounts to match the payee account's currency
+  const filteredExpenseAccounts = paymentCurrency
+    ? expenseAccounts.filter((a) => a.account_currency === paymentCurrency)
+    : expenseAccounts;
+
+  // When payee currency changes, clear expense accounts that don't match
+  useEffect(() => {
+    if (!paymentCurrency) return;
+    setExpenseLines((prev) =>
+      prev.map((line) => {
+        if (!line.account) return line;
+        const acctCurrency = expenseAccounts.find((a) => a.name === line.account)?.account_currency;
+        if (acctCurrency && acctCurrency !== paymentCurrency) {
+          return { ...line, account: "" };
+        }
+        return line;
+      }),
+    );
+  }, [paymentCurrency, expenseAccounts]);
 
   // Auto-fetch exchange rate for the selected date
   const { data: fetchedRate } = useExchangeRate(
@@ -200,18 +196,18 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
 
   // When expense lines change, recompute converted total (rate stays fixed)
   useEffect(() => {
-    if (isExchange && expenseTotal > 0 && canonicalRate > 0) {
+    if (isMultiCurrency && expenseTotal > 0 && canonicalRate > 0) {
       setConvertedTotal(String(roundTo2(expenseTotal * canonicalRate)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isExchange, expenseTotal]);
+  }, [isMultiCurrency, expenseTotal]);
 
-  // Default rateFlipped when isExchange turns on — always show "1 foreign = ? company"
+  // Default rateFlipped when multi-currency turns on — always show "1 foreign = ? company"
   useEffect(() => {
-    if (isExchange) {
+    if (isMultiCurrency) {
       setRateFlipped(false);
     }
-  }, [isExchange]);
+  }, [isMultiCurrency]);
 
   const resetForm = useCallback(() => {
     setPostingDate(getToday());
@@ -240,8 +236,11 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
 
         setPostingDate(entry.posting_date);
 
-        // Parse payee from user_remark
-        const remark = entry.user_remark || "";
+        // Parse payee from user_remark (strip [Expense] tag if present)
+        const rawRemark = entry.user_remark || "";
+        const remark = rawRemark.startsWith("[Expense] ")
+          ? rawRemark.slice("[Expense] ".length)
+          : rawRemark;
         if (remark.startsWith("Paid to ")) {
           // Extract payee — everything after "Paid to " until a newline or " | "
           const afterPrefix = remark.slice("Paid to ".length);
@@ -289,53 +288,21 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
         // Restore exchange rate if multi-currency
         const loadedPaymentCurrency =
           bankAccounts.find((a) => a.name === creditAccount?.account)?.account_currency ?? "";
-        const loadedExpenseCurrencies = [
-          ...new Set(
-            debitAccounts
-              .map(
-                (a) => expenseAccounts.find((ea) => ea.name === a.account)?.account_currency ?? "",
-              )
-              .filter(Boolean),
-          ),
-        ];
-        const loadedExpenseCurrency =
-          loadedExpenseCurrencies.length === 1 ? loadedExpenseCurrencies[0] : null;
 
-        if (
-          loadedPaymentCurrency &&
-          loadedExpenseCurrency &&
-          loadedPaymentCurrency !== loadedExpenseCurrency
-        ) {
-          // Find the row with exchange_rate !== 1 — that's the foreign row
+        if (loadedPaymentCurrency && loadedPaymentCurrency !== companyCurrency) {
+          // Multi-currency: payee is foreign currency, all rows share the same rate
           const foreignRow = entry.accounts.find((a) => a.exchange_rate && a.exchange_rate !== 1);
           if (foreignRow?.exchange_rate) {
             const R = foreignRow.exchange_rate;
             setRateFlipped(false);
             setRateInput(String(R));
 
-            // Reverse-convert expense amounts back to foreign currency
-            if (loadedPaymentCurrency !== companyCurrency) {
-              // Bank was foreign → expense rows stored in company currency (amount × R)
-              // Restore original foreign amounts: amount / R
-              setExpenseLines(
-                debitAccounts.map((a) => ({
-                  id: crypto.randomUUID(),
-                  account: a.account,
-                  amount: String((a.debit_in_account_currency || 0) / R),
-                })),
-              );
-            }
-            // Bank was company → expense rows stored in foreign currency (original) — no conversion needed
-
-            // Compute converted total from restored amounts
-            const restoredTotal = debitAccounts.reduce((s, a) => {
-              const amt =
-                loadedPaymentCurrency !== companyCurrency
-                  ? (a.debit_in_account_currency || 0) / R
-                  : a.debit_in_account_currency || 0;
-              return s + amt;
-            }, 0);
-            setConvertedTotal(String(roundTo2(restoredTotal * R)));
+            // Expense amounts are stored in payee currency — no reverse-conversion needed
+            const total = debitAccounts.reduce(
+              (s, a) => s + (a.debit_in_account_currency || 0),
+              0,
+            );
+            setConvertedTotal(String(roundTo2(total * R)));
           }
         } else {
           setRateInput("1");
@@ -351,7 +318,7 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
         setStatus({ type: "error", message });
       }
     },
-    [onLoadEntry, bankAccounts, expenseAccounts, companyCurrency],
+    [onLoadEntry, bankAccounts, companyCurrency],
   );
 
   useImperativeHandle(ref, () => ({
@@ -362,7 +329,7 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
   const paymentFromData = bankAccounts.find((a) => a.name === paymentFrom);
   const paymentFromBalance = paymentFromData?.balance ?? 0;
   const paymentFromCurrency = paymentFromData?.account_currency ?? "";
-  const checkAmount = isExchange ? parseFloat(convertedTotal) || 0 : expenseTotal;
+  const checkAmount = isMultiCurrency ? parseFloat(convertedTotal) || 0 : expenseTotal;
   const isInsufficientBalance =
     !!paymentFrom && checkAmount > 0 && checkAmount > paymentFromBalance;
 
@@ -378,25 +345,10 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
     const total = validLines.reduce((sum, l) => sum + parseFloat(l.amount), 0);
     if (total <= 0) return "Total must be greater than 0";
 
-    if (isMixedExpense) {
-      return "All expense lines must share the same currency for exchange rate support";
-    }
-
-    // Currencies differ but neither is company currency
-    if (
-      expenseCurrency &&
-      paymentCurrency &&
-      expenseCurrency !== paymentCurrency &&
-      expenseCurrency !== companyCurrency &&
-      paymentCurrency !== companyCurrency
-    ) {
-      return `Multi-currency requires at least one account in ${companyCurrency}`;
-    }
-
-    if (isExchange && canonicalRate <= 0) {
+    if (isMultiCurrency && canonicalRate <= 0) {
       return "Exchange rate must be greater than 0";
     }
-    if (isExchange) {
+    if (isMultiCurrency) {
       const ct = parseFloat(convertedTotal);
       if (!ct || ct <= 0) {
         return "Converted total must be greater than 0";
@@ -435,9 +387,9 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
         memo,
         editingName,
         editingDocstatus,
-        exchangeRate: isExchange ? canonicalRate : 1,
-        convertedTotal: isExchange ? parseFloat(convertedTotal) || 0 : 0,
-        isMultiCurrency: isExchange,
+        exchangeRate: isMultiCurrency ? canonicalRate : 1,
+        convertedTotal: isMultiCurrency ? parseFloat(convertedTotal) || 0 : 0,
+        isMultiCurrency: isMultiCurrency,
       });
 
       setStatus({ type: "success", message: "Entry posted successfully" });
@@ -541,27 +493,20 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
           {/* Expense Lines */}
           <ExpenseLines
             lines={expenseLines}
-            expenseAccounts={expenseAccounts}
+            expenseAccounts={filteredExpenseAccounts}
             onUpdate={setExpenseLines}
             onOpenNewAccount={onOpenNewAccount}
-            hideTotal={isExchange}
+            hideTotal={isMultiCurrency}
           />
 
-          {/* Mixed currency warning */}
-          {isMixedExpense && (
-            <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
-              All expense lines must share the same currency for exchange rate support.
-            </div>
-          )}
-
           {/* Exchange rate — compact 2-col */}
-          {isExchange && (
+          {isMultiCurrency && (
             <div className="rounded-lg border border-dashed bg-muted/30 px-3 py-2.5 space-y-2.5">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>{t("totalAmount")}</span>
                 <span className="font-mono font-medium text-foreground">
-                  {formatNumber(expenseTotal)}{" "}
-                  {paymentCurrency !== companyCurrency ? paymentCurrency : expenseCurrency}
+                  {formatNumber(expenseTotal, 2)}{" "}
+                  {paymentCurrency}
                 </span>
               </div>
 
@@ -622,10 +567,10 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
               {/* Conversion summary */}
               {expenseTotal > 0 && parseFloat(convertedTotal) > 0 && (
                 <p className="text-[11px] text-muted-foreground text-center">
-                  {formatNumber(expenseTotal)}&nbsp;
-                  {paymentCurrency !== companyCurrency ? paymentCurrency : expenseCurrency}
+                  {formatNumber(expenseTotal, 2)}&nbsp;
+                  {paymentCurrency}
                   <span className="mx-1.5 opacity-40">→</span>
-                  {formatNumber(parseFloat(convertedTotal))}&nbsp;{companyCurrency}
+                  {formatNumber(parseFloat(convertedTotal), 2)}&nbsp;{companyCurrency}
                 </p>
               )}
             </div>

@@ -17,9 +17,8 @@ import {
   useAmendJournalEntry,
   useUpdateDraftAndSubmit,
 } from "@/hooks/use-journal-entries";
-import { useBankAccountsWithCurrency, useExpenseAccountsWithCurrency } from "@/hooks/use-accounts";
+import { useBankAccountsWithCurrency } from "@/hooks/use-accounts";
 import { queryKeys } from "@/hooks/query-keys";
-import { useCompanies } from "@/hooks/use-companies";
 import { ensureMultiCurrencyEnabled } from "@/lib/multi-currency";
 import type { AccountWithCurrency } from "@/types/account";
 import type { JournalEntry, JournalEntryAccount } from "@/types/journal-entry";
@@ -31,14 +30,11 @@ function roundTo2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-function buildAccounts(
-  data: WriteCheckFormData,
-  paymentCurrency: string,
-  companyCurrency: string,
-): JournalEntryAccount[] {
+function buildAccounts(data: WriteCheckFormData): JournalEntryAccount[] {
+  const total = data.expenseLines.reduce((sum, l) => sum + l.amount, 0);
+
   if (!data.isMultiCurrency) {
-    // Same-currency path — unchanged behavior
-    const total = data.expenseLines.reduce((sum, l) => sum + l.amount, 0);
+    // Same-currency path — no exchange rates needed
     const accounts: JournalEntryAccount[] = data.expenseLines.map((l) => ({
       doctype: "Journal Entry Account",
       account: l.account,
@@ -52,52 +48,24 @@ function buildAccounts(
     return accounts;
   }
 
-  // Multi-currency path.
-  // convertedTotal is the exact company-currency amount the user confirmed in the UI.
-  // Using it directly (instead of total × R) avoids floating-point multiplication errors
-  // and ensures debit == credit even when the rate is an irrational number.
-  const total = data.expenseLines.reduce((s, l) => s + l.amount, 0);
-  const ct = data.convertedTotal; // exact company-currency total
-  // Derived rate: used only where ERPNext needs an explicit exchange_rate field.
-  // convertedTotal / total gives the same value as data.exchangeRate but is
-  // anchored to the confirmed company amount, ensuring consistency.
+  // Multi-currency: all accounts share the same foreign currency (payee currency).
+  // convertedTotal is the user-confirmed company-currency equivalent.
+  const ct = data.convertedTotal;
   const R = total > 0 ? ct / total : data.exchangeRate;
 
-  if (paymentCurrency === companyCurrency) {
-    // Bank=company (UZS), expense=foreign (USD).
-    // • Expense rows: foreign amount + rate R → ERPNext computes company debit = amount × R.
-    // • Payment row: exact company amount (ct) with rate 1 → no multiplication, no rounding error.
-    const accounts: JournalEntryAccount[] = data.expenseLines.map((l) => ({
-      doctype: "Journal Entry Account",
-      account: l.account,
-      debit_in_account_currency: l.amount,
-      exchange_rate: R,
-    }));
-    accounts.push({
-      doctype: "Journal Entry Account",
-      account: data.paymentFrom,
-      credit_in_account_currency: ct,
-      exchange_rate: 1,
-    });
-    return accounts;
-  } else {
-    // Bank=foreign (USD), expense=company (UZS).
-    // • Expense rows: company amount (amount × R, rounded) with rate 1 → no ERPNext multiplication.
-    // • Payment row: exact foreign amount with rate R → ERPNext computes company credit = total × R = ct.
-    const accounts: JournalEntryAccount[] = data.expenseLines.map((l) => ({
-      doctype: "Journal Entry Account",
-      account: l.account,
-      debit_in_account_currency: roundTo2(l.amount * R),
-      exchange_rate: 1,
-    }));
-    accounts.push({
-      doctype: "Journal Entry Account",
-      account: data.paymentFrom,
-      credit_in_account_currency: total,
-      exchange_rate: R,
-    });
-    return accounts;
-  }
+  const accounts: JournalEntryAccount[] = data.expenseLines.map((l) => ({
+    doctype: "Journal Entry Account",
+    account: l.account,
+    debit_in_account_currency: roundTo2(l.amount),
+    exchange_rate: R,
+  }));
+  accounts.push({
+    doctype: "Journal Entry Account",
+    account: data.paymentFrom,
+    credit_in_account_currency: roundTo2(total),
+    exchange_rate: R,
+  });
+  return accounts;
 }
 
 function buildRemark(payee: string, memo: string): string {
@@ -109,14 +77,10 @@ function buildRemark(payee: string, memo: string): string {
 function collectCurrencies(
   data: WriteCheckFormData,
   bankAccounts: AccountWithCurrency[],
-  expenseAccounts: AccountWithCurrency[],
 ): string[] {
   const paymentCurrency =
     bankAccounts.find((a) => a.name === data.paymentFrom)?.account_currency ?? "";
-  const expenseCurrencies = data.expenseLines.map(
-    (l) => expenseAccounts.find((a) => a.name === l.account)?.account_currency ?? "",
-  );
-  return [paymentCurrency, ...expenseCurrencies];
+  return [paymentCurrency];
 }
 
 export default function WriteCheckPage() {
@@ -130,19 +94,14 @@ export default function WriteCheckPage() {
   const amend = useAmendJournalEntry();
   const updateDraft = useUpdateDraftAndSubmit();
   const { data: bankAccounts } = useBankAccountsWithCurrency(company);
-  const { data: expenseAccounts } = useExpenseAccountsWithCurrency(company);
-  const { data: companies } = useCompanies();
 
   const handleSubmit = async (data: WriteCheckFormData) => {
-    const paymentCurrency =
-      bankAccounts?.find((a) => a.name === data.paymentFrom)?.account_currency ?? "";
-    const companyCurr = companies?.find((c) => c.name === company)?.default_currency ?? "";
-    const accounts = buildAccounts(data, paymentCurrency, companyCurr);
-    const remark = buildRemark(data.payee, data.memo);
+    const accounts = buildAccounts(data);
+    const remark = `[Expense] ${buildRemark(data.payee, data.memo)}`;
 
     setIsSubmitting(true);
     try {
-      const currencies = collectCurrencies(data, bankAccounts ?? [], expenseAccounts ?? []);
+      const currencies = collectCurrencies(data, bankAccounts ?? []);
       const multiCurrency = await ensureMultiCurrencyEnabled(company, currencies);
 
       // Branch: Edit draft (docstatus 0)
@@ -225,13 +184,13 @@ export default function WriteCheckPage() {
 
         {/* History — desktop */}
         <div className="hidden lg:flex h-full min-h-0 flex-col rounded-xl border bg-card p-4 shadow-sm">
-          <HistoryPanel onEdit={handleEditFromHistory} />
+          <HistoryPanel onEdit={handleEditFromHistory} remarkFilter="[Expense]" />
         </div>
       </div>
 
       {/* Mobile: history below */}
       <div className="mt-6 lg:hidden rounded-xl border bg-card p-4 shadow-sm">
-        <HistoryPanel onEdit={handleEditFromHistory} />
+        <HistoryPanel onEdit={handleEditFromHistory} remarkFilter="[Expense]" />
       </div>
 
       <CreateAccountDialog

@@ -22,10 +22,10 @@ export async function ensureMultiCurrencyEnabled(
 
   const company = await frappe.getDoc<CompanyDoc>("Company", companyName);
 
-  // Include company default currency — ERPNext requires multi_currency
-  // when ANY account currency differs from company currency
-  const allCurrencies = new Set([...filtered, company.default_currency]);
-  if (allCurrencies.size <= 1) return false;
+  // Multi-currency needed when ANY account currency differs from the company's
+  // default currency — ERPNext validates this, not just whether the two sides differ.
+  const needsMultiCurrency = filtered.some((c) => c !== company.default_currency);
+  if (!needsMultiCurrency) return false;
 
   if (company.enable_multi_currency === 1) return true;
 
@@ -37,7 +37,13 @@ export async function ensureMultiCurrencyEnabled(
         "Multi-currency is not enabled for this company. Please contact an administrator to enable it in ERPNext (Company Settings).",
       );
     }
-    throw err;
+    // Validation errors (e.g. write_off_account currency mismatch) should not
+    // block the JE. The JE's own multi_currency field is what ERPNext uses for
+    // row-level exchange rates; the Company flag is a secondary UI preference.
+    console.warn(
+      "[multi-currency] Could not auto-enable multi_currency on Company doc — proceeding anyway. Error:",
+      err instanceof Error ? err.message : err,
+    );
   }
 
   return true;
