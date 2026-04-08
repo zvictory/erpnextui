@@ -68,10 +68,13 @@ function buildAccounts(data: WriteCheckFormData): JournalEntryAccount[] {
   return accounts;
 }
 
-function buildRemark(payee: string, memo: string): string {
-  if (memo) return memo;
-  if (payee) return `Paid to ${payee}`;
-  return "";
+function buildRemark(
+  payee: string,
+  lines: { memo: string }[],
+): string {
+  const memos = lines.map((l) => l.memo).join("; ");
+  if (payee) return `Paid to ${payee} | ${memos}`;
+  return memos;
 }
 
 function collectCurrencies(
@@ -97,7 +100,7 @@ export default function WriteCheckPage() {
 
   const handleSubmit = async (data: WriteCheckFormData) => {
     const accounts = buildAccounts(data);
-    const remark = `[Expense] ${buildRemark(data.payee, data.memo)}`;
+    const remark = `[Expense] ${buildRemark(data.payee, data.expenseLines)}`;
 
     setIsSubmitting(true);
     try {

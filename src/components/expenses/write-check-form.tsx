@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DateInput } from "@/components/shared/date-input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -40,8 +39,7 @@ export interface WriteCheckFormData {
   postingDate: string;
   payee: string;
   paymentFrom: string;
-  expenseLines: { account: string; amount: number }[];
-  memo: string;
+  expenseLines: { account: string; amount: number; memo: string }[];
   editingName: string | null;
   editingDocstatus: number | null;
   exchangeRate: number;
@@ -70,7 +68,7 @@ function getToday(): string {
 }
 
 function makeDefaultLine(): ExpenseLine {
-  return { id: crypto.randomUUID(), account: "", amount: "" };
+  return { id: crypto.randomUUID(), account: "", amount: "", memo: "" };
 }
 
 const WriteCheckFormInner: React.ForwardRefRenderFunction<
@@ -93,7 +91,6 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
   const [payee, setPayee] = useState("");
   const [paymentFrom, setPaymentFrom] = useState("");
   const [expenseLines, setExpenseLines] = useState<ExpenseLine[]>([makeDefaultLine()]);
-  const [memo, setMemo] = useState("");
   const [editingName, setEditingName] = useState<string | null>(null);
   const [editingDocstatus, setEditingDocstatus] = useState<number | null>(null);
 
@@ -214,7 +211,6 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
     setPayee("");
     setPaymentFrom("");
     setExpenseLines([makeDefaultLine()]);
-    setMemo("");
     setEditingName(null);
     setEditingDocstatus(null);
     setRateInput("1");
@@ -236,13 +232,15 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
 
         setPostingDate(entry.posting_date);
 
-        // Parse payee from user_remark (strip [Expense] tag if present)
+        // Parse payee + per-line memos from user_remark
+        // Format: "[Expense] Paid to X | memo1; memo2" or "[Expense] memo1; memo2"
         const rawRemark = entry.user_remark || "";
         const remark = rawRemark.startsWith("[Expense] ")
           ? rawRemark.slice("[Expense] ".length)
           : rawRemark;
+
+        let memosStr = "";
         if (remark.startsWith("Paid to ")) {
-          // Extract payee — everything after "Paid to " until a newline or " | "
           const afterPrefix = remark.slice("Paid to ".length);
           const pipeIdx = afterPrefix.indexOf(" | ");
           const newlineIdx = afterPrefix.indexOf("\n");
@@ -250,17 +248,14 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
           if (pipeIdx !== -1) endIdx = Math.min(endIdx, pipeIdx);
           if (newlineIdx !== -1) endIdx = Math.min(endIdx, newlineIdx);
           setPayee(afterPrefix.slice(0, endIdx).trim());
-
-          // Extract memo — everything after " | "
           if (pipeIdx !== -1) {
-            setMemo(afterPrefix.slice(pipeIdx + 3).trim());
-          } else {
-            setMemo("");
+            memosStr = afterPrefix.slice(pipeIdx + 3).trim();
           }
         } else {
           setPayee("");
-          setMemo(remark);
+          memosStr = remark;
         }
+        const lineMemos = memosStr ? memosStr.split("; ") : [];
 
         // Parse accounts: credit account is paymentFrom, debit accounts are expense lines
         const creditAccount = entry.accounts.find(
@@ -275,10 +270,11 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
         );
         if (debitAccounts.length > 0) {
           setExpenseLines(
-            debitAccounts.map((a) => ({
+            debitAccounts.map((a, i) => ({
               id: crypto.randomUUID(),
               account: a.account,
               amount: String(a.debit_in_account_currency || 0),
+              memo: lineMemos[i] ?? "",
             })),
           );
         } else {
@@ -357,7 +353,8 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
 
     if (isInsufficientBalance) return "Insufficient balance in payment account";
 
-    if (!memo.trim()) return "Memo is required";
+    const missingMemo = validLines.find((l) => !l.memo.trim());
+    if (missingMemo) return "Each expense line must have a description";
 
     return null;
   };
@@ -379,6 +376,7 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
         .map((l) => ({
           account: l.account,
           amount: parseFloat(l.amount),
+          memo: l.memo.trim(),
         }));
 
       await onSubmit({
@@ -386,7 +384,6 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
         payee,
         paymentFrom,
         expenseLines: validLines,
-        memo,
         editingName,
         editingDocstatus,
         exchangeRate: isMultiCurrency ? canonicalRate : 1,
@@ -577,21 +574,6 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
               )}
             </div>
           )}
-
-          {/* Memo */}
-          <div className="space-y-1.5">
-            <Label htmlFor="memo">
-              {t("description")} <span className="text-destructive">*</span>
-            </Label>
-            <Textarea
-              id="memo"
-              placeholder="What is this expense for?"
-              value={memo}
-              onChange={(e) => setMemo(e.target.value)}
-              rows={1}
-              required
-            />
-          </div>
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-3">

@@ -12,6 +12,7 @@ export interface ExpenseLine {
   id: string;
   account: string;
   amount: string;
+  memo: string;
 }
 
 interface ExpenseLinesProps {
@@ -40,13 +41,17 @@ export function ExpenseLines({
     onUpdate(lines.map((line) => (line.id === id ? { ...line, amount: value } : line)));
   };
 
+  const handleMemoChange = (id: string, value: string) => {
+    onUpdate(lines.map((line) => (line.id === id ? { ...line, memo: value } : line)));
+  };
+
   const handleRemove = (id: string) => {
     if (lines.length <= 1) return;
     onUpdate(lines.filter((line) => line.id !== id));
   };
 
   const handleAddLine = () => {
-    onUpdate([...lines, { id: crypto.randomUUID(), account: "", amount: "" }]);
+    onUpdate([...lines, { id: crypto.randomUUID(), account: "", amount: "", memo: "" }]);
   };
 
   const total = lines.reduce((sum, line) => {
@@ -70,9 +75,11 @@ export function ExpenseLines({
             id={line.id}
             account={line.account}
             amount={line.amount}
+            memo={line.memo}
             expenseAccounts={expenseAccounts}
             onAccountChange={handleAccountChange}
             onAmountChange={handleAmountChange}
+            onMemoChange={handleMemoChange}
             onRemove={handleRemove}
             canRemove={lines.length > 1}
           />
