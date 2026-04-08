@@ -144,6 +144,7 @@ export default function WriteCheckPage() {
         userRemark: remark,
         accounts,
         multiCurrency,
+        listKeySuffix: "[Expense]",
       });
       if (result.submitted) {
         toast.success(`Submitted ${result.name}`);

@@ -24,19 +24,28 @@ export function useJournalEntry(name: string) {
 // List
 // ---------------------------------------------------------------------------
 
-export function useJournalEntryList(company: string, voucherType = "Journal Entry") {
+export function useJournalEntryList(
+  company: string,
+  voucherType = "Journal Entry",
+  remarkFilter?: string,
+) {
   return useQuery({
-    queryKey: queryKeys.journalEntries.list(company, voucherType),
-    queryFn: () =>
-      frappe.getList<JournalEntryListItem>("Journal Entry", {
-        filters: [
-          ["company", "=", company],
-          ["voucher_type", "=", voucherType],
-        ],
+    queryKey: queryKeys.journalEntries.list(company, voucherType + (remarkFilter ?? "")),
+    queryFn: () => {
+      const filters: unknown[] = [
+        ["company", "=", company],
+        ["voucher_type", "=", voucherType],
+      ];
+      if (remarkFilter) {
+        filters.push(["user_remark", "like", `%${remarkFilter}%`]);
+      }
+      return frappe.getList<JournalEntryListItem>("Journal Entry", {
+        filters,
         fields: ["name", "posting_date", "total_debit", "user_remark", "docstatus"],
-        orderBy: "posting_date desc,creation desc",
+        orderBy: "posting_date desc",
         limitPageLength: 50,
-      }),
+      });
+    },
     enabled: !!company,
   });
 }
@@ -54,6 +63,8 @@ interface CreateAndSubmitParams {
   multiCurrency?: boolean;
   chequeNo?: string;
   chequeDate?: string;
+  /** Suffix appended to the list cache key for optimistic updates (e.g. "[Expense]") */
+  listKeySuffix?: string;
 }
 
 interface CreateAndSubmitResult {
@@ -101,10 +112,11 @@ export function useCreateAndSubmitJournalEntry() {
     },
     onSuccess: (result, variables) => {
       // Optimistically prepend the new entry into the matching list cache
+      // Estimate total_debit in company currency for optimistic cache
       const totalDebit = variables.accounts.reduce((sum, acc) => {
         const debit = acc.debit_in_account_currency ?? 0;
-        const rate = acc.exchange_rate ?? 1;
-        return sum + debit * rate;
+        const rate = acc.exchange_rate && acc.exchange_rate !== 1 ? acc.exchange_rate : 1;
+        return sum + Math.round(debit * rate * 100) / 100;
       }, 0);
       const newItem: JournalEntryListItem = {
         name: result.name,
@@ -114,7 +126,10 @@ export function useCreateAndSubmitJournalEntry() {
         docstatus: result.submitted ? 1 : 0,
       };
       const vt = variables.voucherType ?? "Journal Entry";
-      const listKey = queryKeys.journalEntries.list(variables.company, vt);
+      const listKey = queryKeys.journalEntries.list(
+        variables.company,
+        vt + (variables.listKeySuffix ?? ""),
+      );
       qc.setQueryData<JournalEntryListItem[]>(listKey, (old) =>
         old ? [newItem, ...old] : [newItem],
       );
