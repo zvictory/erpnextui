@@ -2,7 +2,8 @@
 
 import { AlertTriangle } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { formatCurrency } from "@/lib/utils";
+import { formatInvoiceCurrency } from "@/lib/formatters";
+import { useCurrencyMap } from "@/hooks/use-accounts";
 
 interface InsufficientBalanceWarningProps {
   balance: number;
@@ -16,6 +17,7 @@ export function InsufficientBalanceWarning({
   currency,
 }: InsufficientBalanceWarningProps) {
   const tCommon = useTranslations("common");
+  const { data: currencyMap } = useCurrencyMap();
 
   if (amount <= 0 || amount <= balance) return null;
 
@@ -24,7 +26,7 @@ export function InsufficientBalanceWarning({
       <AlertTriangle className="size-4 shrink-0" />
       <span>
         {tCommon("insufficientBalance", {
-          balance: formatCurrency(balance, currency, true),
+          balance: formatInvoiceCurrency(balance, currency, currencyMap?.get(currency)),
         })}
       </span>
     </div>

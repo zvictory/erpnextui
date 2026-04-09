@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { InvoiceDetailDialog } from "@/components/shared/invoice-detail-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -16,15 +16,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import {
   CreditCard,
   FileText,
   BookOpen,
   Receipt,
-  ArrowDownLeft,
-  ArrowUpRight,
   ArrowUp,
   ArrowDown,
   Pencil,
@@ -33,6 +29,7 @@ import {
   MoreHorizontal,
   Eye,
   XCircle,
+  Handshake,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -77,13 +74,23 @@ export function getVoucherIcon(voucherType: string) {
 }
 
 function getVoucherHref(voucherType: string, voucherNo: string): string | null {
-  if (voucherType === "Sales Invoice") {
-    return `/sales-invoices/${encodeURIComponent(voucherNo)}`;
+  const enc = encodeURIComponent(voucherNo);
+  switch (voucherType) {
+    case "Sales Invoice":
+      return `/sales-invoices/${enc}`;
+    case "Purchase Invoice":
+      return `/purchase-invoices/${enc}`;
+    case "Sales Order":
+      return `/sales-orders/${enc}`;
+    case "Purchase Order":
+      return `/purchase-orders/${enc}`;
+    case "Delivery Note":
+      return `/delivery-notes/${enc}`;
+    case "Payment Entry":
+      return `/payments/${enc}`;
+    default:
+      return null;
   }
-  if (voucherType === "Purchase Invoice") {
-    return `/purchase-invoices/${encodeURIComponent(voucherNo)}`;
-  }
-  return null;
 }
 
 interface PartyDetailPanelProps {
@@ -96,6 +103,8 @@ interface PartyDetailPanelProps {
   className?: string;
   onEdit?: () => void;
   onDelete?: () => void;
+  /** Called when corrected balance is computed from ledger — lets parent sync sidebar */
+  onBalanceUpdate?: (balances: CurrencyBalance[]) => void;
 }
 
 export function PartyDetailPanel({
@@ -108,9 +117,9 @@ export function PartyDetailPanel({
   className,
   onEdit,
   onDelete,
+  onBalanceUpdate,
 }: PartyDetailPanelProps) {
   const tCommon = useTranslations("common");
-  const tInvoices = useTranslations("invoices");
   const tCustomers = useTranslations("customers");
   const tVendors = useTranslations("vendors");
   const { company, currencySymbol, symbolOnRight } = useCompanyStore();
@@ -130,8 +139,9 @@ export function PartyDetailPanel({
   const { data: entries, isLoading } = usePartyLedger(partyType, partyName, company, ledgerPage);
   const { data: ledgerCount = 0 } = usePartyLedgerCount(partyType, partyName, company);
 
-  // Draft invoices for this party
+  // Draft invoices and orders for this party
   const invoiceDoctype = partyType === "Customer" ? "Sales Invoice" : "Purchase Invoice";
+  const orderDoctype = partyType === "Customer" ? "Sales Order" : "Purchase Order";
   const partyField = partyType === "Customer" ? "customer" : "supplier";
   const { data: draftInvoices = [] } = useQuery({
     queryKey: ["draftInvoices", invoiceDoctype, partyName, company],
@@ -153,6 +163,73 @@ export function PartyDetailPanel({
       }),
     enabled: !!partyName && !!company,
   });
+
+  const { data: draftOrders = [] } = useQuery({
+    queryKey: ["draftOrders", orderDoctype, partyName, company],
+    queryFn: () =>
+      frappe.getList<{
+        name: string;
+        transaction_date: string;
+        grand_total: number;
+        currency: string;
+      }>(orderDoctype, {
+        filters: [
+          [partyField, "=", partyName],
+          ["company", "=", company],
+          ["docstatus", "=", 0],
+        ],
+        fields: ["name", "transaction_date", "grand_total", "currency"],
+        orderBy: "transaction_date desc",
+        limitPageLength: 20,
+      }),
+    enabled: !!partyName && !!company,
+  });
+
+  // Recent submitted orders (not in GL ledger)
+  const { data: recentOrders = [] } = useQuery({
+    queryKey: ["recentOrders", orderDoctype, partyName, company],
+    queryFn: () =>
+      frappe.getList<{
+        name: string;
+        transaction_date: string;
+        grand_total: number;
+        currency: string;
+        status: string;
+        per_billed: number;
+        per_delivered: number;
+      }>(orderDoctype, {
+        filters: [
+          [partyField, "=", partyName],
+          ["company", "=", company],
+          ["docstatus", "=", 1],
+        ],
+        fields: [
+          "name",
+          "transaction_date",
+          "grand_total",
+          "currency",
+          "status",
+          "per_billed",
+          "per_delivered",
+        ],
+        orderBy: "transaction_date desc",
+        limitPageLength: 20,
+      }),
+    enabled: !!partyName && !!company,
+  });
+
+  // Check if this party has a linked partner
+  const partnerLinkField =
+    partyType === "Customer" ? "custom_linked_supplier" : "custom_linked_customer";
+  const { data: partnerLink } = useQuery({
+    queryKey: ["partnerLink", partyType, partyName],
+    queryFn: async () => {
+      const doc = await frappe.getDoc<Record<string, unknown>>(partyType, partyName);
+      return (doc[partnerLinkField] as string) || null;
+    },
+    enabled: !!partyName,
+  });
+
   const totalPages = Math.max(1, Math.ceil(ledgerCount / 50));
 
   // Compute balance from GL entries as fallback when balanceMap data is zero/missing
@@ -162,10 +239,15 @@ export function PartyDetailPanel({
     let baseTotal = 0;
     for (const e of entries) {
       const prev = byCurrency.get(e.account_currency) ?? 0;
-      byCurrency.set(
-        e.account_currency,
-        prev + e.debit_in_account_currency - e.credit_in_account_currency,
-      );
+      const dr =
+        e.account_currency === "UZS"
+          ? Math.round(e.debit_in_account_currency)
+          : e.debit_in_account_currency;
+      const cr =
+        e.account_currency === "UZS"
+          ? Math.round(e.credit_in_account_currency)
+          : e.credit_in_account_currency;
+      byCurrency.set(e.account_currency, prev + dr - cr);
       baseTotal += e.debit - e.credit;
     }
     const balances: CurrencyBalance[] = Array.from(byCurrency.entries())
@@ -174,15 +256,10 @@ export function PartyDetailPanel({
     return { balances, baseTotal };
   }, [entries]);
 
-  // Use prop values, falling back to ledger-computed values when prop shows zero but entries exist
   const effectiveBalance =
     (outstandingBalance === 0 || outstandingBalance == null) && computedFromLedger
       ? computedFromLedger.baseTotal
       : outstandingBalance;
-  const effectiveCurrencyBalances =
-    currencyBalances.length === 0 && computedFromLedger
-      ? computedFromLedger.balances
-      : currencyBalances;
 
   const cancelSI = useCancelSalesInvoice();
   const cancelPI = useCancelPurchaseInvoice();
@@ -208,6 +285,51 @@ export function PartyDetailPanel({
   }
 
   // Group GL entries by voucher_no + account_currency, then compute running balance
+  // Fetch actual Payment Entry amounts to correct GL rounding artifacts
+  const peVouchers = useMemo(
+    () =>
+      (entries ?? [])
+        .filter((e) => e.voucher_type === "Payment Entry")
+        .map((e) => e.voucher_no)
+        .filter((v, i, a) => a.indexOf(v) === i),
+    [entries],
+  );
+  interface PEAmountInfo {
+    paid_amount: number;
+    received_amount: number;
+    paid_from_account_currency: string;
+    paid_to_account_currency: string;
+  }
+  const { data: peAmounts } = useQuery({
+    queryKey: ["peAmounts", ...peVouchers],
+    queryFn: () =>
+      peVouchers.length > 0
+        ? frappe.getList<{
+            name: string;
+            paid_amount: number;
+            received_amount: number;
+            paid_from_account_currency: string;
+            paid_to_account_currency: string;
+          }>("Payment Entry", {
+            filters: [["name", "in", peVouchers]],
+            fields: [
+              "name",
+              "paid_amount",
+              "received_amount",
+              "paid_from_account_currency",
+              "paid_to_account_currency",
+            ],
+            limitPageLength: peVouchers.length,
+          })
+        : Promise.resolve([]),
+    enabled: peVouchers.length > 0,
+    staleTime: 10 * 60 * 1000,
+  });
+  const peAmountMap = useMemo(
+    () => new Map<string, PEAmountInfo>((peAmounts ?? []).map((p) => [p.name, p])),
+    [peAmounts],
+  );
+
   const displayEntries = useMemo(() => {
     if (!entries?.length) return [];
 
@@ -228,6 +350,28 @@ export function PartyDetailPanel({
     }
 
     const merged = Array.from(grouped.values());
+    // Fix PE amounts: use actual paid/received amount from Payment Entry (avoids exchange rate rounding)
+    // Match the GL entry's account_currency to the correct PE amount side
+    for (const e of merged) {
+      if (e.voucher_type === "Payment Entry") {
+        const pe = peAmountMap.get(e.voucher_no);
+        if (pe) {
+          let actual: number | undefined;
+          if (e.account_currency === pe.paid_from_account_currency) {
+            actual = pe.paid_amount;
+          } else if (e.account_currency === pe.paid_to_account_currency) {
+            actual = pe.received_amount;
+          }
+          if (actual != null) {
+            if (e.credit_in_account_currency > 0) e.credit_in_account_currency = actual;
+            if (e.debit_in_account_currency > 0) e.debit_in_account_currency = actual;
+          }
+        }
+      } else if (e.account_currency === "UZS") {
+        e.debit_in_account_currency = Math.round(e.debit_in_account_currency);
+        e.credit_in_account_currency = Math.round(e.credit_in_account_currency);
+      }
+    }
     const sorted = merged.sort((a, b) => a.posting_date.localeCompare(b.posting_date));
     const runningByCurrency = new Map<string, number>();
     const withBalance = sorted.map((e) => {
@@ -238,14 +382,43 @@ export function PartyDetailPanel({
       return { ...e, balance: newBal, balanceCurrency: curr };
     });
     return sortAsc ? withBalance : [...withBalance].reverse();
-  }, [entries, sortAsc]);
+  }, [entries, sortAsc, peAmountMap]);
+
+  // Use corrected ledger balance (with PE amount fixes) for the balance card
+  const ledgerFinalBalances = useMemo(() => {
+    if (!displayEntries.length) return null;
+    const ascending = sortAsc ? displayEntries : [...displayEntries].reverse();
+    const byCurrency = new Map<string, number>();
+    for (const e of ascending) {
+      byCurrency.set(e.balanceCurrency, e.balance);
+    }
+    const balances: CurrencyBalance[] = Array.from(byCurrency.entries())
+      .map(([currency, amount]) => ({ currency, amount }))
+      .filter((b) => Math.abs(b.amount) > 0.005);
+    return balances;
+  }, [displayEntries, sortAsc]);
+
+  const effectiveCurrencyBalances =
+    ledgerFinalBalances && ledgerFinalBalances.length > 0
+      ? ledgerFinalBalances
+      : currencyBalances.length === 0 && computedFromLedger
+        ? computedFromLedger.balances
+        : currencyBalances;
+
+  // Sync corrected balance to parent (sidebar) when ledger computes it
+  // Use ref for callback to avoid infinite re-render loop
+  const balanceUpdateRef = useRef(onBalanceUpdate);
+  balanceUpdateRef.current = onBalanceUpdate;
+  useEffect(() => {
+    if (ledgerFinalBalances && ledgerFinalBalances.length > 0 && balanceUpdateRef.current) {
+      balanceUpdateRef.current(ledgerFinalBalances);
+    }
+  }, [ledgerFinalBalances]);
 
   const formattedBalance =
     effectiveBalance != null
       ? formatCurrency(Math.abs(effectiveBalance), currencySymbol, symbolOnRight)
       : null;
-
-  const balanceLabel = partyType === "Customer" ? tCustomers("receivable") : tVendors("payable");
 
   const newInvoiceHref =
     partyType === "Supplier"
@@ -259,201 +432,216 @@ export function PartyDetailPanel({
 
   return (
     <>
-      <div className={cn("h-full flex flex-col gap-0 min-h-0", className)}>
-        {/* sr-only a11y title */}
-        <span className="sr-only">
-          {partyDisplayName} — {partyType} details
-        </span>
-
-        <div className="flex flex-col gap-4 p-6 pb-4">
-          {/* Avatar + name/ID block + edit/delete */}
+      <div className={cn("h-full flex flex-col min-h-0", className)}>
+        {/* ── Compact header: name + balance + actions ── */}
+        <div className="px-4 py-3 border-b shrink-0">
           <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10">
-              <AvatarFallback className="bg-muted text-muted-foreground text-sm font-medium">
+            <Avatar className="h-9 w-9 shrink-0">
+              <AvatarFallback className="bg-muted text-muted-foreground text-xs font-medium">
                 {getInitials(partyDisplayName)}
               </AvatarFallback>
             </Avatar>
-            <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-base font-bold leading-tight truncate">{partyDisplayName}</span>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-xs text-muted-foreground truncate">{partyName}</span>
-                <Badge variant="secondary" className="text-xs py-0 h-4">
-                  {partyType === "Customer" ? tCustomers("customer") : tVendors("vendor")}
-                </Badge>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold truncate">{partyDisplayName}</span>
                 {partyCurrency && (
-                  <Badge variant="outline" className="text-xs py-0 h-4 font-mono">
+                  <Badge variant="outline" className="text-[10px] py-0 h-3.5 font-mono shrink-0">
                     {partyCurrency}
                   </Badge>
                 )}
-              </div>
-            </div>
-            {(onEdit || onDelete) && (
-              <div className="flex items-center gap-1 flex-shrink-0">
-                {onEdit && (
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
-                    <Pencil className="h-4 w-4" />
-                    <span className="sr-only">{tCommon("edit")}</span>
-                  </Button>
-                )}
-                {onDelete && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive"
-                    onClick={onDelete}
+                {partnerLink && (
+                  <Link
+                    href={`/partners/${encodeURIComponent(partyType === "Customer" ? partyName : partnerLink)}`}
                   >
-                    <Trash2 className="h-4 w-4" />
-                    <span className="sr-only">{tCommon("delete")}</span>
-                  </Button>
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] py-0 h-3.5 text-blue-700 border-blue-300 bg-blue-50 dark:text-blue-400 dark:border-blue-800 dark:bg-blue-950/30 cursor-pointer shrink-0"
+                    >
+                      <Handshake className="size-2.5 mr-0.5" />
+                      Partner
+                    </Badge>
+                  </Link>
                 )}
               </div>
-            )}
+              <span className="text-[11px] text-muted-foreground">{partyName}</span>
+            </div>
+            <div className="flex items-center gap-0.5 shrink-0">
+              {onEdit && (
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onEdit}>
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              {onDelete && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-destructive"
+                  onClick={onDelete}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
           </div>
 
-          {/* Balance card */}
-          <Card>
-            <CardContent className="p-4">
-              {effectiveBalance == null ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-7 w-48" />
-                  <Skeleton className="h-3 w-28" />
-                </div>
-              ) : (
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">
-                      {partyType === "Customer"
-                        ? tCustomers("outstandingBalance")
-                        : tVendors("outstandingBalance")}
-                    </p>
-                    {effectiveCurrencyBalances.length >= 1 ? (
-                      <>
-                        <div className="flex flex-col gap-0.5">
-                          {effectiveCurrencyBalances.map((b) => {
-                            const info = currencyMap?.get(b.currency);
-                            return (
-                              <p
-                                key={b.currency}
-                                className={cn(
-                                  "font-bold tabular-nums",
-                                  effectiveCurrencyBalances.length > 1 ? "text-lg" : "text-2xl",
-                                  b.amount > 0
-                                    ? "text-red-600"
-                                    : b.amount < 0
-                                      ? "text-green-600"
-                                      : "",
-                                )}
-                              >
-                                {formatInvoiceCurrency(Math.abs(b.amount), b.currency, info)}
-                              </p>
-                            );
-                          })}
-                        </div>
-                        {effectiveCurrencyBalances.length > 1 && (
-                          <p className="text-xs text-muted-foreground mt-1.5 border-t pt-1.5">
-                            {tInvoices("total")} ≈ {formattedBalance}
-                          </p>
-                        )}
-                      </>
-                    ) : (
-                      <p
-                        className={
-                          effectiveBalance > 0
-                            ? "text-2xl font-bold text-red-600 tabular-nums"
-                            : effectiveBalance < 0
-                              ? "text-2xl font-bold text-green-600 tabular-nums"
-                              : "text-2xl font-bold tabular-nums"
-                        }
-                      >
-                        {formattedBalance}
-                      </p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {balanceLabel} · {tCommon("asOfToday")}
-                    </p>
-                  </div>
-                  <div
-                    className={
-                      effectiveBalance > 0
-                        ? "text-red-600"
-                        : effectiveBalance < 0
-                          ? "text-green-600"
-                          : "text-muted-foreground"
-                    }
-                  >
-                    {effectiveBalance > 0 ? (
-                      <ArrowUpRight className="h-5 w-5" />
-                    ) : effectiveBalance < 0 ? (
-                      <ArrowDownLeft className="h-5 w-5" />
-                    ) : null}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Action buttons */}
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" asChild>
-              <Link href={newOrderHref}>
-                <Plus className="h-4 w-4 mr-1" />
-                {tCommon("newOrder")}
-              </Link>
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link href={newInvoiceHref}>
-                <Plus className="h-4 w-4 mr-1" />
-                {tCommon("newInvoice")}
-              </Link>
-            </Button>
-            <Button size="sm" asChild>
-              <Link
-                href={
-                  partyType === "Customer"
-                    ? `/payments/receive?customer=${encodeURIComponent(partyName)}`
-                    : `/payments/pay?supplier=${encodeURIComponent(partyName)}`
-                }
-              >
-                {partyType === "Customer" ? tCustomers("receivePayment") : tVendors("makePayment")}
-              </Link>
-            </Button>
+          {/* Balance — compact inline */}
+          <div className="flex items-center justify-between mt-2">
+            <div className="flex items-baseline gap-2 min-w-0">
+              {effectiveCurrencyBalances.length >= 1 ? (
+                effectiveCurrencyBalances.map((b) => {
+                  const info = currencyMap?.get(b.currency);
+                  return (
+                    <span
+                      key={b.currency}
+                      className={cn(
+                        "text-lg font-bold tabular-nums",
+                        b.amount > 0 ? "text-red-600" : b.amount < 0 ? "text-green-600" : "",
+                      )}
+                    >
+                      {formatInvoiceCurrency(Math.abs(b.amount), b.currency, info)}
+                    </span>
+                  );
+                })
+              ) : formattedBalance ? (
+                <span
+                  className={cn(
+                    "text-lg font-bold tabular-nums",
+                    effectiveBalance && effectiveBalance > 0
+                      ? "text-red-600"
+                      : effectiveBalance && effectiveBalance < 0
+                        ? "text-green-600"
+                        : "",
+                  )}
+                >
+                  {formattedBalance}
+                </span>
+              ) : null}
+            </div>
+            <div className="flex gap-1 shrink-0">
+              <Button variant="outline" size="sm" className="h-7 text-xs px-2" asChild>
+                <Link href={newOrderHref}>
+                  <Plus className="h-3 w-3 mr-0.5" />
+                  {tCommon("newOrder")}
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" className="h-7 text-xs px-2" asChild>
+                <Link href={newInvoiceHref}>
+                  <Plus className="h-3 w-3 mr-0.5" />
+                  {tCommon("newInvoice")}
+                </Link>
+              </Button>
+              <Button size="sm" className="h-7 text-xs px-2" asChild>
+                <Link
+                  href={
+                    partyType === "Customer"
+                      ? `/payments/receive?customer=${encodeURIComponent(partyName)}`
+                      : `/payments/pay?supplier=${encodeURIComponent(partyName)}`
+                  }
+                >
+                  {partyType === "Customer"
+                    ? tCustomers("receivePayment")
+                    : tVendors("makePayment")}
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
 
-        <Separator />
-
-        {/* Draft invoices */}
-        {draftInvoices.length > 0 && (
-          <div className="px-4 py-3 space-y-1.5">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Drafts ({draftInvoices.length})
-            </p>
-            {draftInvoices.map((d) => {
-              const info = currencyMap?.get(d.currency);
-              return (
-                <Link
-                  key={d.name}
-                  href={`/${partyType === "Customer" ? "sales-invoices" : "purchase-invoices"}/${encodeURIComponent(d.name)}`}
-                  className="flex items-center justify-between rounded-md px-2 py-1.5 text-xs hover:bg-accent/50 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="text-[10px] h-4 px-1.5">Draft</Badge>
-                    <span className="font-mono text-muted-foreground">{d.name}</span>
-                    <span className="text-muted-foreground">{formatDate(d.posting_date)}</span>
-                  </div>
-                  <span className="font-medium tabular-nums">
-                    {formatInvoiceCurrency(d.grand_total, d.currency, info)}
-                  </span>
-                </Link>
-              );
-            })}
-            <Separator />
-          </div>
-        )}
-
-        {/* Ledger table */}
+        {/* ── All transactions in one scrollable area ── */}
         <ScrollArea className="flex-1 px-4 pb-4">
+          {/* Drafts — amber tint */}
+          {(draftOrders.length > 0 || draftInvoices.length > 0) && (
+            <div className="mb-2 rounded-md bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30 p-2 space-y-1">
+              <p className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
+                Drafts ({draftOrders.length + draftInvoices.length})
+              </p>
+              {draftOrders.map((d) => {
+                const info = currencyMap?.get(d.currency);
+                const href =
+                  partyType === "Customer"
+                    ? `/sales-orders/${encodeURIComponent(d.name)}`
+                    : `/purchase-orders/${encodeURIComponent(d.name)}`;
+                return (
+                  <Link
+                    key={d.name}
+                    href={href}
+                    className="flex items-center justify-between rounded px-1.5 py-1 text-xs hover:bg-amber-100/50 dark:hover:bg-amber-900/20"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Badge
+                        variant="outline"
+                        className="text-[9px] h-3.5 px-1 text-blue-600 border-blue-300"
+                      >
+                        SO
+                      </Badge>
+                      <span className="font-mono text-muted-foreground text-[11px]">{d.name}</span>
+                    </div>
+                    <span className="font-medium tabular-nums text-[11px]">
+                      {formatInvoiceCurrency(d.grand_total, d.currency, info)}
+                    </span>
+                  </Link>
+                );
+              })}
+              {draftInvoices.map((d) => {
+                const info = currencyMap?.get(d.currency);
+                return (
+                  <Link
+                    key={d.name}
+                    href={`/${partyType === "Customer" ? "sales-invoices" : "purchase-invoices"}/${encodeURIComponent(d.name)}`}
+                    className="flex items-center justify-between rounded px-1.5 py-1 text-xs hover:bg-amber-100/50 dark:hover:bg-amber-900/20"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant="secondary" className="text-[9px] h-3.5 px-1">
+                        SI
+                      </Badge>
+                      <span className="font-mono text-muted-foreground text-[11px]">{d.name}</span>
+                    </div>
+                    <span className="font-medium tabular-nums text-[11px]">
+                      {formatInvoiceCurrency(d.grand_total, d.currency, info)}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Recent orders — compact */}
+          {recentOrders.length > 0 && (
+            <div className="mb-2 space-y-1">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                {partyType === "Customer" ? "Orders" : "PO"} ({recentOrders.length})
+              </p>
+              {recentOrders.map((o) => {
+                const info = currencyMap?.get(o.currency);
+                const href =
+                  partyType === "Customer"
+                    ? `/sales-orders/${encodeURIComponent(o.name)}`
+                    : `/purchase-orders/${encodeURIComponent(o.name)}`;
+                return (
+                  <Link
+                    key={o.name}
+                    href={href}
+                    className="flex items-center justify-between rounded px-1.5 py-1 text-xs hover:bg-accent/50"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Badge
+                        variant="outline"
+                        className={`text-[9px] h-3.5 px-1 ${o.status === "Completed" ? "text-green-600 border-green-300" : o.status === "To Deliver and Bill" || o.status === "To Bill" ? "text-amber-600 border-amber-300" : "text-blue-600 border-blue-300"}`}
+                      >
+                        {o.status}
+                      </Badge>
+                      <span className="font-mono text-muted-foreground text-[11px]">{o.name}</span>
+                    </div>
+                    <span className="font-medium tabular-nums text-[11px]">
+                      {formatInvoiceCurrency(o.grand_total, o.currency, info)}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Ledger */}
           <Table>
             <TableHeader>
               <TableRow>
