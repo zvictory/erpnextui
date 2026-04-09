@@ -39,6 +39,7 @@ function buildAccounts(data: WriteCheckFormData): JournalEntryAccount[] {
       doctype: "Journal Entry Account",
       account: l.account,
       debit_in_account_currency: roundTo2(l.amount),
+      user_remark: l.memo,
     }));
     accounts.push({
       doctype: "Journal Entry Account",
@@ -58,6 +59,7 @@ function buildAccounts(data: WriteCheckFormData): JournalEntryAccount[] {
     account: l.account,
     debit_in_account_currency: roundTo2(l.amount),
     exchange_rate: R,
+    user_remark: l.memo,
   }));
   accounts.push({
     doctype: "Journal Entry Account",

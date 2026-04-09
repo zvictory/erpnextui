@@ -269,12 +269,14 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
           (a) => a.debit_in_account_currency && a.debit_in_account_currency > 0,
         );
         if (debitAccounts.length > 0) {
+          // Prefer per-line user_remark (new format), fall back to parsed parent memos (legacy)
+          const hasPerLineMemos = debitAccounts.some((a) => a.user_remark);
           setExpenseLines(
             debitAccounts.map((a, i) => ({
               id: crypto.randomUUID(),
               account: a.account,
               amount: String(a.debit_in_account_currency || 0),
-              memo: lineMemos[i] ?? "",
+              memo: hasPerLineMemos ? (a.user_remark ?? "") : (lineMemos[i] ?? ""),
             })),
           );
         } else {

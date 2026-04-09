@@ -7,6 +7,7 @@ export interface JournalEntryAccount {
   credit_in_account_currency?: number;
   account_currency?: string;
   exchange_rate?: number;
+  user_remark?: string;
 }
 
 export interface JournalEntry {
