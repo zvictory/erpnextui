@@ -39,8 +39,10 @@
       "manufacturing": "Ishlab chiqarish",
       "warehouse": "Sklad",
       "factory": "Zavod",
-      "oee": "OEE"
+      "oee": "OEE",
+      "admin": "Administratsiya"
     },
+    "permissions": "Ruxsatlar",
     "oeeDashboard": "OEE panel",
     "layoutEditor": "Layout tahrirlash",
     "whDashboard": "Jarayon",

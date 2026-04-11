@@ -44,6 +44,7 @@ import {
   Activity,
   Handshake,
   Tags,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -59,8 +60,10 @@ import {
 } from "@/components/ui/sidebar";
 import { useTranslations } from "next-intl";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useMyPermissions } from "@/hooks/use-my-permissions";
 import { useEnabledModules } from "@/hooks/use-enabled-modules";
 import { isSidebarGroupEnabled } from "@/lib/module-groups";
+import type { CapabilityId } from "@/lib/permissions/capabilities";
 
 const mainNav = [
   { tKey: "dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -116,19 +119,19 @@ const warehouseNav = [
   { tKey: "whInvoicing", href: "/warehouse/invoicing", icon: FileText },
 ];
 
-const factoryNav = [
-  { tKey: "oeeDashboard", href: "/factory", icon: Box },
-  { tKey: "layoutEditor", href: "/factory/editor", icon: PenTool },
+const factoryNav: NavItem[] = [
+  { tKey: "oeeDashboard", href: "/factory", icon: Box, capability: "production.read", scopeDim: "line" },
+  { tKey: "layoutEditor", href: "/factory/editor", icon: PenTool, capability: "lines.manage", scopeDim: "line" },
 ];
 
-const oeeNav = [
-  { tKey: "mfgDashboard", href: "/manufacturing", icon: BarChart3 },
-  { tKey: "production", href: "/manufacturing/production", icon: Factory },
-  { tKey: "downtime", href: "/manufacturing/downtime", icon: Clock },
-  { tKey: "energy", href: "/manufacturing/energy", icon: Zap },
-  { tKey: "mfgProducts", href: "/manufacturing/products", icon: Package },
-  { tKey: "mfgLines", href: "/manufacturing/lines", icon: GitBranch },
-  { tKey: "mfgSettings", href: "/manufacturing/settings", icon: Settings },
+const oeeNav: NavItem[] = [
+  { tKey: "mfgDashboard", href: "/manufacturing", icon: BarChart3, capability: "dashboard.read" },
+  { tKey: "production", href: "/manufacturing/production", icon: Factory, capability: "production.read", scopeDim: "line" },
+  { tKey: "downtime", href: "/manufacturing/downtime", icon: Clock, capability: "downtime.read", scopeDim: "line" },
+  { tKey: "energy", href: "/manufacturing/energy", icon: Zap, capability: "energy.read" },
+  { tKey: "mfgProducts", href: "/manufacturing/products", icon: Package, capability: "product.read" },
+  { tKey: "mfgLines", href: "/manufacturing/lines", icon: GitBranch, capability: "lines.manage", scopeDim: "line" },
+  { tKey: "mfgSettings", href: "/manufacturing/settings", icon: Settings, capability: "settings.read" },
 ];
 
 const manufacturingNav = [
@@ -137,6 +140,10 @@ const manufacturingNav = [
   { tKey: "bom", href: "/manufacturing/bom", icon: Layers },
   { tKey: "jobCards", href: "/manufacturing/job-cards", icon: Timer },
   { tKey: "workstations", href: "/manufacturing/workstations", icon: Monitor },
+];
+
+const adminNav: NavItem[] = [
+  { tKey: "permissions", href: "/settings/permissions", icon: ShieldCheck, capability: "platform.admin" },
 ];
 
 const reportNav = [
@@ -157,17 +164,33 @@ type NavItem = {
   icon: React.ComponentType;
   disabled?: boolean;
   doctype?: string;
+  capability?: CapabilityId;
+  scopeDim?: "line" | "warehouse" | "company";
 };
 
 function NavGroup({ labelKey, items }: { labelKey: string; items: NavItem[] }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const { isLoading, canRead } = usePermissions();
+  const { data: myPerms, isLoading: grantsLoading } = useMyPermissions();
+
+  const hasCapability = (item: NavItem): boolean => {
+    if (!item.capability) return true;
+    if (myPerms.isSuperuser) return true;
+    if (!myPerms.capabilities.has(item.capability)) return false;
+    if (!item.scopeDim) return true;
+    const scope = myPerms.allowedScopes[item.scopeDim];
+    if (!scope || scope.size === 0) return false;
+    return true;
+  };
 
   // While loading, show all items to avoid a flash of empty sidebar
-  const visibleItems = isLoading
-    ? items
-    : items.filter((item) => !item.doctype || canRead(item.doctype));
+  const visibleItems =
+    isLoading || grantsLoading
+      ? items
+      : items.filter(
+          (item) => (!item.doctype || canRead(item.doctype)) && hasCapability(item),
+        );
 
   if (visibleItems.length === 0) return null;
 
@@ -254,6 +277,7 @@ export function AppSidebar() {
         {isSidebarGroupEnabled("reports", enabledModules) && (
           <NavGroup labelKey="reports" items={reportNav} />
         )}
+        <NavGroup labelKey="admin" items={adminNav} />
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border/60" />

@@ -39,8 +39,10 @@
       "manufacturing": "Manufacturing",
       "warehouse": "Warehouse",
       "factory": "Factory",
-      "oee": "OEE"
+      "oee": "OEE",
+      "admin": "Administration"
     },
+    "permissions": "Permissions",
     "oeeDashboard": "OEE Dashboard",
     "layoutEditor": "Layout Editor",
     "whDashboard": "Pipeline",

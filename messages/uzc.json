@@ -39,8 +39,10 @@
       "manufacturing": "Ишлаб чиқариш",
       "warehouse": "Склад",
       "factory": "Завод",
-      "oee": "OEE"
+      "oee": "OEE",
+      "admin": "Администрация"
     },
+    "permissions": "Рухсатлар",
     "oeeDashboard": "OEE панел",
     "layoutEditor": "Layout таҳрирлаш",
     "whDashboard": "Жараён",

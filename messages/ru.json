@@ -39,8 +39,10 @@
       "manufacturing": "Производство",
       "warehouse": "Склад",
       "factory": "Завод",
-      "oee": "OEE"
+      "oee": "OEE",
+      "admin": "Администрирование"
     },
+    "permissions": "Права доступа",
     "oeeDashboard": "Панель OEE",
     "layoutEditor": "Редактор макета",
     "whDashboard": "Воронка",
