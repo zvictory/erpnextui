@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { listBuiltinCapabilities } from "@/lib/permissions/capabilities";
 import { SCOPE_WILDCARD } from "@/lib/permissions/constants";
 import { useAdminUserGrants, useUpdateUserGrants } from "@/hooks/use-admin-permissions";
@@ -31,6 +32,10 @@ type Props = {
 };
 
 export function GrantEditor({ userEmail, onClose }: Props) {
+  const t = useTranslations();
+  const tPerm = useTranslations("permissions");
+  const tModule = useTranslations("module");
+  const tScope = useTranslations("scopeDim");
   const open = !!userEmail;
   const { data: currentGrants, isLoading } = useAdminUserGrants(userEmail);
   const { data: lines = [] } = useQuery({
@@ -78,10 +83,10 @@ export function GrantEditor({ userEmail, onClose }: Props) {
     });
     try {
       const result = await updateGrants.mutateAsync({ userEmail, grants });
-      toast.success(`Saved — ${result.added} added, ${result.removed} removed`);
+      toast.success(tPerm("saveToast", { added: result.added, removed: result.removed }));
       onClose();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Save failed");
+      toast.error(err instanceof Error ? err.message : tPerm("saveFailed"));
     }
   };
 
@@ -89,7 +94,7 @@ export function GrantEditor({ userEmail, onClose }: Props) {
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Edit permissions</SheetTitle>
+          <SheetTitle>{tPerm("editTitle")}</SheetTitle>
           <SheetDescription>{userEmail}</SheetDescription>
         </SheetHeader>
 
@@ -104,7 +109,7 @@ export function GrantEditor({ userEmail, onClose }: Props) {
             {[...byModule.entries()].map(([module, caps]) => (
               <section key={module} className="space-y-2">
                 <h3 className="text-sm font-semibold uppercase text-muted-foreground">
-                  {module}
+                  {tModule(module)}
                 </h3>
                 <div className="space-y-3">
                   {caps.map((cap) => {
@@ -116,9 +121,9 @@ export function GrantEditor({ userEmail, onClose }: Props) {
                             checked={selected.has(k)}
                             onCheckedChange={() => toggleGrant(k)}
                           />
-                          <label className="flex-1 text-sm">{cap.id}</label>
+                          <label className="flex-1 text-sm">{t(cap.labelKey)}</label>
                           <Badge variant="outline" className="text-xs">
-                            unscoped
+                            {tPerm("unscoped")}
                           </Badge>
                         </div>
                       );
@@ -133,9 +138,9 @@ export function GrantEditor({ userEmail, onClose }: Props) {
                     return (
                       <div key={cap.id} className="rounded border border-border/60 p-2">
                         <div className="flex items-center gap-2">
-                          <span className="flex-1 text-sm font-medium">{cap.id}</span>
+                          <span className="flex-1 text-sm font-medium">{t(cap.labelKey)}</span>
                           <Badge variant="outline" className="text-xs">
-                            {cap.scopeDim}
+                            {tScope(cap.scopeDim)}
                           </Badge>
                         </div>
                         <div className="mt-2 flex flex-wrap gap-3">
@@ -144,7 +149,7 @@ export function GrantEditor({ userEmail, onClose }: Props) {
                               checked={selected.has(wildcardKey)}
                               onCheckedChange={() => toggleGrant(wildcardKey)}
                             />
-                            All ({cap.scopeDim}s)
+                            {tPerm("allOf", { dim: tScope(cap.scopeDim) })}
                           </label>
                           {cap.scopeDim === "line" &&
                             lines.map((line) => {
@@ -175,10 +180,10 @@ export function GrantEditor({ userEmail, onClose }: Props) {
 
         <SheetFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {tPerm("cancel")}
           </Button>
           <Button onClick={handleSave} disabled={updateGrants.isPending}>
-            {updateGrants.isPending ? "Saving…" : "Save"}
+            {updateGrants.isPending ? tPerm("saving") : tPerm("save")}
           </Button>
         </SheetFooter>
       </SheetContent>

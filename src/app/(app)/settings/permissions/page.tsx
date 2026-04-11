@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { PermissionGuard } from "@/components/shared/permission-guard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -19,21 +20,20 @@ import { GrantEditor } from "@/components/permissions/grant-editor";
 import { formatDate } from "@/lib/formatters";
 
 export default function PermissionsAdminPage() {
+  const t = useTranslations("permissions");
   return (
     <PermissionGuard capability="platform.admin">
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Permissions</h1>
-          <p className="text-muted-foreground">
-            Manage capability grants and review the audit log.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
+          <p className="text-muted-foreground">{t("description")}</p>
         </div>
 
         <Tabs defaultValue="users">
           <TabsList>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="templates">Role Templates</TabsTrigger>
-            <TabsTrigger value="audit">Audit Log</TabsTrigger>
+            <TabsTrigger value="users">{t("tabs.users")}</TabsTrigger>
+            <TabsTrigger value="templates">{t("tabs.templates")}</TabsTrigger>
+            <TabsTrigger value="audit">{t("tabs.audit")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="mt-4">
@@ -41,9 +41,7 @@ export default function PermissionsAdminPage() {
           </TabsContent>
 
           <TabsContent value="templates" className="mt-4">
-            <div className="text-sm text-muted-foreground">
-              Role templates — coming soon. For now, grant capabilities per user.
-            </div>
+            <div className="text-sm text-muted-foreground">{t("templatesComingSoon")}</div>
           </TabsContent>
 
           <TabsContent value="audit" className="mt-4">
@@ -56,6 +54,7 @@ export default function PermissionsAdminPage() {
 }
 
 function UsersTab() {
+  const t = useTranslations("permissions");
   const { data: users = [], isLoading } = useAdminPermissionUsers();
   const [editingUser, setEditingUser] = useState<string | null>(null);
 
@@ -73,9 +72,9 @@ function UsersTab() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Email</TableHead>
-            <TableHead className="text-right">Grants</TableHead>
-            <TableHead>Last granted</TableHead>
+            <TableHead>{t("columns.email")}</TableHead>
+            <TableHead className="text-right">{t("columns.grants")}</TableHead>
+            <TableHead>{t("columns.lastGranted")}</TableHead>
             <TableHead className="w-24" />
           </TableRow>
         </TableHeader>
@@ -83,7 +82,7 @@ function UsersTab() {
           {users.length === 0 ? (
             <TableRow>
               <TableCell colSpan={4} className="text-center text-muted-foreground">
-                No user grants yet. Select a user below to grant capabilities.
+                {t("noUsers")}
               </TableCell>
             </TableRow>
           ) : (
@@ -96,7 +95,7 @@ function UsersTab() {
                 </TableCell>
                 <TableCell>
                   <Button size="sm" variant="outline" onClick={() => setEditingUser(u.userEmail)}>
-                    Edit
+                    {t("editBtn")}
                   </Button>
                 </TableCell>
               </TableRow>
@@ -106,8 +105,11 @@ function UsersTab() {
       </Table>
 
       <div className="mt-4">
-        <Button variant="outline" onClick={() => setEditingUser(prompt("User email") ?? null)}>
-          Grant new user…
+        <Button
+          variant="outline"
+          onClick={() => setEditingUser(prompt(t("columns.email")) ?? null)}
+        >
+          {t("grantNew")}
         </Button>
       </div>
 
@@ -117,6 +119,7 @@ function UsersTab() {
 }
 
 function AuditTab() {
+  const t = useTranslations("permissions");
   const { data: rows = [], isLoading } = useAdminAuditLog("enforce");
 
   if (isLoading) {
@@ -127,19 +130,19 @@ function AuditTab() {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>When</TableHead>
-          <TableHead>Event</TableHead>
-          <TableHead>User</TableHead>
-          <TableHead>Capability</TableHead>
-          <TableHead>Scope</TableHead>
-          <TableHead>Actor</TableHead>
+          <TableHead>{t("columns.when")}</TableHead>
+          <TableHead>{t("columns.event")}</TableHead>
+          <TableHead>{t("columns.user")}</TableHead>
+          <TableHead>{t("columns.capability")}</TableHead>
+          <TableHead>{t("columns.scope")}</TableHead>
+          <TableHead>{t("columns.actor")}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {rows.length === 0 ? (
           <TableRow>
             <TableCell colSpan={6} className="text-center text-muted-foreground">
-              No audit events recorded.
+              {t("noAudit")}
             </TableCell>
           </TableRow>
         ) : (

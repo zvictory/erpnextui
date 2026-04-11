@@ -1244,5 +1244,99 @@
     "customersCount": "{count} mijoz",
     "totalOutstanding": "Umumiy qarzdorlik",
     "totalCustomers": "Jami mijozlar"
+  },
+  "permissions": {
+    "title": "Ruxsatlar",
+    "description": "Imkoniyatlar ruxsatlarini boshqaring va audit jurnalini ko'rib chiqing.",
+    "tabs": {
+      "users": "Foydalanuvchilar",
+      "templates": "Rol shablonlari",
+      "audit": "Audit jurnali"
+    },
+    "columns": {
+      "email": "Elektron pochta",
+      "grants": "Ruxsatlar",
+      "lastGranted": "So'nggi ruxsat",
+      "when": "Qachon",
+      "event": "Hodisa",
+      "user": "Foydalanuvchi",
+      "capability": "Imkoniyat",
+      "scope": "Qamrov",
+      "actor": "Kim tomonidan"
+    },
+    "editBtn": "Tahrirlash",
+    "grantNew": "Yangi foydalanuvchiga ruxsat berish…",
+    "noUsers": "Hozircha foydalanuvchi ruxsatlari yo'q.",
+    "noAudit": "Audit hodisalari yo'q.",
+    "templatesComingSoon": "Rol shablonlari — tez orada. Hozircha har bir foydalanuvchiga alohida ruxsat bering.",
+    "unscoped": "qamrovsiz",
+    "allOf": "Barcha ({dim})",
+    "save": "Saqlash",
+    "saving": "Saqlanmoqda…",
+    "cancel": "Bekor qilish",
+    "editTitle": "Ruxsatlarni tahrirlash",
+    "saveToast": "Saqlandi — {added} qo'shildi, {removed} olib tashlandi",
+    "saveFailed": "Saqlash amalga oshmadi"
+  },
+  "cap": {
+    "platform": {
+      "admin": "Platforma administratori"
+    },
+    "production": {
+      "read": "Ishlab chiqarish ishlarini ko'rish",
+      "create": "Ishlab chiqarish ishlarini yaratish",
+      "update": "Ishlab chiqarish ishlarini tahrirlash",
+      "submit": "Ishlab chiqarish ishlarini tasdiqlash"
+    },
+    "downtime": {
+      "read": "To'xtalishlarni ko'rish",
+      "write": "To'xtalishlarni qayd etish"
+    },
+    "energy": {
+      "read": "Energiya ko'rsatkichlarini ko'rish",
+      "write": "Energiya ko'rsatkichlarini qayd etish"
+    },
+    "lines": {
+      "manage": "Ishlab chiqarish liniyalarini boshqarish"
+    },
+    "product": {
+      "read": "Mahsulotlarni ko'rish",
+      "write": "Mahsulotlarni tahrirlash"
+    },
+    "sales_invoice": {
+      "read": "Sotuv hisob-fakturalarini ko'rish",
+      "create": "Sotuv hisob-fakturalarini yaratish",
+      "submit": "Sotuv hisob-fakturalarini tasdiqlash"
+    },
+    "purchase_invoice": {
+      "read": "Xarid hisob-fakturalarini ko'rish",
+      "create": "Xarid hisob-fakturalarini yaratish"
+    },
+    "warehouse": {
+      "read": "Omborlarni ko'rish",
+      "manage": "Omborlarni boshqarish"
+    },
+    "stock_entry": {
+      "create": "Ombor operatsiyalarini yaratish"
+    },
+    "dashboard": {
+      "read": "Boshqaruv panelini ko'rish"
+    },
+    "settings": {
+      "read": "Sozlamalarni ko'rish",
+      "write": "Sozlamalarni tahrirlash"
+    }
+  },
+  "module": {
+    "platform": "Platforma",
+    "manufacturing": "Ishlab chiqarish",
+    "sales": "Sotuv",
+    "purchases": "Xarid",
+    "stock": "Ombor"
+  },
+  "scopeDim": {
+    "line": "liniya",
+    "warehouse": "ombor",
+    "company": "kompaniya"
   }
 }

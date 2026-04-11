@@ -1307,5 +1307,99 @@
     "customersCount": "{count} customers",
     "totalOutstanding": "Total Outstanding",
     "totalCustomers": "Total Customers"
+  },
+  "permissions": {
+    "title": "Permissions",
+    "description": "Manage capability grants and review the audit log.",
+    "tabs": {
+      "users": "Users",
+      "templates": "Role Templates",
+      "audit": "Audit Log"
+    },
+    "columns": {
+      "email": "Email",
+      "grants": "Grants",
+      "lastGranted": "Last granted",
+      "when": "When",
+      "event": "Event",
+      "user": "User",
+      "capability": "Capability",
+      "scope": "Scope",
+      "actor": "Actor"
+    },
+    "editBtn": "Edit",
+    "grantNew": "Grant new user…",
+    "noUsers": "No user grants yet.",
+    "noAudit": "No audit events recorded.",
+    "templatesComingSoon": "Role templates — coming soon. For now, grant capabilities per user.",
+    "unscoped": "unscoped",
+    "allOf": "All ({dim})",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "editTitle": "Edit permissions",
+    "saveToast": "Saved — {added} added, {removed} removed",
+    "saveFailed": "Save failed"
+  },
+  "cap": {
+    "platform": {
+      "admin": "Platform administrator"
+    },
+    "production": {
+      "read": "View production runs",
+      "create": "Create production runs",
+      "update": "Edit production runs",
+      "submit": "Submit production runs"
+    },
+    "downtime": {
+      "read": "View downtime events",
+      "write": "Record downtime events"
+    },
+    "energy": {
+      "read": "View energy readings",
+      "write": "Record energy readings"
+    },
+    "lines": {
+      "manage": "Manage production lines"
+    },
+    "product": {
+      "read": "View products",
+      "write": "Edit products"
+    },
+    "sales_invoice": {
+      "read": "View sales invoices",
+      "create": "Create sales invoices",
+      "submit": "Submit sales invoices"
+    },
+    "purchase_invoice": {
+      "read": "View purchase invoices",
+      "create": "Create purchase invoices"
+    },
+    "warehouse": {
+      "read": "View warehouses",
+      "manage": "Manage warehouses"
+    },
+    "stock_entry": {
+      "create": "Create stock entries"
+    },
+    "dashboard": {
+      "read": "View dashboard"
+    },
+    "settings": {
+      "read": "View settings",
+      "write": "Edit settings"
+    }
+  },
+  "module": {
+    "platform": "Platform",
+    "manufacturing": "Manufacturing",
+    "sales": "Sales",
+    "purchases": "Purchases",
+    "stock": "Stock"
+  },
+  "scopeDim": {
+    "line": "line",
+    "warehouse": "warehouse",
+    "company": "company"
   }
 }
