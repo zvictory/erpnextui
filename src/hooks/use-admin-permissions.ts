@@ -93,6 +93,121 @@ export function useUpdateUserGrants() {
   });
 }
 
+export type AdminRoleTemplateItem = {
+  id?: number;
+  templateId?: string;
+  capabilityId: string;
+  defaultScopeDim: string;
+};
+
+export type AdminRoleTemplate = {
+  id: string;
+  tenant?: string;
+  name: string;
+  description: string | null;
+  createdAt: string | null;
+  items: AdminRoleTemplateItem[];
+};
+
+export function useAdminRoleTemplates() {
+  return useQuery({
+    queryKey: [...queryKeys.permissions.grants, "admin", "role-templates"] as const,
+    queryFn: async (): Promise<AdminRoleTemplate[]> => {
+      const resp = await fetch("/api/admin/permissions/role-templates", {
+        credentials: "include",
+      });
+      if (!resp.ok) throw new Error(`Failed: ${resp.status}`);
+      const json = await resp.json();
+      return json.templates ?? [];
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function useCreateRoleTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      name: string;
+      description?: string;
+      items: Array<{ capabilityId: string; defaultScopeDim: string }>;
+    }) => {
+      const resp = await fetch("/api/admin/permissions/role-templates", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error ?? `Failed: ${resp.status}`);
+      }
+      return resp.json() as Promise<{ id: string; itemsCount: number }>;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({
+        queryKey: [...queryKeys.permissions.grants, "admin", "role-templates"],
+      });
+    },
+  });
+}
+
+export function useUpdateRoleTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      name?: string;
+      description?: string | null;
+      items?: Array<{ capabilityId: string; defaultScopeDim: string }>;
+    }) => {
+      const { id, ...body } = input;
+      const resp = await fetch(
+        `/api/admin/permissions/role-templates/${encodeURIComponent(id)}`,
+        {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        },
+      );
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error ?? `Failed: ${resp.status}`);
+      }
+      return resp.json() as Promise<{ id: string }>;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({
+        queryKey: [...queryKeys.permissions.grants, "admin", "role-templates"],
+      });
+    },
+  });
+}
+
+export function useDeleteRoleTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const resp = await fetch(
+        `/api/admin/permissions/role-templates/${encodeURIComponent(id)}`,
+        { method: "DELETE", credentials: "include" },
+      );
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error ?? `Failed: ${resp.status}`);
+      }
+      return resp.json() as Promise<{ id: string }>;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({
+        queryKey: [...queryKeys.permissions.grants, "admin", "role-templates"],
+      });
+    },
+  });
+}
+
 export function useAdminAuditLog(source: "enforce" | "dryrun" = "enforce") {
   return useQuery({
     queryKey: [...queryKeys.permissions.grants, "admin", "audit", source] as const,

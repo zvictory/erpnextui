@@ -1331,7 +1331,6 @@
     "grantNew": "Grant new user…",
     "noUsers": "No user grants yet.",
     "noAudit": "No audit events recorded.",
-    "templatesComingSoon": "Role templates — coming soon. For now, grant capabilities per user.",
     "unscoped": "unscoped",
     "allOf": "All ({dim})",
     "save": "Save",
@@ -1339,7 +1338,27 @@
     "cancel": "Cancel",
     "editTitle": "Edit permissions",
     "saveToast": "Saved — {added} added, {removed} removed",
-    "saveFailed": "Save failed"
+    "saveFailed": "Save failed",
+    "tpl": {
+      "name": "Name",
+      "namePlaceholder": "e.g. Line Supervisor",
+      "description": "Description",
+      "capabilities": "Capabilities",
+      "itemsCount": "Capabilities",
+      "empty": "No role templates yet.",
+      "new": "New template",
+      "createTitle": "Create role template",
+      "editTitle": "Edit role template",
+      "editHint": "Bundles capabilities for fast onboarding. Scope values are set per user.",
+      "idLabel": "ID",
+      "idPlaceholder": "my-template",
+      "idHint": "Auto-generated from name if left blank. Must be unique per tenant.",
+      "nameRequired": "Name is required",
+      "createdToast": "Template created",
+      "updatedToast": "Template updated",
+      "delete": "Delete",
+      "deleteConfirm": "Delete template \"{name}\"?"
+    }
   },
   "cap": {
     "platform": {

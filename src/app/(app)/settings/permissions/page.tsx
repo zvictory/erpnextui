@@ -15,8 +15,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAdminAuditLog, useAdminPermissionUsers } from "@/hooks/use-admin-permissions";
+import {
+  useAdminAuditLog,
+  useAdminPermissionUsers,
+  useAdminRoleTemplates,
+  useDeleteRoleTemplate,
+  type AdminRoleTemplate,
+} from "@/hooks/use-admin-permissions";
 import { GrantEditor } from "@/components/permissions/grant-editor";
+import { TemplateEditor } from "@/components/permissions/template-editor";
 import { formatDate } from "@/lib/formatters";
 
 export default function PermissionsAdminPage() {
@@ -41,7 +48,7 @@ export default function PermissionsAdminPage() {
           </TabsContent>
 
           <TabsContent value="templates" className="mt-4">
-            <div className="text-sm text-muted-foreground">{t("templatesComingSoon")}</div>
+            <TemplatesTab />
           </TabsContent>
 
           <TabsContent value="audit" className="mt-4">
@@ -114,6 +121,109 @@ function UsersTab() {
       </div>
 
       <GrantEditor userEmail={editingUser} onClose={() => setEditingUser(null)} />
+    </>
+  );
+}
+
+function TemplatesTab() {
+  const t = useTranslations("permissions");
+  const { data: templates = [], isLoading } = useAdminRoleTemplates();
+  const deleteMut = useDeleteRoleTemplate();
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorMode, setEditorMode] = useState<"create" | "edit">("create");
+  const [editingTemplate, setEditingTemplate] = useState<AdminRoleTemplate | null>(null);
+
+  const openCreate = () => {
+    setEditorMode("create");
+    setEditingTemplate(null);
+    setEditorOpen(true);
+  };
+
+  const openEdit = (tpl: AdminRoleTemplate) => {
+    setEditorMode("edit");
+    setEditingTemplate(tpl);
+    setEditorOpen(true);
+  };
+
+  const handleDelete = async (tpl: AdminRoleTemplate) => {
+    if (!confirm(t("tpl.deleteConfirm", { name: tpl.name }))) return;
+    try {
+      await deleteMut.mutateAsync(tpl.id);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : t("saveFailed"));
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t("tpl.name")}</TableHead>
+            <TableHead>{t("tpl.description")}</TableHead>
+            <TableHead className="text-right">{t("tpl.itemsCount")}</TableHead>
+            <TableHead className="w-40" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {templates.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={4} className="text-center text-muted-foreground">
+                {t("tpl.empty")}
+              </TableCell>
+            </TableRow>
+          ) : (
+            templates.map((tpl) => (
+              <TableRow key={tpl.id}>
+                <TableCell className="font-medium">
+                  {tpl.name}
+                  <div className="text-xs text-muted-foreground font-mono">{tpl.id}</div>
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground">
+                  {tpl.description ?? "—"}
+                </TableCell>
+                <TableCell className="text-right">{tpl.items.length}</TableCell>
+                <TableCell className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => openEdit(tpl)}>
+                    {t("editBtn")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDelete(tpl)}
+                    disabled={deleteMut.isPending}
+                  >
+                    {t("tpl.delete")}
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+
+      <div className="mt-4">
+        <Button variant="outline" onClick={openCreate}>
+          {t("tpl.new")}
+        </Button>
+      </div>
+
+      {editorOpen && (
+        <TemplateEditor
+          mode={editorMode}
+          template={editingTemplate}
+          onClose={() => setEditorOpen(false)}
+        />
+      )}
     </>
   );
 }

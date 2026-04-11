@@ -1268,7 +1268,6 @@
     "grantNew": "Yangi foydalanuvchiga ruxsat berish…",
     "noUsers": "Hozircha foydalanuvchi ruxsatlari yo'q.",
     "noAudit": "Audit hodisalari yo'q.",
-    "templatesComingSoon": "Rol shablonlari — tez orada. Hozircha har bir foydalanuvchiga alohida ruxsat bering.",
     "unscoped": "qamrovsiz",
     "allOf": "Barcha ({dim})",
     "save": "Saqlash",
@@ -1276,7 +1275,27 @@
     "cancel": "Bekor qilish",
     "editTitle": "Ruxsatlarni tahrirlash",
     "saveToast": "Saqlandi — {added} qo'shildi, {removed} olib tashlandi",
-    "saveFailed": "Saqlash amalga oshmadi"
+    "saveFailed": "Saqlash amalga oshmadi",
+    "tpl": {
+      "name": "Nomi",
+      "namePlaceholder": "masalan, Liniya boshlig'i",
+      "description": "Izoh",
+      "capabilities": "Imkoniyatlar",
+      "itemsCount": "Imkoniyatlar soni",
+      "empty": "Hozircha rol shablonlari yo'q.",
+      "new": "Yangi shablon",
+      "createTitle": "Rol shablonini yaratish",
+      "editTitle": "Rol shablonini tahrirlash",
+      "editHint": "Tez sozlash uchun imkoniyatlar to'plami. Qamrov qiymatlari har bir foydalanuvchi uchun alohida belgilanadi.",
+      "idLabel": "ID",
+      "idPlaceholder": "my-template",
+      "idHint": "Nomdan avtomatik yaratiladi. Har bir ijarachida noyob bo'lishi kerak.",
+      "nameRequired": "Nom talab qilinadi",
+      "createdToast": "Shablon yaratildi",
+      "updatedToast": "Shablon yangilandi",
+      "delete": "O'chirish",
+      "deleteConfirm": "«{name}» shablonini o'chirilsinmi?"
+    }
   },
   "cap": {
     "platform": {
