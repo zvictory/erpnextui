@@ -2,9 +2,11 @@ export {
   BUILTIN_CAPABILITIES,
   getBuiltinCapability,
   listBuiltinCapabilities,
+  listAllCapabilities,
   type BuiltinCapabilityId,
   type CapabilityDef,
   type CapabilityId,
+  type MergedCapability,
   type ScopeDim,
 } from "./capabilities";
 

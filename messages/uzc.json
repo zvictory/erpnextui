@@ -1231,8 +1231,7 @@
     "searchCustomer": "Мижоз қидириш...",
     "clearFilters": "Тоза��аш",
     "summaryView": "Хулоса",
-    "detailView": "Батафсил",
-    "total": "Жами"
+    "detailView": "Батафсил"
   },
   "cbs": {
     "title": "Мижозлар баланси",
@@ -1298,7 +1297,31 @@
       "updatedToast": "Шаблон янгиланди",
       "delete": "Ўчириш",
       "deleteConfirm": "«{name}» шаблонини ўчирилсинми?"
-    }
+    },
+    "applyBtn": "Шаблонни қўллаш",
+    "applyTitle": "Рол шаблонини қўллаш",
+    "applySelectUser": "Фойдаланувчини танланг",
+    "applySelectTemplate": "Шаблонни танланг",
+    "applyScopeHint": "Чекланган имкониятлар учун ҳудучи қийматларини киритинг. Ҳаммасига рухсат бериш учун бўш қолдиринг.",
+    "applyToast": "Шаблон қўлланди — {added} қўшилди, {skipped} аллақачон мавжуд",
+    "applyNoTemplates": "Ҳеч қандай шаблон йўқ",
+    "searchUsers": "Фойдаланувчиларни қидириш...",
+    "customCaps": "Махсус имкониятлар",
+    "noCustomCaps": "Махсус имкониятлар йўқ.",
+    "newCap": "Янги имконият",
+    "capId": "ID",
+    "capModule": "Модул",
+    "capLabel": "Ярлиқ калити",
+    "capScopeDim": "Ҳудучи ўлчами",
+    "capCreateTitle": "Махсус имконият яратиш",
+    "capDelete": "Ўчириш",
+    "capDeleteConfirm": "{id} махсус имкониятини ўчириш?",
+    "capIdHint": "Нойоб идентификатор, мас. quality.inspect",
+    "capModuleHint": "Модул гуруҳлари, мас. quality",
+    "capLabelHint": "i18n калити, мас. cap.quality.inspect",
+    "capScopeDimHint": "Чекланмаган имкониятлар учун бўш қолдиринг",
+    "capCreated": "Махсус имконият яратилди",
+    "capDeleted": "Махсус имконият ўчирилди"
   },
   "cap": {
     "platform": {

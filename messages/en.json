@@ -1291,8 +1291,7 @@
     "all": "All",
     "refresh": "Refresh",
     "noData": "No outstanding invoices",
-    "searchCustomer": "Search customer...",
-    "total": "Total"
+    "searchCustomer": "Search customer..."
   },
   "cbs": {
     "title": "Customer Balance Summary",
@@ -1358,7 +1357,31 @@
       "updatedToast": "Template updated",
       "delete": "Delete",
       "deleteConfirm": "Delete template \"{name}\"?"
-    }
+    },
+    "applyBtn": "Apply template",
+    "applyTitle": "Apply role template",
+    "applySelectUser": "Select user",
+    "applySelectTemplate": "Select template",
+    "applyScopeHint": "Specify scope values for scoped capabilities. Leave empty to assign wildcard (all) access.",
+    "applyToast": "Template applied — {added} grants added, {skipped} already existed",
+    "applyNoTemplates": "No templates available",
+    "searchUsers": "Search users...",
+    "customCaps": "Custom Capabilities",
+    "noCustomCaps": "No custom capabilities yet.",
+    "newCap": "New capability",
+    "capId": "ID",
+    "capModule": "Module",
+    "capLabel": "Label key",
+    "capScopeDim": "Scope dimension",
+    "capCreateTitle": "Create custom capability",
+    "capDelete": "Delete",
+    "capDeleteConfirm": "Delete custom capability \"{id}\"?",
+    "capIdHint": "Unique identifier, e.g. \"quality.inspect\"",
+    "capModuleHint": "Module grouping, e.g. \"quality\"",
+    "capLabelHint": "i18n key, e.g. \"cap.quality.inspect\"",
+    "capScopeDimHint": "Leave empty for unscoped capabilities",
+    "capCreated": "Custom capability created",
+    "capDeleted": "Custom capability deleted"
   },
   "cap": {
     "platform": {

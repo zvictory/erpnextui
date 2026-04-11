@@ -15,15 +15,19 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import {
   useAdminAuditLog,
   useAdminPermissionUsers,
   useAdminRoleTemplates,
   useDeleteRoleTemplate,
+  useFrappeUsers,
   type AdminRoleTemplate,
 } from "@/hooks/use-admin-permissions";
 import { GrantEditor } from "@/components/permissions/grant-editor";
 import { TemplateEditor } from "@/components/permissions/template-editor";
+import { ApplyTemplateDialog } from "@/components/permissions/apply-template-dialog";
+import { CustomCapabilityManager } from "@/components/permissions/custom-capability-manager";
 import { formatDate } from "@/lib/formatters";
 
 export default function PermissionsAdminPage() {
@@ -40,6 +44,7 @@ export default function PermissionsAdminPage() {
           <TabsList>
             <TabsTrigger value="users">{t("tabs.users")}</TabsTrigger>
             <TabsTrigger value="templates">{t("tabs.templates")}</TabsTrigger>
+            <TabsTrigger value="customCaps">{t("customCaps")}</TabsTrigger>
             <TabsTrigger value="audit">{t("tabs.audit")}</TabsTrigger>
           </TabsList>
 
@@ -49,6 +54,10 @@ export default function PermissionsAdminPage() {
 
           <TabsContent value="templates" className="mt-4">
             <TemplatesTab />
+          </TabsContent>
+
+          <TabsContent value="customCaps" className="mt-4">
+            <CustomCapabilityManager />
           </TabsContent>
 
           <TabsContent value="audit" className="mt-4">
@@ -64,6 +73,17 @@ function UsersTab() {
   const t = useTranslations("permissions");
   const { data: users = [], isLoading } = useAdminPermissionUsers();
   const [editingUser, setEditingUser] = useState<string | null>(null);
+  const [applyOpen, setApplyOpen] = useState(false);
+  const [showUserSearch, setShowUserSearch] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
+
+  const { data: frappeUsers = [], isLoading: frappeLoading } = useFrappeUsers(userSearch);
+
+  const handleSelectFrappeUser = (email: string) => {
+    setEditingUser(email);
+    setShowUserSearch(false);
+    setUserSearch("");
+  };
 
   if (isLoading) {
     return (
@@ -111,16 +131,48 @@ function UsersTab() {
         </TableBody>
       </Table>
 
-      <div className="mt-4">
-        <Button
-          variant="outline"
-          onClick={() => setEditingUser(prompt(t("columns.email")) ?? null)}
-        >
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button variant="outline" onClick={() => setShowUserSearch(!showUserSearch)}>
           {t("grantNew")}
+        </Button>
+        <Button variant="outline" onClick={() => setApplyOpen(true)}>
+          {t("applyBtn")}
         </Button>
       </div>
 
+      {showUserSearch && (
+        <div className="mt-4 rounded border p-3 space-y-2">
+          <Input
+            placeholder={t("searchUsers")}
+            value={userSearch}
+            onChange={(e) => setUserSearch(e.target.value)}
+          />
+          {frappeLoading && userSearch.length >= 2 ? (
+            <p className="text-xs text-muted-foreground">Loading...</p>
+          ) : frappeUsers.length > 0 ? (
+            <div className="max-h-48 overflow-y-auto">
+              {frappeUsers.slice(0, 20).map((u) => (
+                <button
+                  key={u.email}
+                  type="button"
+                  className="w-full px-3 py-1.5 text-left text-sm hover:bg-accent rounded"
+                  onClick={() => handleSelectFrappeUser(u.email)}
+                >
+                  <span className="font-medium">{u.fullName}</span>
+                  <span className="ml-2 text-xs text-muted-foreground">{u.email}</span>
+                </button>
+              ))}
+            </div>
+          ) : userSearch.length >= 2 ? (
+            <p className="text-xs text-muted-foreground">No users found</p>
+          ) : (
+            <p className="text-xs text-muted-foreground">Type at least 2 characters to search</p>
+          )}
+        </div>
+      )}
+
       <GrantEditor userEmail={editingUser} onClose={() => setEditingUser(null)} />
+      <ApplyTemplateDialog open={applyOpen} onClose={() => setApplyOpen(false)} />
     </>
   );
 }
@@ -264,7 +316,11 @@ function AuditTab() {
               <TableCell>
                 <Badge
                   variant={
-                    r.event === "denied" ? "destructive" : r.event === "revoke" ? "secondary" : "outline"
+                    r.event === "denied"
+                      ? "destructive"
+                      : r.event === "revoke"
+                        ? "secondary"
+                        : "outline"
                   }
                 >
                   {r.event ?? "dryrun"}

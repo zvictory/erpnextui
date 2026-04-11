@@ -4,10 +4,13 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { listBuiltinCapabilities } from "@/lib/permissions/capabilities";
+import { listAllCapabilities } from "@/lib/permissions/capabilities";
 import { SCOPE_WILDCARD } from "@/lib/permissions/constants";
-import { useAdminUserGrants, useUpdateUserGrants } from "@/hooks/use-admin-permissions";
-import { getLines } from "@/actions/lines";
+import {
+  useAdminUserGrants,
+  useUpdateUserGrants,
+  useCustomCapabilities,
+} from "@/hooks/use-admin-permissions";
 import {
   Sheet,
   SheetContent,
@@ -38,14 +41,50 @@ export function GrantEditor({ userEmail, onClose }: Props) {
   const tScope = useTranslations("scopeDim");
   const open = !!userEmail;
   const { data: currentGrants, isLoading } = useAdminUserGrants(userEmail);
+  const { data: customCaps = [] } = useCustomCapabilities();
+
   const { data: lines = [] } = useQuery({
     queryKey: ["lines", "for-grant-editor"] as const,
     queryFn: async () => {
-      const result = await getLines();
-      return result.success ? result.data : [];
+      const result = await fetch("/api/admin/permissions/scope-values?dim=line", {
+        credentials: "include",
+      });
+      if (!result.ok) return [];
+      const json = await result.json();
+      return (json.values ?? []) as Array<{ value: string; label: string }>;
     },
     staleTime: 60_000,
+    enabled: open,
   });
+
+  const { data: warehouses = [] } = useQuery({
+    queryKey: ["scope-values", "warehouse", "for-grant-editor"] as const,
+    queryFn: async () => {
+      const result = await fetch("/api/admin/permissions/scope-values?dim=warehouse", {
+        credentials: "include",
+      });
+      if (!result.ok) return [];
+      const json = await result.json();
+      return (json.values ?? []) as Array<{ value: string; label: string }>;
+    },
+    staleTime: 60_000,
+    enabled: open,
+  });
+
+  const { data: companies = [] } = useQuery({
+    queryKey: ["scope-values", "company", "for-grant-editor"] as const,
+    queryFn: async () => {
+      const result = await fetch("/api/admin/permissions/scope-values?dim=company", {
+        credentials: "include",
+      });
+      if (!result.ok) return [];
+      const json = await result.json();
+      return (json.values ?? []) as Array<{ value: string; label: string }>;
+    },
+    staleTime: 60_000,
+    enabled: open,
+  });
+
   const updateGrants = useUpdateUserGrants();
 
   const [selected, setSelected] = useState<Set<GrantKey>>(new Set());
@@ -55,7 +94,10 @@ export function GrantEditor({ userEmail, onClose }: Props) {
     setSelected(new Set(currentGrants?.map(keyOf) ?? []));
   }
 
-  const capabilities = useMemo(() => listBuiltinCapabilities(), []);
+  const capabilities = useMemo(
+    () => listAllCapabilities(customCaps.map((c) => ({ ...c }))),
+    [customCaps],
+  );
   const byModule = useMemo(() => {
     const map = new Map<string, typeof capabilities>();
     for (const c of capabilities) {
@@ -65,6 +107,13 @@ export function GrantEditor({ userEmail, onClose }: Props) {
     }
     return map;
   }, [capabilities]);
+
+  const scopeValuesForDim = (dim: string) => {
+    if (dim === "line") return lines;
+    if (dim === "warehouse") return warehouses;
+    if (dim === "company") return companies;
+    return [];
+  };
 
   const toggleGrant = (grantKey: GrantKey) => {
     setSelected((prev) => {
@@ -114,7 +163,11 @@ export function GrantEditor({ userEmail, onClose }: Props) {
                 <div className="space-y-3">
                   {caps.map((cap) => {
                     if (cap.scopeDim === null) {
-                      const k = keyOf({ capabilityId: cap.id, scopeDim: "*", scopeValue: "*" });
+                      const k = keyOf({
+                        capabilityId: cap.id,
+                        scopeDim: "*",
+                        scopeValue: "*",
+                      });
                       return (
                         <div key={cap.id} className="flex items-center gap-2">
                           <Checkbox
@@ -125,6 +178,11 @@ export function GrantEditor({ userEmail, onClose }: Props) {
                           <Badge variant="outline" className="text-xs">
                             {tPerm("unscoped")}
                           </Badge>
+                          {cap.isCustom && (
+                            <Badge variant="secondary" className="text-xs">
+                              custom
+                            </Badge>
+                          )}
                         </div>
                       );
                     }
@@ -135,6 +193,8 @@ export function GrantEditor({ userEmail, onClose }: Props) {
                       scopeValue: SCOPE_WILDCARD,
                     });
 
+                    const dimOptions = scopeValuesForDim(cap.scopeDim);
+
                     return (
                       <div key={cap.id} className="rounded border border-border/60 p-2">
                         <div className="flex items-center gap-2">
@@ -142,6 +202,11 @@ export function GrantEditor({ userEmail, onClose }: Props) {
                           <Badge variant="outline" className="text-xs">
                             {tScope(cap.scopeDim)}
                           </Badge>
+                          {cap.isCustom && (
+                            <Badge variant="secondary" className="text-xs">
+                              custom
+                            </Badge>
+                          )}
                         </div>
                         <div className="mt-2 flex flex-wrap gap-3">
                           <label className="flex items-center gap-1.5 text-xs">
@@ -151,23 +216,22 @@ export function GrantEditor({ userEmail, onClose }: Props) {
                             />
                             {tPerm("allOf", { dim: tScope(cap.scopeDim) })}
                           </label>
-                          {cap.scopeDim === "line" &&
-                            lines.map((line) => {
-                              const k = keyOf({
-                                capabilityId: cap.id,
-                                scopeDim: "line",
-                                scopeValue: String(line.id),
-                              });
-                              return (
-                                <label key={line.id} className="flex items-center gap-1.5 text-xs">
-                                  <Checkbox
-                                    checked={selected.has(k)}
-                                    onCheckedChange={() => toggleGrant(k)}
-                                  />
-                                  {line.name}
-                                </label>
-                              );
-                            })}
+                          {dimOptions.map((opt) => {
+                            const k = keyOf({
+                              capabilityId: cap.id,
+                              scopeDim: cap.scopeDim!,
+                              scopeValue: opt.value,
+                            });
+                            return (
+                              <label key={opt.value} className="flex items-center gap-1.5 text-xs">
+                                <Checkbox
+                                  checked={selected.has(k)}
+                                  onCheckedChange={() => toggleGrant(k)}
+                                />
+                                {opt.label}
+                              </label>
+                            );
+                          })}
                         </div>
                       </div>
                     );

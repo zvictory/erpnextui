@@ -1228,8 +1228,7 @@
     "all": "Barchasi",
     "refresh": "Yangilash",
     "noData": "To'lanmagan hujjatlar yo'q",
-    "searchCustomer": "Mijoz qidirish...",
-    "total": "Jami"
+    "searchCustomer": "Mijoz qidirish..."
   },
   "cbs": {
     "title": "Mijozlar balansi",
@@ -1295,7 +1294,31 @@
       "updatedToast": "Shablon yangilandi",
       "delete": "O'chirish",
       "deleteConfirm": "«{name}» shablonini o'chirilsinmi?"
-    }
+    },
+    "applyBtn": "Shablonni qo'llash",
+    "applyTitle": "Rol shablonini qo'llash",
+    "applySelectUser": "Foydalanuvchini tanlang",
+    "applySelectTemplate": "Shablonni tanlang",
+    "applyScopeHint": "Cheklangan imkoniyatlar uchun doira qiymatlarini kiriting. Barchasiga ruxsat berish uchun bo'sh qoldiring.",
+    "applyToast": "Shablon qo'llandi — {added} qo'shildi, {skipped} allaqachon mavjud",
+    "applyNoTemplates": "Hech qanday shablon yo'q",
+    "searchUsers": "Foydalanuvchilarni qidirish...",
+    "customCaps": "Maxsus imkoniyatlar",
+    "noCustomCaps": "Maxsus imkoniyatlar yo'q.",
+    "newCap": "Yangi imkoniyat",
+    "capId": "ID",
+    "capModule": "Modul",
+    "capLabel": "Yorliq kaliti",
+    "capScopeDim": "Doira o'lchami",
+    "capCreateTitle": "Maxsus imkoniyat yaratish",
+    "capDelete": "O'chirish",
+    "capDeleteConfirm": "\"{id}\" maxsus imkoniyatini o'chirish?",
+    "capIdHint": "Noyob identifikator, mas. \"quality.inspect\"",
+    "capModuleHint": "Modul guruhlari, mas. \"quality\"",
+    "capLabelHint": "i18n kaliti, mas. \"cap.quality.inspect\"",
+    "capScopeDimHint": "Cheklanmagan imkoniyatlar uchun bo'sh qoldiring",
+    "capCreated": "Maxsus imkoniyat yaratildi",
+    "capDeleted": "Maxsus imkoniyat o'chirildi"
   },
   "cap": {
     "platform": {

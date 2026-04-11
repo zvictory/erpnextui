@@ -146,3 +146,39 @@ export function listBuiltinCapabilities(): Array<{ id: BuiltinCapabilityId } & C
     ([id, def]) => ({ id, ...def }),
   );
 }
+
+export type MergedCapability = {
+  id: string;
+  module: string;
+  labelKey: string;
+  scopeDim: ScopeDim;
+  isCustom: boolean;
+};
+
+export function listAllCapabilities(
+  customCaps: Array<{ id: string; module: string; labelKey: string; scopeDim: string | null }>,
+): MergedCapability[] {
+  const builtin = (Object.entries(BUILTIN_CAPABILITIES) as Array<[string, CapabilityDef]>).map(
+    ([id, def]) => ({
+      id,
+      module: def.module,
+      labelKey: def.labelKey,
+      scopeDim: def.scopeDim,
+      isCustom: false,
+    }),
+  );
+
+  const seen = new Set(builtin.map((c) => c.id));
+
+  const custom = customCaps
+    .filter((c) => !seen.has(c.id))
+    .map((c) => ({
+      id: c.id,
+      module: c.module,
+      labelKey: c.labelKey,
+      scopeDim: c.scopeDim as ScopeDim,
+      isCustom: true,
+    }));
+
+  return [...builtin, ...custom];
+}

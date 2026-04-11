@@ -13,7 +13,11 @@ export type GrantDecision =
   | { granted: true }
   | { granted: false; reason: "no_capability" | "scope_out_of_range" };
 
-export function checkGrant(ctx: AuthContext, capability: CapabilityId, scope: ScopeCheck): GrantDecision {
+export function checkGrant(
+  ctx: AuthContext,
+  capability: CapabilityId,
+  scope: ScopeCheck,
+): GrantDecision {
   if (ctx.isSuperuser) return { granted: true };
 
   if (!ctx.grantedCapabilities.has(capability)) {
@@ -38,14 +42,26 @@ export function checkGrant(ctx: AuthContext, capability: CapabilityId, scope: Sc
   return { granted: true };
 }
 
+const builtinScopeDimMap: Record<string, string | null> = {};
+for (const [key, def] of Object.entries(BUILTIN_CAPABILITIES)) {
+  builtinScopeDimMap[key] = (def as { scopeDim: string | null }).scopeDim;
+}
+
 export function getCapabilityScopeDim(capability: CapabilityId): string | null {
-  const builtin = (BUILTIN_CAPABILITIES as Record<string, { scopeDim: string | null }>)[capability];
-  return builtin ? builtin.scopeDim : null;
+  if (capability in builtinScopeDimMap) {
+    return builtinScopeDimMap[capability];
+  }
+  return null;
 }
 
 export async function logDenial(
   ctx: AuthContext,
-  opts: { capability: string; scopeDim: string | null; scopeValue: string | null; actionName: string },
+  opts: {
+    capability: string;
+    scopeDim: string | null;
+    scopeValue: string | null;
+    actionName: string;
+  },
 ): Promise<void> {
   try {
     await db.insert(permissionAudit).values({
@@ -65,7 +81,12 @@ export async function logDenial(
 
 export async function logDryrunDenial(
   ctx: AuthContext,
-  opts: { capability: string; scopeDim: string | null; scopeValue: string | null; actionName: string },
+  opts: {
+    capability: string;
+    scopeDim: string | null;
+    scopeValue: string | null;
+    actionName: string;
+  },
 ): Promise<void> {
   try {
     await db.insert(permissionAuditDryrun).values({

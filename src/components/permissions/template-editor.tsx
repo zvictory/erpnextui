@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-import { listBuiltinCapabilities } from "@/lib/permissions/capabilities";
+import { listAllCapabilities } from "@/lib/permissions/capabilities";
+import { useCustomCapabilities } from "@/hooks/use-admin-permissions";
 import {
   useCreateRoleTemplate,
   useUpdateRoleTemplate,
@@ -51,16 +52,15 @@ export function TemplateEditor({ mode, template, onClose }: Props) {
     mode === "edit" && template ? (template.description ?? "") : "",
   );
   const [selected, setSelected] = useState<Set<string>>(() =>
-    mode === "edit" && template
-      ? new Set(template.items.map((i) => i.capabilityId))
-      : new Set(),
+    mode === "edit" && template ? new Set(template.items.map((i) => i.capabilityId)) : new Set(),
   );
 
   const createMut = useCreateRoleTemplate();
   const updateMut = useUpdateRoleTemplate();
   const isPending = createMut.isPending || updateMut.isPending;
 
-  const capabilities = useMemo(() => listBuiltinCapabilities(), []);
+  const { data: customCaps = [] } = useCustomCapabilities();
+  const capabilities = useMemo(() => listAllCapabilities(customCaps), [customCaps]);
   const byModule = useMemo(() => {
     const map = new Map<string, typeof capabilities>();
     for (const c of capabilities) {
