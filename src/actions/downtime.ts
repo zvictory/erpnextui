@@ -2,12 +2,11 @@
 
 import { db } from "@/db";
 import { downtimeEvents, stopCodes, productionLines } from "@/db/schema";
-import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
+import { eq, and, gte, lte, desc, sql, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import {
-  createDowntimeEventSchema,
-  updateDowntimeEventSchema,
-} from "@/lib/validations";
+import { createDowntimeEventSchema, updateDowntimeEventSchema } from "@/lib/validations";
+import { requireGrant, toActionError } from "@/lib/permissions/require-grant";
+import { SCOPE_WILDCARD } from "@/lib/permissions/constants";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -21,6 +20,12 @@ interface DowntimeFilters {
 
 export async function getDowntimeEvents(filters?: DowntimeFilters) {
   try {
+    const ctx = await requireGrant({
+      capability: "downtime.read",
+      scope: { dim: "line", mode: "filter" },
+      actionName: "getDowntimeEvents",
+    });
+
     const conditions = [];
 
     if (filters?.dateFrom) {
@@ -31,6 +36,19 @@ export async function getDowntimeEvents(filters?: DowntimeFilters) {
     }
     if (filters?.lineId) {
       conditions.push(eq(downtimeEvents.lineId, filters.lineId));
+    }
+
+    const allowedLines = ctx.allowedScopes.line;
+    const hasWildcardLine =
+      ctx.isSuperuser || !allowedLines || allowedLines.has(SCOPE_WILDCARD);
+    if (!hasWildcardLine) {
+      const allowedLineIds = [...allowedLines]
+        .map(Number)
+        .filter((n) => !Number.isNaN(n));
+      if (allowedLineIds.length === 0) {
+        return { success: true as const, data: [] };
+      }
+      conditions.push(inArray(downtimeEvents.lineId, allowedLineIds));
     }
 
     const rows = await db
@@ -48,15 +66,14 @@ export async function getDowntimeEvents(filters?: DowntimeFilters) {
       })
       .from(downtimeEvents)
       .leftJoin(stopCodes, eq(downtimeEvents.stopCodeId, stopCodes.id))
-      .leftJoin(
-        productionLines,
-        eq(downtimeEvents.lineId, productionLines.id)
-      )
+      .leftJoin(productionLines, eq(downtimeEvents.lineId, productionLines.id))
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(desc(downtimeEvents.date));
 
     return { success: true as const, data: rows };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to fetch downtime events",
@@ -69,6 +86,12 @@ export async function getDowntimeEvents(filters?: DowntimeFilters) {
 export async function createDowntimeEvent(data: unknown) {
   try {
     const parsed = createDowntimeEventSchema.parse(data);
+
+    await requireGrant({
+      capability: "downtime.write",
+      scope: { dim: "line", mode: "require", value: String(parsed.lineId) },
+      actionName: "createDowntimeEvent",
+    });
 
     const result = db
       .insert(downtimeEvents)
@@ -87,6 +110,8 @@ export async function createDowntimeEvent(data: unknown) {
 
     return { success: true as const, data: result };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to create downtime event",
@@ -98,7 +123,26 @@ export async function createDowntimeEvent(data: unknown) {
 
 export async function updateDowntimeEvent(id: number, data: unknown) {
   try {
-    const parsed = updateDowntimeEventSchema.parse({ ...(typeof data === 'object' && data !== null ? data : {}), id });
+    const existing = db
+      .select({ lineId: downtimeEvents.lineId })
+      .from(downtimeEvents)
+      .where(eq(downtimeEvents.id, id))
+      .get();
+
+    if (!existing) {
+      return { success: false as const, error: "Downtime event not found" };
+    }
+
+    await requireGrant({
+      capability: "downtime.write",
+      scope: { dim: "line", mode: "require", value: String(existing.lineId) },
+      actionName: "updateDowntimeEvent",
+    });
+
+    const parsed = updateDowntimeEventSchema.parse({
+      ...(typeof data === "object" && data !== null ? data : {}),
+      id,
+    });
 
     const cleanData: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(parsed)) {
@@ -127,6 +171,8 @@ export async function updateDowntimeEvent(id: number, data: unknown) {
 
     return { success: true as const, data: result };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to update downtime event",
@@ -138,11 +184,23 @@ export async function updateDowntimeEvent(id: number, data: unknown) {
 
 export async function deleteDowntimeEvent(id: number) {
   try {
-    const result = db
-      .delete(downtimeEvents)
+    const existing = db
+      .select({ lineId: downtimeEvents.lineId })
+      .from(downtimeEvents)
       .where(eq(downtimeEvents.id, id))
-      .returning()
       .get();
+
+    if (!existing) {
+      return { success: false as const, error: "Downtime event not found" };
+    }
+
+    await requireGrant({
+      capability: "downtime.write",
+      scope: { dim: "line", mode: "require", value: String(existing.lineId) },
+      actionName: "deleteDowntimeEvent",
+    });
+
+    const result = db.delete(downtimeEvents).where(eq(downtimeEvents.id, id)).returning().get();
 
     if (!result) {
       return { success: false as const, error: "Downtime event not found" };
@@ -153,6 +211,8 @@ export async function deleteDowntimeEvent(id: number) {
 
     return { success: true as const, data: result };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to delete downtime event",
@@ -164,6 +224,12 @@ export async function deleteDowntimeEvent(id: number) {
 
 export async function getDowntimeParetoData(filters?: DowntimeFilters) {
   try {
+    const ctx = await requireGrant({
+      capability: "downtime.read",
+      scope: { dim: "line", mode: "filter" },
+      actionName: "getDowntimeParetoData",
+    });
+
     const conditions = [];
 
     if (filters?.dateFrom) {
@@ -176,15 +242,26 @@ export async function getDowntimeParetoData(filters?: DowntimeFilters) {
       conditions.push(eq(downtimeEvents.lineId, filters.lineId));
     }
 
+    const allowedLines = ctx.allowedScopes.line;
+    const hasWildcardLine =
+      ctx.isSuperuser || !allowedLines || allowedLines.has(SCOPE_WILDCARD);
+    if (!hasWildcardLine) {
+      const allowedLineIds = [...allowedLines]
+        .map(Number)
+        .filter((n) => !Number.isNaN(n));
+      if (allowedLineIds.length === 0) {
+        return { success: true as const, data: [] };
+      }
+      conditions.push(inArray(downtimeEvents.lineId, allowedLineIds));
+    }
+
     const rows = await db
       .select({
         stopCodeId: downtimeEvents.stopCodeId,
         stopCodeCode: stopCodes.code,
         stopCodeName: stopCodes.nameUz,
         stopCodeCategory: stopCodes.category,
-        totalMinutes: sql<number>`sum(${downtimeEvents.durationMinutes})`.as(
-          "total_minutes"
-        ),
+        totalMinutes: sql<number>`sum(${downtimeEvents.durationMinutes})`.as("total_minutes"),
       })
       .from(downtimeEvents)
       .leftJoin(stopCodes, eq(downtimeEvents.stopCodeId, stopCodes.id))
@@ -210,6 +287,8 @@ export async function getDowntimeParetoData(filters?: DowntimeFilters) {
 
     return { success: true as const, data: enriched };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to fetch Pareto data",

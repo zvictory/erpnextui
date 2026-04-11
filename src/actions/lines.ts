@@ -2,21 +2,40 @@
 
 import { db } from "@/db";
 import { productionLines } from "@/db/schema";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { createLineSchema, updateLineSchema } from "@/lib/validations";
+import { requireGrant, toActionError } from "@/lib/permissions/require-grant";
+import { SCOPE_WILDCARD } from "@/lib/permissions/constants";
 
 // ─── Get all lines ──────────────────────────────────────────────────
 
 export async function getLines() {
   try {
-    const rows = await db
-      .select()
-      .from(productionLines)
-      .orderBy(asc(productionLines.sortOrder));
+    const ctx = await requireGrant({
+      capability: "production.read",
+      scope: { dim: "line", mode: "filter" },
+      actionName: "getLines",
+    });
+
+    const query = db.select().from(productionLines).orderBy(asc(productionLines.sortOrder));
+
+    // Filter by the user's allowed line scopes unless they have wildcard.
+    const allowed = ctx.allowedScopes.line;
+    const hasWildcard = !allowed || allowed.has(SCOPE_WILDCARD) || ctx.isSuperuser;
+
+    const rows = hasWildcard
+      ? await query
+      : await db
+          .select()
+          .from(productionLines)
+          .where(inArray(productionLines.id, [...allowed].map(Number).filter((n) => !Number.isNaN(n))))
+          .orderBy(asc(productionLines.sortOrder));
 
     return { success: true as const, data: rows };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to fetch lines",
@@ -28,6 +47,12 @@ export async function getLines() {
 
 export async function createLine(data: unknown) {
   try {
+    await requireGrant({
+      capability: "lines.manage",
+      scope: { dim: null },
+      actionName: "createLine",
+    });
+
     const parsed = createLineSchema.parse(data);
 
     const result = db
@@ -44,6 +69,8 @@ export async function createLine(data: unknown) {
 
     return { success: true as const, data: result };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to create line",
@@ -55,7 +82,16 @@ export async function createLine(data: unknown) {
 
 export async function updateLine(id: number, data: unknown) {
   try {
-    const parsed = updateLineSchema.parse({ ...(typeof data === 'object' && data !== null ? data : {}), id });
+    await requireGrant({
+      capability: "lines.manage",
+      scope: { dim: "line", mode: "require", value: String(id) },
+      actionName: "updateLine",
+    });
+
+    const parsed = updateLineSchema.parse({
+      ...(typeof data === "object" && data !== null ? data : {}),
+      id,
+    });
 
     const cleanData: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(parsed)) {
@@ -83,6 +119,8 @@ export async function updateLine(id: number, data: unknown) {
 
     return { success: true as const, data: result };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to update line",
@@ -94,11 +132,13 @@ export async function updateLine(id: number, data: unknown) {
 
 export async function deleteLine(id: number) {
   try {
-    const result = db
-      .delete(productionLines)
-      .where(eq(productionLines.id, id))
-      .returning()
-      .get();
+    await requireGrant({
+      capability: "lines.manage",
+      scope: { dim: "line", mode: "require", value: String(id) },
+      actionName: "deleteLine",
+    });
+
+    const result = db.delete(productionLines).where(eq(productionLines.id, id)).returning().get();
 
     if (!result) {
       return { success: false as const, error: "Line not found" };
@@ -108,9 +148,12 @@ export async function deleteLine(id: number) {
 
     return { success: true as const, data: result };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to delete line",
     };
   }
 }
+

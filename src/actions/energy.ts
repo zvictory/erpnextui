@@ -4,10 +4,8 @@ import { db } from "@/db";
 import { energyLogs, productionRuns, products } from "@/db/schema";
 import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import {
-  createEnergyLogSchema,
-  updateEnergyLogSchema,
-} from "@/lib/validations";
+import { createEnergyLogSchema, updateEnergyLogSchema } from "@/lib/validations";
+import { requireGrant, toActionError } from "@/lib/permissions/require-grant";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -20,6 +18,12 @@ interface EnergyFilters {
 
 export async function getEnergyLogs(filters?: EnergyFilters) {
   try {
+    await requireGrant({
+      capability: "energy.read",
+      scope: { dim: null },
+      actionName: "getEnergyLogs",
+    });
+
     const conditions = [];
 
     if (filters?.dateFrom) {
@@ -42,7 +46,7 @@ export async function getEnergyLogs(filters?: EnergyFilters) {
           .select({
             totalWeightKg:
               sql<number>`coalesce(sum(${productionRuns.actualOutput} * ${products.weightKg}), 0)`.as(
-                "total_weight_kg"
+                "total_weight_kg",
               ),
           })
           .from(productionRuns)
@@ -58,16 +62,15 @@ export async function getEnergyLogs(filters?: EnergyFilters) {
             totalProductionWeightKg > 0
               ? (row.electricityKwh ?? 0) / totalProductionWeightKg
               : null,
-          gasPerKg:
-            totalProductionWeightKg > 0
-              ? (row.gasM3 ?? 0) / totalProductionWeightKg
-              : null,
+          gasPerKg: totalProductionWeightKg > 0 ? (row.gasM3 ?? 0) / totalProductionWeightKg : null,
         };
-      })
+      }),
     );
 
     return { success: true as const, data: enriched };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to fetch energy logs",
@@ -79,6 +82,12 @@ export async function getEnergyLogs(filters?: EnergyFilters) {
 
 export async function createEnergyLog(data: unknown) {
   try {
+    await requireGrant({
+      capability: "energy.write",
+      scope: { dim: null },
+      actionName: "createEnergyLog",
+    });
+
     const parsed = createEnergyLogSchema.parse(data);
 
     const result = db
@@ -96,6 +105,8 @@ export async function createEnergyLog(data: unknown) {
 
     return { success: true as const, data: result };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to create energy log",
@@ -107,7 +118,16 @@ export async function createEnergyLog(data: unknown) {
 
 export async function updateEnergyLog(id: number, data: unknown) {
   try {
-    const parsed = updateEnergyLogSchema.parse({ ...(typeof data === 'object' && data !== null ? data : {}), id });
+    await requireGrant({
+      capability: "energy.write",
+      scope: { dim: null },
+      actionName: "updateEnergyLog",
+    });
+
+    const parsed = updateEnergyLogSchema.parse({
+      ...(typeof data === "object" && data !== null ? data : {}),
+      id,
+    });
 
     const cleanData: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(parsed)) {
@@ -136,6 +156,8 @@ export async function updateEnergyLog(id: number, data: unknown) {
 
     return { success: true as const, data: result };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to update energy log",
@@ -147,11 +169,13 @@ export async function updateEnergyLog(id: number, data: unknown) {
 
 export async function deleteEnergyLog(id: number) {
   try {
-    const result = db
-      .delete(energyLogs)
-      .where(eq(energyLogs.id, id))
-      .returning()
-      .get();
+    await requireGrant({
+      capability: "energy.write",
+      scope: { dim: null },
+      actionName: "deleteEnergyLog",
+    });
+
+    const result = db.delete(energyLogs).where(eq(energyLogs.id, id)).returning().get();
 
     if (!result) {
       return { success: false as const, error: "Energy log not found" };
@@ -162,6 +186,8 @@ export async function deleteEnergyLog(id: number) {
 
     return { success: true as const, data: result };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to delete energy log",

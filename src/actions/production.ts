@@ -2,13 +2,12 @@
 
 import { db } from "@/db";
 import { productionRuns, products, productionLines } from "@/db/schema";
-import { eq, and, gte, lte, desc } from "drizzle-orm";
+import { eq, and, gte, lte, desc, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import {
-  createProductionRunSchema,
-  updateProductionRunSchema,
-} from "@/lib/validations";
+import { createProductionRunSchema, updateProductionRunSchema } from "@/lib/validations";
 import { calculateRunMetrics } from "@/lib/calculations";
+import { requireGrant, toActionError } from "@/lib/permissions/require-grant";
+import { SCOPE_WILDCARD } from "@/lib/permissions/constants";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -22,6 +21,12 @@ interface ProductionRunFilters {
 
 export async function getProductionRuns(filters?: ProductionRunFilters) {
   try {
+    const ctx = await requireGrant({
+      capability: "production.read",
+      scope: { dim: "line", mode: "filter" },
+      actionName: "getProductionRuns",
+    });
+
     const conditions = [];
 
     if (filters?.dateFrom) {
@@ -32,6 +37,21 @@ export async function getProductionRuns(filters?: ProductionRunFilters) {
     }
     if (filters?.lineId) {
       conditions.push(eq(productionRuns.lineId, filters.lineId));
+    }
+
+    // Enforce line-scope filter unless user has wildcard or is superuser.
+    const allowedLines = ctx.allowedScopes.line;
+    const hasWildcardLine =
+      ctx.isSuperuser || !allowedLines || allowedLines.has(SCOPE_WILDCARD);
+
+    if (!hasWildcardLine) {
+      const allowedLineIds = [...allowedLines]
+        .map(Number)
+        .filter((n) => !Number.isNaN(n));
+      if (allowedLineIds.length === 0) {
+        return { success: true as const, data: [] };
+      }
+      conditions.push(inArray(productionRuns.lineId, allowedLineIds));
     }
 
     const rows = await db
@@ -53,10 +73,7 @@ export async function getProductionRuns(filters?: ProductionRunFilters) {
       })
       .from(productionRuns)
       .leftJoin(products, eq(productionRuns.productId, products.id))
-      .leftJoin(
-        productionLines,
-        eq(productionRuns.lineId, productionLines.id)
-      )
+      .leftJoin(productionLines, eq(productionRuns.lineId, productionLines.id))
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(desc(productionRuns.date));
 
@@ -73,6 +90,8 @@ export async function getProductionRuns(filters?: ProductionRunFilters) {
 
     return { success: true as const, data: enriched };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to fetch production runs",
@@ -84,6 +103,12 @@ export async function getProductionRuns(filters?: ProductionRunFilters) {
 
 export async function getProductionRun(id: number) {
   try {
+    const ctx = await requireGrant({
+      capability: "production.read",
+      scope: { dim: "line", mode: "filter" },
+      actionName: "getProductionRun",
+    });
+
     const rows = await db
       .select({
         id: productionRuns.id,
@@ -103,10 +128,7 @@ export async function getProductionRun(id: number) {
       })
       .from(productionRuns)
       .leftJoin(products, eq(productionRuns.productId, products.id))
-      .leftJoin(
-        productionLines,
-        eq(productionRuns.lineId, productionLines.id)
-      )
+      .leftJoin(productionLines, eq(productionRuns.lineId, productionLines.id))
       .where(eq(productionRuns.id, id))
       .limit(1);
 
@@ -115,6 +137,15 @@ export async function getProductionRun(id: number) {
     }
 
     const row = rows[0];
+
+    // Verify the row's lineId is in the caller's allowed scope.
+    const allowedLines = ctx.allowedScopes.line;
+    const hasWildcardLine =
+      ctx.isSuperuser || !allowedLines || allowedLines.has(SCOPE_WILDCARD);
+    if (!hasWildcardLine && !allowedLines.has(String(row.lineId))) {
+      return { success: false as const, error: "Production run not found" };
+    }
+
     const metrics = calculateRunMetrics({
       actualOutput: row.actualOutput,
       totalHours: row.totalHours,
@@ -124,6 +155,8 @@ export async function getProductionRun(id: number) {
 
     return { success: true as const, data: { ...row, ...metrics } };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to fetch production run",
@@ -136,6 +169,12 @@ export async function getProductionRun(id: number) {
 export async function createProductionRun(data: unknown) {
   try {
     const parsed = createProductionRunSchema.parse(data);
+
+    await requireGrant({
+      capability: "production.create",
+      scope: { dim: "line", mode: "require", value: String(parsed.lineId) },
+      actionName: "createProductionRun",
+    });
 
     const result = db
       .insert(productionRuns)
@@ -156,6 +195,8 @@ export async function createProductionRun(data: unknown) {
 
     return { success: true as const, data: result };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to create production run",
@@ -167,7 +208,27 @@ export async function createProductionRun(data: unknown) {
 
 export async function updateProductionRun(id: number, data: unknown) {
   try {
-    const parsed = updateProductionRunSchema.parse({ ...( typeof data === 'object' && data !== null ? data : {}), id });
+    // Fetch existing row first to know the lineId for the scope check.
+    const existing = db
+      .select({ lineId: productionRuns.lineId })
+      .from(productionRuns)
+      .where(eq(productionRuns.id, id))
+      .get();
+
+    if (!existing) {
+      return { success: false as const, error: "Production run not found" };
+    }
+
+    await requireGrant({
+      capability: "production.update",
+      scope: { dim: "line", mode: "require", value: String(existing.lineId) },
+      actionName: "updateProductionRun",
+    });
+
+    const parsed = updateProductionRunSchema.parse({
+      ...(typeof data === "object" && data !== null ? data : {}),
+      id,
+    });
 
     // Remove id and undefined fields
     const cleanData: Record<string, unknown> = {};
@@ -197,6 +258,8 @@ export async function updateProductionRun(id: number, data: unknown) {
 
     return { success: true as const, data: result };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to update production run",
@@ -208,11 +271,23 @@ export async function updateProductionRun(id: number, data: unknown) {
 
 export async function deleteProductionRun(id: number) {
   try {
-    const result = db
-      .delete(productionRuns)
+    const existing = db
+      .select({ lineId: productionRuns.lineId })
+      .from(productionRuns)
       .where(eq(productionRuns.id, id))
-      .returning()
       .get();
+
+    if (!existing) {
+      return { success: false as const, error: "Production run not found" };
+    }
+
+    await requireGrant({
+      capability: "production.submit",
+      scope: { dim: "line", mode: "require", value: String(existing.lineId) },
+      actionName: "deleteProductionRun",
+    });
+
+    const result = db.delete(productionRuns).where(eq(productionRuns.id, id)).returning().get();
 
     if (!result) {
       return { success: false as const, error: "Production run not found" };
@@ -223,6 +298,8 @@ export async function deleteProductionRun(id: number) {
 
     return { success: true as const, data: result };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to delete production run",

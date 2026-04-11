@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { productionRuns, products, productionLines } from "@/db/schema";
 import { eq, and, gte, lte, sql, asc, inArray } from "drizzle-orm";
 import { calculateRunMetrics } from "@/lib/calculations";
+import { requireGrant, toActionError } from "@/lib/permissions/require-grant";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -72,7 +73,7 @@ function computeAggregates(
     totalHours: number;
     plannedStopHours: number | null;
     nominalSpeed: number | null;
-  }[]
+  }[],
 ) {
   let totalOutput = 0;
   let totalNetWorkHours = 0;
@@ -95,8 +96,7 @@ function computeAggregates(
     totalUnplannedStopHours += metrics.unplannedStopHours;
   }
 
-  const productivity =
-    totalPlannedWorkHours > 0 ? totalNetWorkHours / totalPlannedWorkHours : 0;
+  const productivity = totalPlannedWorkHours > 0 ? totalNetWorkHours / totalPlannedWorkHours : 0;
   const efficiency = totalHours > 0 ? totalNetWorkHours / totalHours : 0;
 
   return {
@@ -109,12 +109,14 @@ function computeAggregates(
 
 // ─── Dashboard KPIs ─────────────────────────────────────────────────
 
-export async function getDashboardKPIs(
-  dateFrom?: string,
-  dateTo?: string,
-  lineIds?: number[]
-) {
+export async function getDashboardKPIs(dateFrom?: string, dateTo?: string, lineIds?: number[]) {
   try {
+    await requireGrant({
+      capability: "dashboard.read",
+      scope: { dim: null },
+      actionName: "getDashboardKPIs",
+    });
+
     const filters: DashboardFilters = { dateFrom, dateTo, lineIds };
     const currentRows = await fetchRunsForPeriod(filters);
     const current = computeAggregates(currentRows);
@@ -143,13 +145,14 @@ export async function getDashboardKPIs(
               productivity: previous.productivity,
               efficiency: previous.efficiency,
               totalOutput: previous.totalOutput,
-              totalUnplannedDowntimeHours:
-                previous.totalUnplannedDowntimeHours,
+              totalUnplannedDowntimeHours: previous.totalUnplannedDowntimeHours,
             }
           : null,
       },
     };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to fetch dashboard KPIs",
@@ -162,13 +165,16 @@ export async function getDashboardKPIs(
 export async function getDailyEfficiencyTrend(
   dateFrom: string,
   dateTo: string,
-  lineIds?: number[]
+  lineIds?: number[],
 ) {
   try {
-    const conditions = [
-      gte(productionRuns.date, dateFrom),
-      lte(productionRuns.date, dateTo),
-    ];
+    await requireGrant({
+      capability: "dashboard.read",
+      scope: { dim: null },
+      actionName: "getDailyEfficiencyTrend",
+    });
+
+    const conditions = [gte(productionRuns.date, dateFrom), lte(productionRuns.date, dateTo)];
 
     if (lineIds && lineIds.length > 0) {
       conditions.push(inArray(productionRuns.lineId, lineIds));
@@ -215,6 +221,8 @@ export async function getDailyEfficiencyTrend(
 
     return { success: true as const, data: trend };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to fetch efficiency trend",
@@ -227,17 +235,22 @@ export async function getDailyEfficiencyTrend(
 export async function getProductionByProduct(
   dateFrom?: string,
   dateTo?: string,
-  lineIds?: number[]
+  lineIds?: number[],
 ) {
   try {
+    await requireGrant({
+      capability: "dashboard.read",
+      scope: { dim: null },
+      actionName: "getProductionByProduct",
+    });
+
     const filters: DashboardFilters = { dateFrom, dateTo, lineIds };
     const where = buildRunConditions(filters);
 
     const rows = await db
       .select({
         productName: products.name,
-        totalOutput:
-          sql<number>`sum(${productionRuns.actualOutput})`.as("total_output"),
+        totalOutput: sql<number>`sum(${productionRuns.actualOutput})`.as("total_output"),
       })
       .from(productionRuns)
       .leftJoin(products, eq(productionRuns.productId, products.id))
@@ -247,6 +260,8 @@ export async function getProductionByProduct(
 
     return { success: true as const, data: rows };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to fetch production by product",
@@ -256,11 +271,14 @@ export async function getProductionByProduct(
 
 // ─── Line comparison ────────────────────────────────────────────────
 
-export async function getLineComparison(
-  dateFrom?: string,
-  dateTo?: string
-) {
+export async function getLineComparison(dateFrom?: string, dateTo?: string) {
   try {
+    await requireGrant({
+      capability: "dashboard.read",
+      scope: { dim: null },
+      actionName: "getLineComparison",
+    });
+
     const conditions = [];
     if (dateFrom) conditions.push(gte(productionRuns.date, dateFrom));
     if (dateTo) conditions.push(lte(productionRuns.date, dateTo));
@@ -276,10 +294,7 @@ export async function getLineComparison(
       })
       .from(productionRuns)
       .leftJoin(products, eq(productionRuns.productId, products.id))
-      .leftJoin(
-        productionLines,
-        eq(productionRuns.lineId, productionLines.id)
-      )
+      .leftJoin(productionLines, eq(productionRuns.lineId, productionLines.id))
       .where(conditions.length > 0 ? and(...conditions) : undefined);
 
     // Group by line
@@ -306,22 +321,22 @@ export async function getLineComparison(
       byLine.set(lineId, existing);
     }
 
-    const result = Array.from(byLine.values()).map(
-      ({ lineName, rows: lineRows }) => {
-        const agg = computeAggregates(lineRows);
-        return {
-          lineName: lineName ?? "Unknown",
-          efficiency: agg.efficiency,
-          productivity: agg.productivity,
-        };
-      }
-    );
+    const result = Array.from(byLine.values()).map(({ lineName, rows: lineRows }) => {
+      const agg = computeAggregates(lineRows);
+      return {
+        lineName: lineName ?? "Unknown",
+        efficiency: agg.efficiency,
+        productivity: agg.productivity,
+      };
+    });
 
     // Sort by line name for consistent ordering
     result.sort((a, b) => a.lineName.localeCompare(b.lineName));
 
     return { success: true as const, data: result };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to fetch line comparison",

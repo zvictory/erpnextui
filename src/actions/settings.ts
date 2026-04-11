@@ -5,11 +5,18 @@ import { settings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { updateSettingSchema } from "@/lib/validations";
+import { requireGrant, toActionError } from "@/lib/permissions/require-grant";
 
 // ─── Get all settings ───────────────────────────────────────────────
 
 export async function getSettings() {
   try {
+    await requireGrant({
+      capability: "settings.read",
+      scope: { dim: null },
+      actionName: "getSettings",
+    });
+
     const rows = await db.select().from(settings);
 
     const result: Record<string, string> = {};
@@ -19,6 +26,8 @@ export async function getSettings() {
 
     return { success: true as const, data: result };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to fetch settings",
@@ -30,11 +39,13 @@ export async function getSettings() {
 
 export async function getSetting(key: string) {
   try {
-    const rows = await db
-      .select()
-      .from(settings)
-      .where(eq(settings.key, key))
-      .limit(1);
+    await requireGrant({
+      capability: "settings.read",
+      scope: { dim: null },
+      actionName: "getSetting",
+    });
+
+    const rows = await db.select().from(settings).where(eq(settings.key, key)).limit(1);
 
     if (rows.length === 0) {
       return { success: true as const, data: null };
@@ -42,6 +53,8 @@ export async function getSetting(key: string) {
 
     return { success: true as const, data: rows[0].value };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to fetch setting",
@@ -53,6 +66,12 @@ export async function getSetting(key: string) {
 
 export async function updateSetting(key: string, value: string) {
   try {
+    await requireGrant({
+      capability: "settings.write",
+      scope: { dim: null },
+      actionName: "updateSetting",
+    });
+
     updateSettingSchema.parse({ key, value });
 
     // Upsert: insert or update on conflict
@@ -65,6 +84,8 @@ export async function updateSetting(key: string, value: string) {
 
     return { success: true as const };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to update setting",
@@ -76,6 +97,12 @@ export async function updateSetting(key: string, value: string) {
 
 export async function updateSettings(newSettings: Record<string, string>) {
   try {
+    await requireGrant({
+      capability: "settings.write",
+      scope: { dim: null },
+      actionName: "updateSettings",
+    });
+
     for (const [key, value] of Object.entries(newSettings)) {
       updateSettingSchema.parse({ key, value });
 
@@ -89,6 +116,8 @@ export async function updateSettings(newSettings: Record<string, string>) {
 
     return { success: true as const };
   } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
     return {
       success: false as const,
       error: error instanceof Error ? error.message : "Failed to update settings",
