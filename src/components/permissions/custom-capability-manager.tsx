@@ -6,7 +6,9 @@ import { useTranslations } from "next-intl";
 import {
   useCreateCustomCapability,
   useDeleteCustomCapability,
+  useUpdateCustomCapability,
   useCustomCapabilities,
+  type CustomCapabilityRow,
 } from "@/hooks/use-admin-permissions";
 import {
   Dialog,
@@ -47,9 +49,14 @@ export function CustomCapabilityManager() {
   const t = useTranslations("permissions");
   const { data: caps = [], isLoading } = useCustomCapabilities();
   const createMut = useCreateCustomCapability();
+  const updateMut = useUpdateCustomCapability();
   const deleteMut = useDeleteCustomCapability();
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<CustomCapabilityRow | null>(null);
+  const [editModule, setEditModule] = useState("");
+  const [editLabelKey, setEditLabelKey] = useState("");
+  const [editScopeDim, setEditScopeDim] = useState<string>("none");
   const [id, setId] = useState("");
   const [module, setModule] = useState("");
   const [labelKey, setLabelKey] = useState("");
@@ -70,6 +77,29 @@ export function CustomCapabilityManager() {
       setLabelKey("");
       setScopeDim("none");
       setCreateOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("saveFailed"));
+    }
+  };
+
+  const openEdit = (cap: CustomCapabilityRow) => {
+    setEditTarget(cap);
+    setEditModule(cap.module);
+    setEditLabelKey(cap.labelKey);
+    setEditScopeDim(cap.scopeDim ?? "none");
+  };
+
+  const handleEdit = async () => {
+    if (!editTarget || !editModule.trim() || !editLabelKey.trim()) return;
+    try {
+      await updateMut.mutateAsync({
+        id: editTarget.id,
+        module: editModule.trim(),
+        labelKey: editLabelKey.trim(),
+        scopeDim: editScopeDim === "none" ? null : (editScopeDim as "line" | "warehouse" | "company"),
+      });
+      toast.success(t("capEdited"));
+      setEditTarget(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("saveFailed"));
     }
@@ -127,14 +157,23 @@ export function CustomCapabilityManager() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDelete(cap.id)}
-                      disabled={deleteMut.isPending}
-                    >
-                      {t("capDelete")}
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openEdit(cap)}
+                      >
+                        {t("capEdit")}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDelete(cap.id)}
+                        disabled={deleteMut.isPending}
+                      >
+                        {t("capDelete")}
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -142,6 +181,65 @@ export function CustomCapabilityManager() {
           </Table>
         )}
       </div>
+
+      <Dialog open={!!editTarget} onOpenChange={(v) => !v && setEditTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("capEditTitle")}</DialogTitle>
+            <DialogDescription className="font-mono text-xs">{editTarget?.id}</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-cap-module">{t("capModule")}</Label>
+              <Input
+                id="edit-cap-module"
+                value={editModule}
+                onChange={(e) => setEditModule(e.target.value)}
+                placeholder={t("capModuleHint")}
+                className="text-xs"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-cap-label">{t("capLabel")}</Label>
+              <Input
+                id="edit-cap-label"
+                value={editLabelKey}
+                onChange={(e) => setEditLabelKey(e.target.value)}
+                placeholder={t("capLabelHint")}
+                className="text-xs"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("capScopeDim")}</Label>
+              <Select value={editScopeDim} onValueChange={setEditScopeDim}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SCOPE_DIM_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTarget(null)}>
+              {t("cancel")}
+            </Button>
+            <Button
+              onClick={handleEdit}
+              disabled={!editModule.trim() || !editLabelKey.trim() || updateMut.isPending}
+            >
+              {updateMut.isPending ? t("saving") : t("save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-md">

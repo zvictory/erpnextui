@@ -143,6 +143,7 @@ const manufacturingNav = [
 ];
 
 const adminNav: NavItem[] = [
+  { tKey: "settings", href: "/settings", icon: Settings },
   { tKey: "permissions", href: "/settings/permissions", icon: ShieldCheck, capability: "platform.admin" },
 ];
 

@@ -42,6 +42,7 @@
       "oee": "OEE",
       "admin": "Administration"
     },
+    "settings": "Settings",
     "permissions": "Permissions",
     "oeeDashboard": "OEE Dashboard",
     "layoutEditor": "Layout Editor",
@@ -1381,7 +1382,12 @@
     "capLabelHint": "i18n key, e.g. \"cap.quality.inspect\"",
     "capScopeDimHint": "Leave empty for unscoped capabilities",
     "capCreated": "Custom capability created",
-    "capDeleted": "Custom capability deleted"
+    "capDeleted": "Custom capability deleted",
+    "capEdit": "Edit",
+    "capEditTitle": "Edit custom capability",
+    "capEdited": "Custom capability updated",
+    "applyScopeSection": "Scope access",
+    "applyScopeAll": "All (wildcard)"
   },
   "cap": {
     "platform": {

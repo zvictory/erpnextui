@@ -42,6 +42,7 @@
       "oee": "OEE",
       "admin": "Администрирование"
     },
+    "settings": "Настройки",
     "permissions": "Права доступа",
     "oeeDashboard": "Панель OEE",
     "layoutEditor": "Редактор макета",
@@ -1334,7 +1335,12 @@
     "capLabelHint": "Ключ i18n, напр. \"cap.quality.inspect\"",
     "capScopeDimHint": "Оставьте пустым для неограниченных возможностей",
     "capCreated": "Пользовательская возможность создана",
-    "capDeleted": "Пользовательская возможность удалена"
+    "capDeleted": "Пользовательская возможность удалена",
+    "capEdit": "Изменить",
+    "capEditTitle": "Изменить пользовательскую возможность",
+    "capEdited": "Пользовательская возможность обновлена",
+    "applyScopeSection": "Область доступа",
+    "applyScopeAll": "Все (любой)"
   },
   "cap": {
     "platform": {

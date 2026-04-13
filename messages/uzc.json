@@ -42,6 +42,7 @@
       "oee": "OEE",
       "admin": "Администрация"
     },
+    "settings": "Созламалар",
     "permissions": "Рухсатлар",
     "oeeDashboard": "OEE панел",
     "layoutEditor": "Layout таҳрирлаш",
@@ -1321,7 +1322,12 @@
     "capLabelHint": "i18n калити, мас. cap.quality.inspect",
     "capScopeDimHint": "Чекланмаган имкониятлар учун бўш қолдиринг",
     "capCreated": "Махсус имконият яратилди",
-    "capDeleted": "Махсус имконият ўчирилди"
+    "capDeleted": "Махсус имконият ўчирилди",
+    "capEdit": "Таҳрирлаш",
+    "capEditTitle": "Махсус имкониятни таҳрирлаш",
+    "capEdited": "Махсус имконият янгиланди",
+    "applyScopeSection": "Кириш доираси",
+    "applyScopeAll": "Барчаси (wildcard)"
   },
   "cap": {
     "platform": {

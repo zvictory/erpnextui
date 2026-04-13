@@ -335,6 +335,39 @@ export function useCreateCustomCapability() {
   });
 }
 
+export function useUpdateCustomCapability() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      module?: string;
+      labelKey?: string;
+      scopeDim?: "line" | "warehouse" | "company" | null;
+    }) => {
+      const { id, ...body } = input;
+      const resp = await fetch(
+        `/api/admin/permissions/custom-capabilities/${encodeURIComponent(id)}`,
+        {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        },
+      );
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error ?? `Failed: ${resp.status}`);
+      }
+      return resp.json() as Promise<{ id: string }>;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({
+        queryKey: [...queryKeys.permissions.grants, "admin", "custom-capabilities"],
+      });
+    },
+  });
+}
+
 export function useDeleteCustomCapability() {
   const qc = useQueryClient();
   return useMutation({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { PermissionGuard } from "@/components/shared/permission-guard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -71,23 +71,55 @@ export default function PermissionsAdminPage() {
 
 function UsersTab() {
   const t = useTranslations("permissions");
-  const { data: users = [], isLoading } = useAdminPermissionUsers();
+  const { data: grantedUsers = [], isLoading: grantsLoading } = useAdminPermissionUsers();
+  const { data: allFrappeUsers = [], isLoading: frappeLoading } = useFrappeUsers("");
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [applyOpen, setApplyOpen] = useState(false);
-  const [showUserSearch, setShowUserSearch] = useState(false);
-  const [userSearch, setUserSearch] = useState("");
+  const [search, setSearch] = useState("");
 
-  const { data: frappeUsers = [], isLoading: frappeLoading } = useFrappeUsers(userSearch);
+  // Build email → grant info map from local DB
+  const grantMap = useMemo(() => {
+    const map = new Map<string, { grantCount: number; lastGrantedAt: string | null }>();
+    for (const u of grantedUsers) {
+      map.set(u.userEmail, { grantCount: u.grantCount, lastGrantedAt: u.lastGrantedAt });
+    }
+    return map;
+  }, [grantedUsers]);
 
-  const handleSelectFrappeUser = (email: string) => {
-    setEditingUser(email);
-    setShowUserSearch(false);
-    setUserSearch("");
-  };
+  // Merge all Frappe users with their grant counts
+  const mergedUsers = useMemo(() => {
+    const seen = new Set(allFrappeUsers.map((u) => u.email));
+    const result = allFrappeUsers.map((u) => ({
+      email: u.email,
+      fullName: u.fullName,
+      ...(grantMap.get(u.email) ?? { grantCount: 0, lastGrantedAt: null }),
+    }));
+    // Append granted users not in Frappe list (e.g. disabled accounts)
+    for (const u of grantedUsers) {
+      if (!seen.has(u.userEmail)) {
+        result.push({
+          email: u.userEmail,
+          fullName: u.userEmail,
+          grantCount: u.grantCount,
+          lastGrantedAt: u.lastGrantedAt,
+        });
+      }
+    }
+    return result;
+  }, [allFrappeUsers, grantedUsers, grantMap]);
 
-  if (isLoading) {
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return mergedUsers;
+    return mergedUsers.filter(
+      (u) => u.email.includes(q) || u.fullName.toLowerCase().includes(q),
+    );
+  }, [mergedUsers, search]);
+
+  if (grantsLoading || frappeLoading) {
     return (
       <div className="space-y-2">
+        <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
       </div>
@@ -96,32 +128,49 @@ function UsersTab() {
 
   return (
     <>
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <Input
+          placeholder={t("searchUsers")}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-xs"
+        />
+        <Button variant="outline" onClick={() => setApplyOpen(true)}>
+          {t("applyBtn")}
+        </Button>
+      </div>
+
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>{t("columns.email")}</TableHead>
+            <TableHead>{t("columns.user")}</TableHead>
             <TableHead className="text-right">{t("columns.grants")}</TableHead>
             <TableHead>{t("columns.lastGranted")}</TableHead>
             <TableHead className="w-24" />
           </TableRow>
         </TableHeader>
         <TableBody>
-          {users.length === 0 ? (
+          {filtered.length === 0 ? (
             <TableRow>
               <TableCell colSpan={4} className="text-center text-muted-foreground">
                 {t("noUsers")}
               </TableCell>
             </TableRow>
           ) : (
-            users.map((u) => (
-              <TableRow key={u.userEmail}>
-                <TableCell className="font-mono text-xs">{u.userEmail}</TableCell>
-                <TableCell className="text-right">{u.grantCount}</TableCell>
+            filtered.map((u) => (
+              <TableRow key={u.email}>
+                <TableCell>
+                  <div className="font-medium text-sm">{u.fullName}</div>
+                  <div className="font-mono text-xs text-muted-foreground">{u.email}</div>
+                </TableCell>
+                <TableCell className="text-right">
+                  <Badge variant={u.grantCount > 0 ? "default" : "outline"}>{u.grantCount}</Badge>
+                </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
                   {u.lastGrantedAt ? formatDate(u.lastGrantedAt) : "—"}
                 </TableCell>
                 <TableCell>
-                  <Button size="sm" variant="outline" onClick={() => setEditingUser(u.userEmail)}>
+                  <Button size="sm" variant="outline" onClick={() => setEditingUser(u.email)}>
                     {t("editBtn")}
                   </Button>
                 </TableCell>
@@ -130,46 +179,6 @@ function UsersTab() {
           )}
         </TableBody>
       </Table>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Button variant="outline" onClick={() => setShowUserSearch(!showUserSearch)}>
-          {t("grantNew")}
-        </Button>
-        <Button variant="outline" onClick={() => setApplyOpen(true)}>
-          {t("applyBtn")}
-        </Button>
-      </div>
-
-      {showUserSearch && (
-        <div className="mt-4 rounded border p-3 space-y-2">
-          <Input
-            placeholder={t("searchUsers")}
-            value={userSearch}
-            onChange={(e) => setUserSearch(e.target.value)}
-          />
-          {frappeLoading && userSearch.length >= 2 ? (
-            <p className="text-xs text-muted-foreground">Loading...</p>
-          ) : frappeUsers.length > 0 ? (
-            <div className="max-h-48 overflow-y-auto">
-              {frappeUsers.slice(0, 20).map((u) => (
-                <button
-                  key={u.email}
-                  type="button"
-                  className="w-full px-3 py-1.5 text-left text-sm hover:bg-accent rounded"
-                  onClick={() => handleSelectFrappeUser(u.email)}
-                >
-                  <span className="font-medium">{u.fullName}</span>
-                  <span className="ml-2 text-xs text-muted-foreground">{u.email}</span>
-                </button>
-              ))}
-            </div>
-          ) : userSearch.length >= 2 ? (
-            <p className="text-xs text-muted-foreground">No users found</p>
-          ) : (
-            <p className="text-xs text-muted-foreground">Type at least 2 characters to search</p>
-          )}
-        </div>
-      )}
 
       <GrantEditor userEmail={editingUser} onClose={() => setEditingUser(null)} />
       <ApplyTemplateDialog open={applyOpen} onClose={() => setApplyOpen(false)} />

@@ -5,8 +5,8 @@ import type { GLEntry } from "@/types/gl-entry";
 import type { PartyBalances, CurrencyBalance } from "@/types/party-report";
 
 /**
- * Fetch balances using the AR/AP Summary report with `in_party_currency: 1`.
- * Returns amounts in each party's billing currency (not the account's currency).
+ * Fetch balances using the AR/AP Summary report in company currency.
+ * Returns exact booked amounts — no exchange-rate round-trip.
  */
 async function fetchBalancesFromReport(
   partyType: "Customer" | "Supplier",
@@ -29,7 +29,9 @@ async function fetchBalancesFromReport(
       range2: 60,
       range3: 90,
       range4: 120,
-      in_party_currency: 1,
+      // Do NOT pass in_party_currency: 1 — it causes ERPNext to round-trip
+      // UZS → USD → UZS at report-date rate, producing rounding errors (e.g.
+      // 179,975 instead of 180,000). Company-currency figures are exact.
     },
   });
 
@@ -145,11 +147,9 @@ export function usePartyDraftJEs(partyType: string, party: string, company: stri
   });
 }
 
-const PARTY_LEDGER_PAGE_SIZE = 50;
-
-export function usePartyLedger(partyType: string, party: string, company: string, page = 1) {
+export function usePartyLedger(partyType: string, party: string, company: string) {
   return useQuery({
-    queryKey: queryKeys.partyLedger.list(partyType, party, company, page),
+    queryKey: queryKeys.partyLedger.list(partyType, party, company),
     queryFn: () =>
       frappe.getList<GLEntry>("GL Entry", {
         filters: [
@@ -172,23 +172,8 @@ export function usePartyLedger(partyType: string, party: string, company: string
           "remarks",
         ],
         orderBy: "posting_date desc",
-        limitPageLength: PARTY_LEDGER_PAGE_SIZE,
-        limitStart: (page - 1) * PARTY_LEDGER_PAGE_SIZE,
+        limitPageLength: 0,
       }),
-    enabled: !!party && !!company,
-  });
-}
-
-export function usePartyLedgerCount(partyType: string, party: string, company: string) {
-  return useQuery({
-    queryKey: queryKeys.partyLedger.count(partyType, party, company),
-    queryFn: () =>
-      frappe.getCount("GL Entry", [
-        ["party_type", "=", partyType],
-        ["party", "=", party],
-        ["company", "=", company],
-        ["is_cancelled", "=", 0],
-      ]),
     enabled: !!party && !!company,
   });
 }

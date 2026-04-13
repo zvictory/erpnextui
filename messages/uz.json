@@ -42,6 +42,7 @@
       "oee": "OEE",
       "admin": "Administratsiya"
     },
+    "settings": "Sozlamalar",
     "permissions": "Ruxsatlar",
     "oeeDashboard": "OEE panel",
     "layoutEditor": "Layout tahrirlash",
@@ -1318,7 +1319,12 @@
     "capLabelHint": "i18n kaliti, mas. \"cap.quality.inspect\"",
     "capScopeDimHint": "Cheklanmagan imkoniyatlar uchun bo'sh qoldiring",
     "capCreated": "Maxsus imkoniyat yaratildi",
-    "capDeleted": "Maxsus imkoniyat o'chirildi"
+    "capDeleted": "Maxsus imkoniyat o'chirildi",
+    "capEdit": "Tahrirlash",
+    "capEditTitle": "Maxsus imkoniyatni tahrirlash",
+    "capEdited": "Maxsus imkoniyat yangilandi",
+    "applyScopeSection": "Kirish doirasi",
+    "applyScopeAll": "Barchasi (wildcard)"
   },
   "cap": {
     "platform": {
