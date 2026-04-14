@@ -273,14 +273,6 @@ export function useAccrueSalary() {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Fetch account currency helper (used by pay salary)
-// ---------------------------------------------------------------------------
-
-async function getAccountCurrency(accountName: string): Promise<string> {
-  const doc = await frappe.getDoc<{ account_currency: string }>("Account", accountName);
-  return doc.account_currency;
-}
 
 async function fetchExchangeRate(
   fromCurrency: string,
@@ -336,9 +328,18 @@ export function usePaySalary() {
 
   return useMutation({
     mutationFn: async (p: PaySalaryParams) => {
-      const isMultiCurrency = p.bankCurrency !== p.payableCurrency;
+      // Defensive: verify actual account currencies from ERPNext master data
+      // (caller may pass stale/empty values if the query hadn't resolved yet)
+      const [payableAccDoc, bankAccDoc] = await Promise.all([
+        frappe.getDoc<{ account_currency: string }>("Account", p.salaryPayableAccount),
+        frappe.getDoc<{ account_currency: string }>("Account", p.bankAccount),
+      ]);
+      const payableCurrency = payableAccDoc.account_currency;
+      const bankCurrency = bankAccDoc.account_currency;
+
+      const isMultiCurrency = bankCurrency !== payableCurrency;
       if (isMultiCurrency) {
-        await ensureMultiCurrencyEnabled(p.company, [p.payableCurrency, p.bankCurrency]);
+        await ensureMultiCurrencyEnabled(p.company, [payableCurrency, bankCurrency]);
       }
 
       // Golden rule: both amounts are sacred. Derive exchange rates from amounts.
@@ -351,22 +352,22 @@ export function usePaySalary() {
       let bankRate: number;
       let payableRate: number;
 
-      if (p.bankCurrency === p.payableCurrency) {
+      if (bankCurrency === payableCurrency) {
         // Same currency — no conversion
-        bankRate = p.bankCurrency === companyCurrency ? 1 : (await fetchExchangeRate(p.bankCurrency, companyCurrency, p.postingDate)) ?? 1;
+        bankRate = bankCurrency === companyCurrency ? 1 : (await fetchExchangeRate(bankCurrency, companyCurrency, p.postingDate)) ?? 1;
         payableRate = bankRate;
-      } else if (p.bankCurrency === companyCurrency) {
+      } else if (bankCurrency === companyCurrency) {
         // Bank is in company currency (e.g. UZS), payable is foreign (e.g. USD)
         // base = bankAmount (already in company currency)
         bankRate = 1;
         payableRate = p.bankAmount / p.payableAmount;
-      } else if (p.payableCurrency === companyCurrency) {
+      } else if (payableCurrency === companyCurrency) {
         // Payable is in company currency, bank is foreign
         payableRate = 1;
         bankRate = p.payableAmount / p.bankAmount;
       } else {
         // Neither is company currency — anchor to bank side via fetched rate
-        const fetchedBankRate = (await fetchExchangeRate(p.bankCurrency, companyCurrency, p.postingDate)) ?? 1;
+        const fetchedBankRate = (await fetchExchangeRate(bankCurrency, companyCurrency, p.postingDate)) ?? 1;
         const companyAmount = p.bankAmount * fetchedBankRate;
         bankRate = fetchedBankRate;
         payableRate = companyAmount / p.payableAmount;
@@ -382,14 +383,14 @@ export function usePaySalary() {
           account: p.salaryPayableAccount,
           party_type: "Employee" as const,
           party: p.employee,
-          account_currency: p.payableCurrency,
+          account_currency: payableCurrency,
           debit_in_account_currency: p.payableAmount,
           exchange_rate: payableRate,
         },
         {
           doctype: "Journal Entry Account" as const,
           account: p.bankAccount,
-          account_currency: p.bankCurrency,
+          account_currency: bankCurrency,
           credit_in_account_currency: p.bankAmount,
           exchange_rate: bankRate,
         },

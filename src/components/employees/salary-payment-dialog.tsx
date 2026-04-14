@@ -72,8 +72,9 @@ export function SalaryPaymentDialog({
   const { data: companies } = useCompanies();
   const companyCurrency = companies?.find((c) => c.name === company)?.default_currency ?? "";
 
-  // Fetch payable account currency
-  const { data: payableCurrency = "" } = useAccountCurrency(salaryPayableAccount);
+  // Fetch payable account currency — must resolve before submit
+  const { data: payableCurrency = "", isLoading: payableCurrencyLoading } =
+    useAccountCurrency(salaryPayableAccount);
 
   const {
     register,
@@ -157,11 +158,10 @@ export function SalaryPaymentDialog({
       toast.error(tSettings("salary.notConfigured"));
       return;
     }
-    if (!bankAccount) return;
-    if (!amount || amount <= 0) return;
+    if (!bankAccount || !amount || amount <= 0) return;
+    if (!payableCurrency || !bankCurrency) return;
 
     const effectivePayableAmount = isMultiCurrency ? payableAmount : amount;
-    const effectivePayableCurrency = isMultiCurrency ? payableCurrency : bankCurrency;
 
     if (isMultiCurrency && (!effectivePayableAmount || effectivePayableAmount <= 0)) return;
 
@@ -174,7 +174,7 @@ export function SalaryPaymentDialog({
         bankAmount: amount,
         payableAmount: effectivePayableAmount,
         bankCurrency,
-        payableCurrency: effectivePayableCurrency,
+        payableCurrency,
         salaryPayableAccount,
         bankAccount,
         description: description.trim() || undefined,
@@ -289,8 +289,10 @@ export function SalaryPaymentDialog({
             <Button
               disabled={
                 paySalary.isPending ||
+                payableCurrencyLoading ||
                 !bankAccount ||
                 !amount ||
+                !payableCurrency ||
                 isInsufficientBalance ||
                 (isMultiCurrency && (!payableAmount || payableAmount <= 0))
               }
