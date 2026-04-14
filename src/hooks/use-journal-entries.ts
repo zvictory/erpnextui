@@ -135,7 +135,7 @@ export function useCreateAndSubmitJournalEntry() {
       );
 
       // Background refetch for accurate data
-      qc.invalidateQueries({ queryKey: ["journalEntries", "list"] });
+      qc.invalidateQueries({ queryKey: ["journalEntries"] });
       qc.invalidateQueries({ queryKey: ["partyBalances", "employee"] });
       qc.invalidateQueries({ queryKey: ["partyLedger"] });
     },
@@ -175,7 +175,7 @@ export function useCreateJournalEntryDraft() {
       return { name: created.name };
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["journalEntries", "list"] });
+      qc.invalidateQueries({ queryKey: ["journalEntries"] });
       qc.invalidateQueries({ queryKey: ["partyBalances", "employee"] });
       qc.invalidateQueries({ queryKey: ["partyLedger"] });
     },
@@ -236,7 +236,7 @@ export function useAmendJournalEntry() {
       return { originalName, newName: created.name };
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["journalEntries", "list"] });
+      qc.invalidateQueries({ queryKey: ["journalEntries"] });
       qc.invalidateQueries({ queryKey: ["partyBalances"] });
       qc.invalidateQueries({ queryKey: ["partyLedger"] });
     },
@@ -304,7 +304,7 @@ export function useUpdateDraftAndSubmit() {
       }
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["journalEntries", "list"] });
+      qc.invalidateQueries({ queryKey: ["journalEntries"] });
       qc.invalidateQueries({ queryKey: ["partyBalances"] });
       qc.invalidateQueries({ queryKey: ["partyLedger"] });
     },
@@ -366,7 +366,7 @@ export function useSubmitJournalEntry() {
       return frappe.submit<JournalEntry>(fullDoc as unknown as Record<string, unknown>);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["journalEntries", "list"] });
+      qc.invalidateQueries({ queryKey: ["journalEntries"] });
       qc.invalidateQueries({ queryKey: ["partyBalances"] });
       qc.invalidateQueries({ queryKey: ["partyLedger"] });
     },
@@ -389,7 +389,7 @@ export function useCancelJournalEntry() {
       await frappe.cancel("Journal Entry", name);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["journalEntries", "list"] });
+      qc.invalidateQueries({ queryKey: ["journalEntries"] });
       qc.invalidateQueries({ queryKey: ["partyBalances"] });
       qc.invalidateQueries({ queryKey: ["partyLedger"] });
     },
@@ -412,7 +412,7 @@ export function useDeleteJournalEntry() {
       await frappe.deleteDoc("Journal Entry", name);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["journalEntries", "list"] });
+      qc.invalidateQueries({ queryKey: ["journalEntries"] });
       qc.invalidateQueries({ queryKey: ["partyBalances"] });
       qc.invalidateQueries({ queryKey: ["partyLedger"] });
     },
@@ -513,7 +513,7 @@ export function useCreateIceCreamSale() {
       return { siName: si.name, jeName: je.name };
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["journalEntries", "list"] });
+      qc.invalidateQueries({ queryKey: ["journalEntries"] });
       qc.invalidateQueries({ queryKey: ["partyBalances"] });
       qc.invalidateQueries({ queryKey: ["partyLedger"] });
       qc.invalidateQueries({ queryKey: ["salesInvoices"] });
@@ -539,7 +539,7 @@ export function useCancelIceCreamSale() {
       await frappe.cancel("Sales Invoice", siName);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["journalEntries", "list"] });
+      qc.invalidateQueries({ queryKey: ["journalEntries"] });
       qc.invalidateQueries({ queryKey: ["partyBalances"] });
       qc.invalidateQueries({ queryKey: ["partyLedger"] });
       qc.invalidateQueries({ queryKey: ["salesInvoices"] });
