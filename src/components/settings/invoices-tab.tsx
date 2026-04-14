@@ -46,7 +46,9 @@ export function InvoicesTab() {
   const cs = useUISettingsStore((s) => s.getCompanySettings(company));
   const update = useUISettingsStore((s) => s.updateCompanySetting);
 
+  const sellingWarehouse = cs.sellingWarehouse;
   const salaryPayable = cs.salaryPayableAccount;
+  const salaryBank = cs.salaryBankAccount;
   const icDebit = cs.iceCreamDebitAccount;
   const icCredit = cs.iceCreamCreditAccount;
   const icCurrency = cs.iceCreamCurrency;
@@ -55,6 +57,27 @@ export function InvoicesTab() {
 
   return (
     <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Selling Warehouse</CardTitle>
+          <CardDescription>
+            Only items with stock in this warehouse will appear in sales forms
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <LinkField
+            doctype="Warehouse"
+            value={sellingWarehouse}
+            onChange={(v) => update(company, "sellingWarehouse", v)}
+            filters={[
+              ["company", "=", company],
+              ["is_group", "=", 0],
+            ]}
+            placeholder="All items (no filter)"
+          />
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>{t("invoiceColumns.title")}</CardTitle>
@@ -185,6 +208,22 @@ export function InvoicesTab() {
               filters={[
                 ["root_type", "=", "Liability"],
                 ["is_group", "=", 0],
+              ]}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="flex flex-col gap-1">
+              <span>{t("salary.bankAccount")}</span>
+            </Label>
+            <LinkField
+              doctype="Account"
+              value={salaryBank}
+              onChange={(v) => update(company, "salaryBankAccount", v)}
+              filters={[
+                ["account_type", "in", ["Bank", "Cash"]],
+                ["is_group", "=", 0],
+                ["disabled", "=", 0],
+                ["company", "=", company],
               ]}
             />
           </div>

@@ -536,6 +536,7 @@
       "description": "Ish haqi hisoblash va to'lash uchun standart hisoblar",
       "expenseAccount": "Ish haqi xarajati hisobi",
       "payableAccount": "Ish haqi qarzdorligi hisobi",
+      "bankAccount": "Standart bank hisobi",
       "notConfigured": "Sozlamalarda ish haqi hisoblarini sozlang"
     },
     "languages": {

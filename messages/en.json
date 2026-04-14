@@ -587,6 +587,7 @@
       "description": "Default accounts for salary accrual and payment",
       "expenseAccount": "Salary Expense Account",
       "payableAccount": "Salary Payable Account",
+      "bankAccount": "Default Bank Account",
       "notConfigured": "Please configure salary accounts in Settings"
     },
     "languages": {

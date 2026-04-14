@@ -14,21 +14,25 @@ export type Locale = "en" | "ru" | "uz" | "uzc";
 export interface CompanySpecificSettings {
   salaryExpenseAccount: string;
   salaryPayableAccount: string;
+  salaryBankAccount: string;
   iceCreamDebitAccount: string;
   iceCreamCreditAccount: string;
   iceCreamCurrency: string;
   iceCreamCustomer: string;
   iceCreamCustomerARAccount: string;
+  sellingWarehouse: string;
 }
 
 export const DEFAULT_COMPANY_SETTINGS: CompanySpecificSettings = {
   salaryExpenseAccount: "",
   salaryPayableAccount: "",
+  salaryBankAccount: "",
   iceCreamDebitAccount: "",
   iceCreamCreditAccount: "",
   iceCreamCurrency: "",
   iceCreamCustomer: "",
   iceCreamCustomerARAccount: "",
+  sellingWarehouse: "",
 };
 
 interface UISettingsState {
@@ -139,6 +143,8 @@ export const useUISettingsStore = create<UISettingsState>()(
               iceCreamCurrency: (s.iceCreamCurrency as string) ?? "",
               iceCreamCustomer: (s.iceCreamCustomer as string) ?? "",
               iceCreamCustomerARAccount: (s.iceCreamCustomerARAccount as string) ?? "",
+              salaryBankAccount: "",
+              sellingWarehouse: "",
             };
             // Store under "__migrated" key — user will see it under whichever company
             // they had selected. The settings UI will pick it up for the active company.

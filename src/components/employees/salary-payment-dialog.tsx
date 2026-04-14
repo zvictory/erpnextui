@@ -58,6 +58,9 @@ export function SalaryPaymentDialog({
   const salaryPayableAccount = useUISettingsStore(
     (s) => s.getCompanySettings(company).salaryPayableAccount,
   );
+  const defaultBankAccount = useUISettingsStore(
+    (s) => s.getCompanySettings(company).salaryBankAccount,
+  );
   const paySalary = usePaySalary();
 
   const {
@@ -65,12 +68,11 @@ export function SalaryPaymentDialog({
     reset,
     setValue,
     watch,
-    formState: { errors },
   } = useForm<SalaryPaymentFormValues>({
     defaultValues: {
       posting_date: format(new Date(), "yyyy-MM-dd"),
       amount: defaultAmount,
-      bank_account: "",
+      bank_account: defaultBankAccount,
     },
   });
 
@@ -79,10 +81,10 @@ export function SalaryPaymentDialog({
       reset({
         posting_date: format(new Date(), "yyyy-MM-dd"),
         amount: defaultAmount,
-        bank_account: "",
+        bank_account: defaultBankAccount,
       });
     }
-  }, [open, defaultAmount, reset]);
+  }, [open, defaultAmount, defaultBankAccount, reset]);
 
   const bankAccount = watch("bank_account");
   const amount = watch("amount");
@@ -160,7 +162,12 @@ export function SalaryPaymentDialog({
             </Select>
             {bankAccount && selectedAccount && (
               <span className="inline-block rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                Balance: {formatCurrency(selectedAccount.balance ?? 0, selectedAccount.account_currency, true)}
+                Balance:{" "}
+                {formatCurrency(
+                  selectedAccount.balance ?? 0,
+                  selectedAccount.account_currency,
+                  true,
+                )}
               </span>
             )}
             {bankAccount && (
