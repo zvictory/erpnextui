@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { frappe } from "@/lib/frappe-client";
+import { fetchExchangeRate } from "@/lib/multi-currency";
 import { queryKeys } from "@/hooks/query-keys";
 import type {
   OutstandingInvoice,
@@ -65,39 +66,6 @@ interface CreatePaymentEntryInput {
   counterAmount?: number;
 }
 
-/** Fetch exchange rate: 1 fromCurrency = X toCurrency. Returns null if not found. */
-async function fetchExchangeRate(
-  fromCurrency: string,
-  toCurrency: string,
-  date: string,
-): Promise<number | null> {
-  const records = await frappe.getList<{ exchange_rate: number }>("Currency Exchange", {
-    filters: [
-      ["from_currency", "=", fromCurrency],
-      ["to_currency", "=", toCurrency],
-      ["date", "<=", date],
-    ],
-    fields: ["exchange_rate"],
-    orderBy: "date desc",
-    limitPageLength: 1,
-  });
-  if (records.length > 0) return records[0].exchange_rate;
-
-  // Try reverse pair and invert
-  const reverse = await frappe.getList<{ exchange_rate: number }>("Currency Exchange", {
-    filters: [
-      ["from_currency", "=", toCurrency],
-      ["to_currency", "=", fromCurrency],
-      ["date", "<=", date],
-    ],
-    fields: ["exchange_rate"],
-    orderBy: "date desc",
-    limitPageLength: 1,
-  });
-  if (reverse.length > 0 && reverse[0].exchange_rate > 0) return 1 / reverse[0].exchange_rate;
-
-  return null;
-}
 
 export function useCreatePaymentEntry() {
   const qc = useQueryClient();

@@ -8,6 +8,8 @@ export interface JournalEntryAccount {
   account_currency?: string;
   exchange_rate?: number;
   user_remark?: string;
+  reference_type?: string;
+  reference_name?: string;
 }
 
 export interface JournalEntry {

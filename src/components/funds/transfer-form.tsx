@@ -13,6 +13,7 @@ import { ArrowLeftRight, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { DateInput } from "@/components/shared/date-input";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,6 +33,7 @@ import { useExchangeRate } from "@/hooks/use-exchange-rate";
 import { useCompanyStore } from "@/stores/company-store";
 import { useCompanies } from "@/hooks/use-companies";
 import { cn, formatCurrency } from "@/lib/utils";
+import { formatNumber } from "@/lib/formatters";
 import type { JournalEntry, JournalEntryAccount } from "@/types/journal-entry";
 
 export interface TransferFormData {
@@ -90,6 +92,8 @@ function buildTransferAccounts(
   fromExRate: number,
   debitAmount: number,
   toExRate: number,
+  fromCurrency?: string,
+  toCurrency?: string,
 ): JournalEntryAccount[] {
   return [
     {
@@ -97,21 +101,16 @@ function buildTransferAccounts(
       account: fromAccount,
       credit_in_account_currency: creditAmount,
       exchange_rate: fromExRate,
+      ...(fromCurrency ? { account_currency: fromCurrency } : {}),
     },
     {
       doctype: "Journal Entry Account",
       account: toAccount,
       debit_in_account_currency: debitAmount,
       exchange_rate: toExRate,
+      ...(toCurrency ? { account_currency: toCurrency } : {}),
     },
   ];
-}
-
-function formatNumber(n: number): string {
-  return n.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
 }
 
 function roundTo2(n: number): number {
@@ -161,13 +160,8 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
   // Auto-fetch exchange rate for the selected date
   const { data: fetchedRate } = useExchangeRate(baseCurrency, quoteCurrency, postingDate);
 
-  // Apply fetched rate when it arrives (only if user hasn't manually edited)
+  // State for manual-edit flag (read during render, so must be state not a ref)
   const [rateManuallyEdited, setRateManuallyEdited] = useState(false);
-  useEffect(() => {
-    if (fetchedRate && fetchedRate > 0 && !rateManuallyEdited && !editingName) {
-      setRate(String(fetchedRate));
-    }
-  }, [fetchedRate, rateManuallyEdited, editingName]);
 
   // Reset manual edit flag when currencies or date change
   useEffect(() => {
@@ -175,16 +169,26 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
   }, [baseCurrency, quoteCurrency, postingDate]);
 
   const parsedAmount = parseFloat(amount) || 0;
-  const parsedRate = parseFloat(rate) || 1;
+
+  // Derive effective rate: use fetched rate unless user has manually edited or we're in edit mode
+  const effectiveRateStr =
+    !rateManuallyEdited && !editingName && fetchedRate && fetchedRate > 0
+      ? String(fetchedRate)
+      : rate;
+  const parsedRate = parseFloat(effectiveRateStr) || 1;
+
+  // Derive effective received amount: auto-compute unless user has manually edited
+  const autoReceived =
+    isExchange && parsedAmount > 0 && parsedRate > 0
+      ? String(
+          roundTo2(
+            fromCurrency === companyCurrency ? parsedAmount / parsedRate : parsedAmount * parsedRate,
+          ),
+        )
+      : "";
+  const effectiveReceivedInput = rateManuallyEdited ? receivedInput : autoReceived;
 
   const receivedCurrency = toCurrency;
-
-  useEffect(() => {
-    if (!isExchange || parsedAmount <= 0 || parsedRate <= 0) return;
-    const newReceived =
-      fromCurrency === companyCurrency ? parsedAmount / parsedRate : parsedAmount * parsedRate;
-    setReceivedInput(String(roundTo2(newReceived)));
-  }, [isExchange, parsedAmount, parsedRate, fromCurrency, companyCurrency]);
 
   const handleSwap = useCallback(() => {
     setFromAccount((prev) => {
@@ -211,7 +215,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
   );
 
   const handleRateBlur = useCallback(() => {
-    const r = parseFloat(rate) || 1;
+    const r = parseFloat(effectiveRateStr) || 1;
     if (parsedAmount <= 0 || r <= 0) return;
     const rawReceived = fromCurrency === companyCurrency ? parsedAmount / r : parsedAmount * r;
     const rounded = roundTo2(rawReceived);
@@ -221,8 +225,9 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
         ? parsedAmount / rounded // rate = sent / rounded-received
         : rounded / parsedAmount; // rate = rounded-received / sent
     setRate(String(correctedRate));
+    setRateManuallyEdited(true);
     setReceivedInput(String(rounded));
-  }, [rate, parsedAmount, fromCurrency, companyCurrency]);
+  }, [effectiveRateStr, parsedAmount, fromCurrency, companyCurrency]);
 
   const handleReceivedChange = useCallback(
     (value: string) => {
@@ -236,7 +241,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
           : r / parsedAmount; // rate = received / sent
       setRate(String(newRate));
     },
-    [parsedAmount, fromCurrency],
+    [parsedAmount, fromCurrency, companyCurrency],
   );
 
   const resetForm = useCallback(() => {
@@ -345,7 +350,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
     setStatus({ type: "loading", message: "Posting transfer..." });
 
     try {
-      const parsedReceivedInput = parseFloat(receivedInput) || 0;
+      const parsedReceivedInput = parseFloat(effectiveReceivedInput) || 0;
 
       let fromExRate: number, toExRate: number, debitAmount: number;
       if (fromCurrency === toCurrency) {
@@ -380,6 +385,8 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
         fromExRate,
         debitAmount,
         toExRate,
+        fromCurrency,
+        toCurrency,
       );
 
       await onSubmit({
@@ -538,15 +545,13 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
                 {fromCurrency ? ` (${fromCurrency})` : ""}{" "}
                 <span className="text-destructive">*</span>
               </Label>
-              <Input
+              <NumberInput
                 id="amount"
-                type="number"
-                step="any"
-                min="0"
-                placeholder="0.00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                required
+                value={amount ? parseFloat(amount) : undefined}
+                onChange={(v) => setAmount(String(v))}
+                min={0}
+                decimals={0}
+                placeholder="0"
               />
             </div>
           </div>
@@ -569,7 +574,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
                       type="number"
                       step="any"
                       min="0"
-                      value={rate}
+                      value={effectiveRateStr}
                       onChange={(e) => handleRateChange(e.target.value)}
                       onBlur={handleRateBlur}
                       className="h-8 min-w-0"
@@ -589,7 +594,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
                     step="any"
                     min="0"
                     placeholder="0.00"
-                    value={receivedInput}
+                    value={effectiveReceivedInput}
                     onChange={(e) => handleReceivedChange(e.target.value)}
                     className="h-8"
                   />
@@ -597,11 +602,11 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
               </div>
 
               {/* Conversion summary */}
-              {parsedAmount > 0 && parseFloat(receivedInput) > 0 && (
+              {parsedAmount > 0 && parseFloat(effectiveReceivedInput) > 0 && (
                 <p className="text-[11px] text-muted-foreground text-center">
-                  {formatNumber(parsedAmount)}&nbsp;{fromCurrency}
+                  {formatNumber(parsedAmount, 2)}&nbsp;{fromCurrency}
                   <span className="mx-1.5 opacity-40">→</span>
-                  {formatNumber(parseFloat(receivedInput))}&nbsp;{toCurrency}
+                  {formatNumber(parseFloat(effectiveReceivedInput), 2)}&nbsp;{toCurrency}
                 </p>
               )}
             </div>

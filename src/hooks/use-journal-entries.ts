@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { frappe } from "@/lib/frappe-client";
 import { queryKeys } from "@/hooks/query-keys";
+import { enrichJEAccounts } from "@/lib/multi-currency";
 import type {
   JournalEntry,
   JournalEntryAccount,
@@ -65,6 +66,8 @@ interface CreateAndSubmitParams {
   chequeDate?: string;
   /** Suffix appended to the list cache key for optimistic updates (e.g. "[Expense]") */
   listKeySuffix?: string;
+  /** When provided, skips the Company doc fetch needed for account enrichment */
+  companyCurrency?: string;
 }
 
 interface CreateAndSubmitResult {
@@ -86,7 +89,17 @@ export function useCreateAndSubmitJournalEntry() {
       multiCurrency,
       chequeNo,
       chequeDate,
+      companyCurrency: callerCurrency,
     }) => {
+      const compCurrency =
+        callerCurrency ??
+        (await frappe.getDoc<{ default_currency: string }>("Company", company)).default_currency;
+      const { accounts: enrichedAccounts, isMultiCurrency: detected } = await enrichJEAccounts(
+        accounts,
+        compCurrency,
+      );
+      const effectiveMultiCurrency = multiCurrency || detected;
+
       const created = await frappe.createDoc<JournalEntry>("Journal Entry", {
         doctype: "Journal Entry",
         voucher_type: voucherType ?? "Journal Entry",
@@ -94,8 +107,8 @@ export function useCreateAndSubmitJournalEntry() {
         posting_date: postingDate,
         company,
         user_remark: userRemark,
-        accounts,
-        multi_currency: multiCurrency ? 1 : 0,
+        accounts: enrichedAccounts,
+        multi_currency: effectiveMultiCurrency ? 1 : 0,
         ...(chequeNo ? { cheque_no: chequeNo } : {}),
         ...(chequeDate ? { cheque_date: chequeDate } : {}),
       });
@@ -159,7 +172,17 @@ export function useCreateJournalEntryDraft() {
       multiCurrency,
       chequeNo,
       chequeDate,
+      companyCurrency: callerCurrency,
     }) => {
+      const compCurrency =
+        callerCurrency ??
+        (await frappe.getDoc<{ default_currency: string }>("Company", company)).default_currency;
+      const { accounts: enrichedAccounts, isMultiCurrency: detected } = await enrichJEAccounts(
+        accounts,
+        compCurrency,
+      );
+      const effectiveMultiCurrency = multiCurrency || detected;
+
       const created = await frappe.createDoc<JournalEntry>("Journal Entry", {
         doctype: "Journal Entry",
         voucher_type: voucherType ?? "Journal Entry",
@@ -167,8 +190,8 @@ export function useCreateJournalEntryDraft() {
         posting_date: postingDate,
         company,
         user_remark: userRemark,
-        accounts,
-        multi_currency: multiCurrency ? 1 : 0,
+        accounts: enrichedAccounts,
+        multi_currency: effectiveMultiCurrency ? 1 : 0,
         ...(chequeNo ? { cheque_no: chequeNo } : {}),
         ...(chequeDate ? { cheque_date: chequeDate } : {}),
       });
@@ -196,6 +219,7 @@ interface AmendParams {
   voucherType?: string;
   chequeNo?: string;
   chequeDate?: string;
+  companyCurrency?: string;
 }
 
 interface AmendResult {
@@ -217,8 +241,18 @@ export function useAmendJournalEntry() {
       voucherType,
       chequeNo,
       chequeDate,
+      companyCurrency: callerCurrency,
     }) => {
       await frappe.cancel("Journal Entry", originalName);
+
+      const compCurrency =
+        callerCurrency ??
+        (await frappe.getDoc<{ default_currency: string }>("Company", company)).default_currency;
+      const { accounts: enrichedAccounts, isMultiCurrency: detected } = await enrichJEAccounts(
+        accounts,
+        compCurrency,
+      );
+      const effectiveMultiCurrency = multiCurrency || detected;
 
       const created = await frappe.createDoc<JournalEntry>("Journal Entry", {
         doctype: "Journal Entry",
@@ -227,8 +261,8 @@ export function useAmendJournalEntry() {
         posting_date: postingDate,
         company,
         user_remark: userRemark,
-        accounts,
-        multi_currency: multiCurrency ? 1 : 0,
+        accounts: enrichedAccounts,
+        multi_currency: effectiveMultiCurrency ? 1 : 0,
         ...(chequeNo ? { cheque_no: chequeNo } : {}),
         ...(chequeDate ? { cheque_date: chequeDate } : {}),
       });
@@ -255,6 +289,7 @@ interface UpdateDraftAndSubmitParams {
   multiCurrency?: boolean;
   chequeNo?: string;
   chequeDate?: string;
+  companyCurrency?: string;
 }
 
 interface UpdateDraftAndSubmitResult {
@@ -275,17 +310,27 @@ export function useUpdateDraftAndSubmit() {
       multiCurrency,
       chequeNo,
       chequeDate,
+      companyCurrency: callerCurrency,
     }) => {
       const doc = await frappe.getDoc<JournalEntry>("Journal Entry", name);
+
+      const compCurrency =
+        callerCurrency ??
+        (await frappe.getDoc<{ default_currency: string }>("Company", doc.company)).default_currency;
+      const { accounts: enrichedAccounts, isMultiCurrency: detected } = await enrichJEAccounts(
+        accounts,
+        compCurrency,
+      );
+      const effectiveMultiCurrency = multiCurrency || detected;
 
       const modifiedDoc = {
         ...(doc as unknown as Record<string, unknown>),
         posting_date: postingDate,
         user_remark: userRemark,
-        multi_currency: multiCurrency ? 1 : 0,
+        multi_currency: effectiveMultiCurrency ? 1 : 0,
         ...(chequeNo ? { cheque_no: chequeNo } : {}),
         ...(chequeDate ? { cheque_date: chequeDate } : {}),
-        accounts: accounts.map((acc) => ({
+        accounts: enrichedAccounts.map((acc) => ({
           ...acc,
           doctype: "Journal Entry Account" as const,
         })),
@@ -321,20 +366,31 @@ interface SaveDraftParams {
   userRemark: string;
   accounts: JournalEntryAccount[];
   multiCurrency?: boolean;
+  companyCurrency?: string;
 }
 
 export function useSaveDraftJournalEntry() {
   const qc = useQueryClient();
 
   return useMutation<JournalEntry, Error, SaveDraftParams>({
-    mutationFn: async ({ name, postingDate, userRemark, accounts, multiCurrency }) => {
+    mutationFn: async ({ name, postingDate, userRemark, accounts, multiCurrency, companyCurrency: callerCurrency }) => {
       const doc = await frappe.getDoc<JournalEntry>("Journal Entry", name);
+
+      const compCurrency =
+        callerCurrency ??
+        (await frappe.getDoc<{ default_currency: string }>("Company", doc.company)).default_currency;
+      const { accounts: enrichedAccounts, isMultiCurrency: detected } = await enrichJEAccounts(
+        accounts,
+        compCurrency,
+      );
+      const effectiveMultiCurrency = multiCurrency || detected;
+
       const modifiedDoc = {
         ...(doc as unknown as Record<string, unknown>),
         posting_date: postingDate,
         user_remark: userRemark,
-        multi_currency: multiCurrency ? 1 : 0,
-        accounts: accounts.map((acc) => ({
+        multi_currency: effectiveMultiCurrency ? 1 : 0,
+        accounts: enrichedAccounts.map((acc) => ({
           ...acc,
           doctype: "Journal Entry Account" as const,
         })),
@@ -478,6 +534,33 @@ export function useCreateIceCreamSale() {
       const total = p.items.reduce((s, i) => s + i.amount, 0);
 
       // Step 3: Create remapping JE (CR customer AR, DR employee receivable)
+      const companyDoc = await frappe.getDoc<{ default_currency: string }>("Company", p.company);
+      const rawAccounts: JournalEntryAccount[] = [
+        {
+          doctype: "Journal Entry Account",
+          account: p.customerARAccount,
+          party_type: "Customer",
+          party: p.customer,
+          credit_in_account_currency: total,
+          account_currency: p.currency,
+          exchange_rate: p.exchangeRate,
+        },
+        {
+          doctype: "Journal Entry Account",
+          account: p.employeeAccount,
+          party_type: "Employee",
+          party: p.employee,
+          debit_in_account_currency: total,
+          account_currency: p.currency,
+          exchange_rate: p.exchangeRate,
+        },
+      ];
+      const { accounts: jeAccounts, isMultiCurrency: detected } = await enrichJEAccounts(
+        rawAccounts,
+        companyDoc.default_currency,
+      );
+      const effectiveMultiCurrency = p.multiCurrency || detected;
+
       const je = await frappe.createDoc<JournalEntry>("Journal Entry", {
         doctype: "Journal Entry",
         voucher_type: "Journal Entry",
@@ -485,25 +568,8 @@ export function useCreateIceCreamSale() {
         posting_date: p.postingDate,
         company: p.company,
         user_remark: p.userRemark + ` [SI:${si.name}]`,
-        multi_currency: p.multiCurrency ? 1 : 0,
-        accounts: [
-          {
-            doctype: "Journal Entry Account",
-            account: p.customerARAccount,
-            party_type: "Customer",
-            party: p.customer,
-            credit_in_account_currency: total,
-            exchange_rate: p.exchangeRate,
-          },
-          {
-            doctype: "Journal Entry Account",
-            account: p.employeeAccount,
-            party_type: "Employee",
-            party: p.employee,
-            debit_in_account_currency: total,
-            exchange_rate: p.exchangeRate,
-          },
-        ],
+        multi_currency: effectiveMultiCurrency ? 1 : 0,
+        accounts: jeAccounts,
       });
 
       // Step 4: Fetch full JE doc then submit
