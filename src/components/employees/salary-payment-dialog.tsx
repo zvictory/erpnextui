@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -32,6 +33,7 @@ interface SalaryPaymentFormValues {
   posting_date: string;
   amount: number;
   bank_account: string;
+  description: string;
 }
 
 interface SalaryPaymentDialogProps {
@@ -73,6 +75,7 @@ export function SalaryPaymentDialog({
       posting_date: format(new Date(), "yyyy-MM-dd"),
       amount: defaultAmount,
       bank_account: defaultBankAccount,
+      description: "",
     },
   });
 
@@ -82,6 +85,7 @@ export function SalaryPaymentDialog({
         posting_date: format(new Date(), "yyyy-MM-dd"),
         amount: defaultAmount,
         bank_account: defaultBankAccount,
+        description: "",
       });
     }
   }, [open, defaultAmount, defaultBankAccount, reset]);
@@ -89,6 +93,7 @@ export function SalaryPaymentDialog({
   const bankAccount = watch("bank_account");
   const amount = watch("amount");
   const postingDate = watch("posting_date");
+  const description = watch("description");
 
   const { data: bankAccounts = [] } = useBankAccountsWithCurrency(company);
   const selectedAccount = bankAccounts.find((a) => a.name === bankAccount);
@@ -113,6 +118,7 @@ export function SalaryPaymentDialog({
         amount,
         salaryPayableAccount,
         bankAccount,
+        description: description.trim() || undefined,
       });
       toast.success(t("salaryPaid"));
       onOpenChange(false);
@@ -177,6 +183,15 @@ export function SalaryPaymentDialog({
                 currency={bankCurrency}
               />
             )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>{t("description")}</Label>
+            <Textarea
+              rows={2}
+              placeholder={t("descriptionPlaceholder")}
+              {...register("description")}
+            />
           </div>
 
           <div className="flex justify-end pt-2">

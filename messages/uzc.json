@@ -827,6 +827,8 @@
     "monthlySalary": "Ойлик иш ҳақи",
     "accrueAndSubmit": "Ҳисоблаш ва тасдиқлаш",
     "payAndSubmit": "Тўлаш ва тасдиқлаш",
+    "description": "Тавсиф",
+    "descriptionPlaceholder": "Тўлов учун изоҳ (ихтиёрий)",
     "alreadyAccrued": "Аллақачон ҳисобланган",
     "salaryAccrued": "Иш ҳақи муваффақиятли ҳисобланди",
     "salaryPaid": "Иш ҳақи тўлови тасдиқланди",

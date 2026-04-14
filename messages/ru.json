@@ -843,6 +843,8 @@
     "monthlySalary": "Ежемесячная зарплата",
     "accrueAndSubmit": "Начислить и провести",
     "payAndSubmit": "Оплатить и провести",
+    "description": "Описание",
+    "descriptionPlaceholder": "Примечание к платежу (необязательно)",
     "alreadyAccrued": "Уже начислено",
     "salaryAccrued": "Зарплата успешно начислена",
     "salaryPaid": "Выплата зарплаты проведена",

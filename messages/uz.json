@@ -827,6 +827,8 @@
     "monthlySalary": "Oylik ish haqi",
     "accrueAndSubmit": "Hisoblash va tasdiqlash",
     "payAndSubmit": "To'lash va tasdiqlash",
+    "description": "Tavsif",
+    "descriptionPlaceholder": "To'lov uchun izoh (ixtiyoriy)",
     "alreadyAccrued": "Allaqachon hisoblangan",
     "salaryAccrued": "Ish haqi muvaffaqiyatli hisoblandi",
     "salaryPaid": "Ish haqi to'lovi tasdiqlandi",

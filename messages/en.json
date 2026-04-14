@@ -890,6 +890,8 @@
     "monthlySalary": "Monthly salary",
     "accrueAndSubmit": "Accrue & Submit",
     "payAndSubmit": "Pay & Submit",
+    "description": "Description",
+    "descriptionPlaceholder": "Optional note for this payment",
     "alreadyAccrued": "Already accrued",
     "salaryAccrued": "Salary accrued successfully",
     "salaryPaid": "Salary payment submitted",

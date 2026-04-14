@@ -218,7 +218,8 @@ export function useAccrueSalary() {
         } else {
           // payable → company → expense
           const companyAmount = payableTotal * payRate;
-          expenseAmount = expRate > 0 ? Math.round((companyAmount / expRate) * 100) / 100 : payableTotal;
+          expenseAmount =
+            expRate > 0 ? Math.round((companyAmount / expRate) * 100) / 100 : payableTotal;
         }
 
         return {
@@ -276,6 +277,37 @@ async function getAccountCurrency(accountName: string): Promise<string> {
   return doc.account_currency;
 }
 
+async function fetchExchangeRate(
+  fromCurrency: string,
+  toCurrency: string,
+  date: string,
+): Promise<number> {
+  if (fromCurrency === toCurrency) return 1;
+  const records = await frappe.getList<{ exchange_rate: number }>("Currency Exchange", {
+    filters: [
+      ["from_currency", "=", fromCurrency],
+      ["to_currency", "=", toCurrency],
+      ["date", "<=", date],
+    ],
+    fields: ["exchange_rate"],
+    orderBy: "date desc",
+    limitPageLength: 1,
+  });
+  if (records.length > 0) return records[0].exchange_rate;
+  const reverse = await frappe.getList<{ exchange_rate: number }>("Currency Exchange", {
+    filters: [
+      ["from_currency", "=", toCurrency],
+      ["to_currency", "=", fromCurrency],
+      ["date", "<=", date],
+    ],
+    fields: ["exchange_rate"],
+    orderBy: "date desc",
+    limitPageLength: 1,
+  });
+  if (reverse.length > 0 && reverse[0].exchange_rate > 0) return 1 / reverse[0].exchange_rate;
+  return 1;
+}
+
 // ---------------------------------------------------------------------------
 // Pay salary (create + submit JE)
 // ---------------------------------------------------------------------------
@@ -288,6 +320,7 @@ interface PaySalaryParams {
   amount: number;
   salaryPayableAccount: string;
   bankAccount: string;
+  description?: string;
 }
 
 export function usePaySalary() {
@@ -305,7 +338,31 @@ export function usePaySalary() {
         bankCurrency,
       ]);
 
-      const userRemark = `Salary payment to ${p.employeeName} [SALARY-PAY]`;
+      // Fetch company default currency + exchange rates
+      const companyDoc = await frappe.getDoc<{ default_currency: string }>(
+        "Company",
+        p.company,
+      );
+      const companyCurrency = companyDoc.default_currency;
+      const [payableRate, bankRate] = await Promise.all([
+        fetchExchangeRate(payableCurrency, companyCurrency, p.postingDate),
+        fetchExchangeRate(bankCurrency, companyCurrency, p.postingDate),
+      ]);
+
+      // Amount entered is in bank-account currency. Convert for payable side
+      // so both rows produce the same base-currency total.
+      const bankAmountInBase =
+        Math.round(p.amount * bankRate * 100) / 100;
+      const payableAmount =
+        payableCurrency === bankCurrency
+          ? p.amount
+          : payableRate > 0
+            ? Math.round((bankAmountInBase / payableRate) * 100) / 100
+            : p.amount;
+
+      const userRemark = p.description
+        ? `${p.description} — Salary payment to ${p.employeeName} [SALARY-PAY]`
+        : `Salary payment to ${p.employeeName} [SALARY-PAY]`;
 
       const accounts = [
         {
@@ -313,14 +370,16 @@ export function usePaySalary() {
           account: p.salaryPayableAccount,
           party_type: "Employee" as const,
           party: p.employee,
-          debit_in_account_currency: p.amount,
-          exchange_rate: 1,
+          account_currency: payableCurrency,
+          debit_in_account_currency: payableAmount,
+          exchange_rate: payableRate,
         },
         {
           doctype: "Journal Entry Account" as const,
           account: p.bankAccount,
+          account_currency: bankCurrency,
           credit_in_account_currency: p.amount,
-          exchange_rate: 1,
+          exchange_rate: bankRate,
         },
       ];
 
