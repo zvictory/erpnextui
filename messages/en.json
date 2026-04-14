@@ -733,7 +733,8 @@
     "cancelPaymentDesc": "Are you sure you want to cancel this payment? This action cannot be undone.",
     "currency": "Currency",
     "submit": "Submit",
-    "amend": "Amend"
+    "amend": "Amend",
+    "counterAmount": "Counter amount"
   },
   "orders": {
     "salesOrders": "Sales Orders",

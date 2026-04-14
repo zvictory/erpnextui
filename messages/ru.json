@@ -686,7 +686,8 @@
     "outstandingBalance": "Задолженность",
     "currency": "Валюта",
     "submit": "Провести",
-    "amend": "Исправить"
+    "amend": "Исправить",
+    "counterAmount": "Сумма контрагента"
   },
   "orders": {
     "salesOrders": "Заказы на продажу",

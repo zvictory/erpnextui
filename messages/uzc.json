@@ -670,7 +670,8 @@
     "outstandingBalance": "Қолдиқ қарз",
     "currency": "Валюта",
     "submit": "Тасдиқлаш",
-    "amend": "Тузатиш"
+    "amend": "Тузатиш",
+    "counterAmount": "Контрагент суммаси"
   },
   "orders": {
     "salesOrders": "Сотиш буюртмалари",

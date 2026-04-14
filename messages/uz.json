@@ -670,7 +670,8 @@
     "outstandingBalance": "Qoldiq qarz",
     "currency": "Valyuta",
     "submit": "Tasdiqlash",
-    "amend": "Tuzatish"
+    "amend": "Tuzatish",
+    "counterAmount": "Kontragent summasi"
   },
   "orders": {
     "salesOrders": "Sotish buyurtmalari",

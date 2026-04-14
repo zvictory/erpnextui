@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useReducer } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -23,9 +24,14 @@ import { LinkField } from "@/components/shared/link-field";
 import { DateInput } from "@/components/shared/date-input";
 import { InsufficientBalanceWarning } from "@/components/shared/insufficient-balance-warning";
 import { useBankAccountsWithCurrency, useCurrencyMap } from "@/hooks/use-accounts";
-import { useOutstandingInvoices, useCreatePaymentEntry, usePaymentEntry } from "@/hooks/use-payment-entries";
+import {
+  useOutstandingInvoices,
+  useCreatePaymentEntry,
+  usePaymentEntry,
+} from "@/hooks/use-payment-entries";
 import { usePartyLedger } from "@/hooks/use-party-balances";
 import { useSupplier } from "@/hooks/use-suppliers";
+import { useExchangeRate } from "@/hooks/use-exchange-rate";
 import { useCompanyStore } from "@/stores/company-store";
 import { cn, getToday } from "@/lib/utils";
 import { formatNumber, formatDate, formatInvoiceCurrency } from "@/lib/formatters";
@@ -50,35 +56,102 @@ export default function PayBillsPage() {
   const amendFrom = searchParams.get("amend_from") ?? "";
   const { data: amendDoc } = usePaymentEntry(amendFrom);
 
-  const [supplier, setSupplier] = useState(prefilledSupplier);
-  const [postingDate, setPostingDate] = useState(getToday);
-  const [paymentAccount, setPaymentAccount] = useState("");
-  const [amount, setAmount] = useState("");
-  const [remarks, setRemarks] = useState("");
-  const [amendApplied, setAmendApplied] = useState(false);
+  type FormState = {
+    supplier: string;
+    postingDate: string;
+    paymentAccount: string;
+    amount: string;
+    counterAmount: string;
+    remarks: string;
+    amendApplied: boolean;
+    selections: Record<string, boolean>;
+    allocations: Record<string, string>;
+  };
+  type FormAction =
+    | { type: "APPLY_AMEND"; supplier: string; amount: string; paymentAccount: string; remarks: string }
+    | { type: "CHANGE_SUPPLIER"; supplier: string }
+    | { type: "SET_FIELD"; field: keyof Omit<FormState, "amendApplied" | "selections" | "allocations">; value: string }
+    | { type: "SET_SELECTIONS"; selections: Record<string, boolean> }
+    | { type: "SET_ALLOCATIONS"; allocations: Record<string, string> }
+    | { type: "SET_SELECTIONS_AND_ALLOCATIONS"; selections: Record<string, boolean>; allocations: Record<string, string> };
 
-  // Pre-fill from amend source once loaded
+  const [form, dispatch] = useReducer(
+    (state: FormState, action: FormAction): FormState => {
+      switch (action.type) {
+        case "APPLY_AMEND":
+          return {
+            ...state,
+            supplier: action.supplier,
+            amount: action.amount,
+            paymentAccount: action.paymentAccount,
+            remarks: action.remarks,
+            amendApplied: true,
+          };
+        case "CHANGE_SUPPLIER":
+          return { ...state, supplier: action.supplier, selections: {}, allocations: {}, paymentAccount: "", counterAmount: "" };
+        case "SET_FIELD":
+          return { ...state, [action.field]: action.value };
+        case "SET_SELECTIONS":
+          return { ...state, selections: action.selections };
+        case "SET_ALLOCATIONS":
+          return { ...state, allocations: action.allocations };
+        case "SET_SELECTIONS_AND_ALLOCATIONS":
+          return { ...state, selections: action.selections, allocations: action.allocations };
+        default:
+          return state;
+      }
+    },
+    null,
+    (): FormState => ({
+      supplier: prefilledSupplier,
+      postingDate: getToday(),
+      paymentAccount: "",
+      amount: "",
+      counterAmount: "",
+      remarks: "",
+      amendApplied: false,
+      selections: {},
+      allocations: {},
+    }),
+  );
+
+  const { supplier, postingDate, paymentAccount, amount, counterAmount, remarks, amendApplied, selections, allocations } = form;
+  const setSupplier = (v: string) => dispatch({ type: "CHANGE_SUPPLIER", supplier: v });
+  const setPostingDate = (v: string) => dispatch({ type: "SET_FIELD", field: "postingDate", value: v });
+  const setPaymentAccount = (v: string) => dispatch({ type: "SET_FIELD", field: "paymentAccount", value: v });
+  const setAmount = (v: string) => dispatch({ type: "SET_FIELD", field: "amount", value: v });
+  const setCounterAmount = (v: string) => dispatch({ type: "SET_FIELD", field: "counterAmount", value: v });
+  const setRemarks = (v: string) => dispatch({ type: "SET_FIELD", field: "remarks", value: v });
+  const setSelections = (v: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => {
+    if (typeof v === "function") {
+      dispatch({ type: "SET_SELECTIONS", selections: v(selections) });
+    } else {
+      dispatch({ type: "SET_SELECTIONS", selections: v });
+    }
+  };
+  const setAllocations = (v: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => {
+    if (typeof v === "function") {
+      dispatch({ type: "SET_ALLOCATIONS", allocations: v(allocations) });
+    } else {
+      dispatch({ type: "SET_ALLOCATIONS", allocations: v });
+    }
+  };
+
+  // Pre-fill from amend source once loaded (single dispatch — no cascading renders)
   useEffect(() => {
     if (amendDoc && !amendApplied) {
-      setSupplier(amendDoc.party);
-      setAmount(String(amendDoc.paid_amount));
-      setPaymentAccount(amendDoc.paid_from);
-      setRemarks(amendDoc.remarks ?? "");
-      setAmendApplied(true);
+      dispatch({
+        type: "APPLY_AMEND",
+        supplier: amendDoc.party,
+        amount: String(amendDoc.paid_amount),
+        paymentAccount: amendDoc.paid_from,
+        remarks: amendDoc.remarks ?? "",
+      });
     }
   }, [amendDoc, amendApplied]);
-  const [selections, setSelections] = useState<Record<string, boolean>>({});
-  const [allocations, setAllocations] = useState<Record<string, string>>({});
 
   const { data: supplierDoc } = useSupplier(supplier);
   const partyCurrency = supplierDoc?.default_currency ?? "";
-  const filteredBankAccounts = useMemo(
-    () =>
-      partyCurrency
-        ? bankAccounts.filter((a) => a.account_currency === partyCurrency)
-        : bankAccounts,
-    [bankAccounts, partyCurrency],
-  );
 
   const { data: invoices = [], isLoading: loadingInvoices } = useOutstandingInvoices(
     "Supplier",
@@ -105,27 +178,61 @@ export default function PayBillsPage() {
   }, [ledgerEntries]);
 
   const parsedAmount = parseFloat(amount) || 0;
+  const parsedCounterAmount = parseFloat(counterAmount) || 0;
 
-  const selectedAccount = filteredBankAccounts.find((a) => a.name === paymentAccount);
+  const selectedAccount = bankAccounts.find((a) => a.name === paymentAccount);
   const selectedBalance = selectedAccount?.balance ?? 0;
   const selectedCurrency = selectedAccount?.account_currency ?? "";
   const isInsufficientBalance =
     !!paymentAccount && parsedAmount > 0 && parsedAmount > selectedBalance;
+
+  // Multi-currency: bank account currency ≠ party/invoice currency
+  const isMultiCurrency =
+    selectedCurrency !== "" && partyCurrency !== "" && selectedCurrency !== partyCurrency;
+
+  // Auto-fetch exchange rate for suggesting counter amount
+  const { data: fetchedRate } = useExchangeRate(
+    isMultiCurrency ? partyCurrency : "",
+    isMultiCurrency ? selectedCurrency : "",
+    postingDate,
+  );
+
+  // Derive suggested counter amount from bank amount + fetched rate
+  const suggestedCounter = useMemo(() => {
+    if (!isMultiCurrency || !fetchedRate || fetchedRate <= 0 || !parsedAmount) return null;
+    // fetchedRate = "1 partyCurrency = X bankCurrency"
+    return Math.round((parsedAmount / fetchedRate) * 100) / 100;
+  }, [isMultiCurrency, fetchedRate, parsedAmount]);
+
+  // Auto-fill counter amount when bank amount or rate changes
+  useEffect(() => {
+    if (suggestedCounter !== null && suggestedCounter > 0) {
+      setCounterAmount(String(suggestedCounter));
+    }
+  }, [suggestedCounter]);
+
+  // Display exchange rate derived from both amounts
+  const displayRate = useMemo(() => {
+    if (!isMultiCurrency || !parsedAmount || !parsedCounterAmount) return "";
+    if (selectedCurrency === companyCurrency) {
+      return formatNumber(parsedAmount / parsedCounterAmount, 2);
+    }
+    if (partyCurrency === companyCurrency) {
+      return formatNumber(parsedCounterAmount / parsedAmount, 2);
+    }
+    return formatNumber(parsedAmount / parsedCounterAmount, 4);
+  }, [isMultiCurrency, parsedAmount, parsedCounterAmount, selectedCurrency, partyCurrency, companyCurrency]);
+
+  // Allocation pool: in multi-currency mode, allocations are in party currency
+  const allocationPool = isMultiCurrency ? parsedCounterAmount : parsedAmount;
 
   const totalAllocated = invoices.reduce((sum, inv) => {
     if (!selections[inv.name]) return sum;
     return sum + (parseFloat(allocations[inv.name]) || 0);
   }, 0);
 
-  const isOverAllocated = totalAllocated > parsedAmount + 0.005;
-  const isBalanced = Math.abs(totalAllocated - parsedAmount) < 0.005;
-
-  // Clear selections and reset account when supplier changes
-  useEffect(() => {
-    setSelections({});
-    setAllocations({});
-    setPaymentAccount("");
-  }, [supplier]);
+  const isOverAllocated = totalAllocated > allocationPool + 0.005;
+  const isBalanced = Math.abs(totalAllocated - allocationPool) < 0.005;
 
   /** Distribute `total` across selected invoices FIFO (due_date asc). */
   const computeAllocations = (selected: Record<string, boolean>, total: number) => {
@@ -141,20 +248,32 @@ export default function PayBillsPage() {
   };
 
   const handleSelectAll = () => {
-    // Compute allocations assuming all invoices are selected
     const allSelected: Record<string, boolean> = {};
     invoices.forEach((inv) => {
       allSelected[inv.name] = true;
     });
 
     const totalOutstanding = invoices.reduce((s, inv) => s + inv.outstanding_amount, 0);
-    if (!parsedAmount) {
-      setAmount(totalOutstanding > 0 ? String(totalOutstanding) : "");
+
+    if (isMultiCurrency) {
+      if (!parsedCounterAmount) {
+        setCounterAmount(totalOutstanding > 0 ? String(totalOutstanding) : "");
+      }
+      if (!parsedAmount && fetchedRate && fetchedRate > 0) {
+        const suggested = Math.round(totalOutstanding * fetchedRate * 100) / 100;
+        setAmount(suggested > 0 ? String(suggested) : "");
+      }
+    } else {
+      if (!parsedAmount) {
+        setAmount(totalOutstanding > 0 ? String(totalOutstanding) : "");
+      }
     }
-    const pool = parsedAmount || totalOutstanding;
+
+    const pool = isMultiCurrency
+      ? (parsedCounterAmount || totalOutstanding)
+      : (parsedAmount || totalOutstanding);
     const alloc = computeAllocations(allSelected, pool);
 
-    // Only check invoices that received a non-zero allocation
     const next: Record<string, boolean> = {};
     for (const inv of invoices) {
       if ((parseFloat(alloc[inv.name]) || 0) > 0) {
@@ -169,6 +288,7 @@ export default function PayBillsPage() {
     setSelections({});
     setAllocations({});
     setAmount("");
+    setCounterAmount("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -189,7 +309,7 @@ export default function PayBillsPage() {
     }));
 
     try {
-      const selectedAccount = filteredBankAccounts.find((a) => a.name === paymentAccount);
+      const acct = bankAccounts.find((a) => a.name === paymentAccount);
       await createPayment.mutateAsync({
         partyType: "Supplier",
         party: supplier,
@@ -197,7 +317,7 @@ export default function PayBillsPage() {
         companyCurrency,
         postingDate,
         paymentAccount,
-        paymentAccountCurrency: selectedAccount?.account_currency ?? companyCurrency,
+        paymentAccountCurrency: acct?.account_currency ?? companyCurrency,
         amount: parsedAmount,
         referenceNo: "",
         referenceDate: "",
@@ -205,6 +325,7 @@ export default function PayBillsPage() {
         allocations: refs,
         partyCurrency: partyCurrency || undefined,
         amendedFrom: amendFrom || undefined,
+        counterAmount: isMultiCurrency ? parsedCounterAmount : undefined,
       });
       toast.success(t("submitted"));
       router.push(prefilledSupplier ? "/vendors" : "/payments");
@@ -258,7 +379,7 @@ export default function PayBillsPage() {
               className={cn(selectClassName, !paymentAccount && "text-muted-foreground")}
             >
               <option value="">{t("selectAccount")}</option>
-              {filteredBankAccounts.map((acc) => (
+              {bankAccounts.map((acc) => (
                 <option key={acc.name} value={acc.name}>
                   {acc.name} ({acc.account_currency})
                 </option>
@@ -280,17 +401,45 @@ export default function PayBillsPage() {
 
           <div className="space-y-1.5">
             <Label>
-              {t("paymentAmount")} <span className="text-destructive">*</span>
+              {t("paymentAmount")}
+              {selectedCurrency ? ` (${selectedCurrency})` : ""}
+              {" "}<span className="text-destructive">*</span>
             </Label>
-            <Input
-              type="number"
-              step="any"
-              min="0"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+            <NumberInput
+              value={amount ? parseFloat(amount) : undefined}
+              onChange={(v) => setAmount(String(v))}
+              min={0}
+              decimals={0}
+              placeholder="0"
             />
           </div>
+
+          {/* Exchange rate box — shown only when currencies differ */}
+          {isMultiCurrency && (
+            <div className="rounded-lg border border-dashed bg-muted/30 px-3 py-2.5 space-y-2.5 sm:col-span-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs">
+                  {t("counterAmount")} ({partyCurrency})
+                </Label>
+                <NumberInput
+                  value={counterAmount ? parseFloat(counterAmount) : undefined}
+                  onChange={(v) => setCounterAmount(String(v))}
+                  min={0}
+                  decimals={2}
+                  placeholder="0"
+                />
+              </div>
+              {parsedAmount > 0 && parsedCounterAmount > 0 && displayRate && (
+                <p className="text-[11px] text-muted-foreground text-center">
+                  {formatNumber(parsedAmount, 0)}&nbsp;{selectedCurrency}
+                  <span className="mx-1.5 opacity-40">&rarr;</span>
+                  {formatNumber(parsedCounterAmount, 2)}&nbsp;{partyCurrency}
+                  <span className="mx-1.5 opacity-40">@</span>
+                  {displayRate}
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="space-y-1.5 sm:col-span-2">
             <Label>{t("remarks")}</Label>
@@ -365,12 +514,22 @@ export default function PayBillsPage() {
                               const selectedOutstanding = invoices
                                 .filter((i) => next[i.name])
                                 .reduce((sum, i) => sum + i.outstanding_amount, 0);
-                              if (!parsedAmount) {
-                                setAmount(
-                                  selectedOutstanding > 0 ? String(selectedOutstanding) : "",
-                                );
+                              if (isMultiCurrency) {
+                                if (!parsedCounterAmount) {
+                                  setCounterAmount(selectedOutstanding > 0 ? String(selectedOutstanding) : "");
+                                }
+                                if (!parsedAmount && fetchedRate && fetchedRate > 0) {
+                                  const suggested = Math.round(selectedOutstanding * fetchedRate * 100) / 100;
+                                  setAmount(suggested > 0 ? String(suggested) : "");
+                                }
+                              } else {
+                                if (!parsedAmount) {
+                                  setAmount(selectedOutstanding > 0 ? String(selectedOutstanding) : "");
+                                }
                               }
-                              const pool = parsedAmount || selectedOutstanding;
+                              const pool = isMultiCurrency
+                                ? (parsedCounterAmount || selectedOutstanding)
+                                : (parsedAmount || selectedOutstanding);
                               setAllocations(computeAllocations(next, pool));
                             }}
                           />
@@ -426,17 +585,17 @@ export default function PayBillsPage() {
               </span>
               <span>
                 {t("paymentAmount")}:{" "}
-                <span className="font-semibold tabular-nums">{formatNumber(parsedAmount)}</span>
+                <span className="font-semibold tabular-nums">{formatNumber(allocationPool)}</span>
               </span>
-              {isBalanced && parsedAmount > 0 && (
+              {isBalanced && allocationPool > 0 && (
                 <CheckCircle2 className="size-4 text-green-600 shrink-0" />
               )}
-              {parsedAmount > 0 &&
+              {allocationPool > 0 &&
                 !isOverAllocated &&
                 !isBalanced &&
-                totalAllocated < parsedAmount && (
+                totalAllocated < allocationPool && (
                   <span className="text-muted-foreground">
-                    {t("remaining")} {formatNumber(parsedAmount - totalAllocated)}{" "}
+                    {t("remaining")} {formatNumber(allocationPool - totalAllocated)}{" "}
                     {t("recordedAsAdvance")}
                   </span>
                 )}
@@ -460,7 +619,8 @@ export default function PayBillsPage() {
               !paymentAccount ||
               parsedAmount <= 0 ||
               isOverAllocated ||
-              isInsufficientBalance
+              isInsufficientBalance ||
+              (isMultiCurrency && parsedCounterAmount <= 0)
             }
           >
             {createPayment.isPending ? t("submitting") : t("makePayment")}
