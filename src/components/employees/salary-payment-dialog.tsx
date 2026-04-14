@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -49,6 +49,20 @@ interface SalaryPaymentDialogProps {
   defaultAmount?: number;
 }
 
+/**
+ * Determines "base" and "quote" for display: "1 base = ? quote".
+ * Anchors to company currency so rates are human-readable (e.g. "1 USD = 12 800 UZS").
+ */
+function getDisplayPair(fromCcy: string, toCcy: string, companyCcy: string): [string, string] {
+  if (fromCcy === companyCcy) return [toCcy, companyCcy];
+  if (toCcy === companyCcy) return [fromCcy, companyCcy];
+  return [fromCcy, toCcy];
+}
+
+function roundTo2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
 export function SalaryPaymentDialog({
   open,
   onOpenChange,
@@ -68,6 +82,9 @@ export function SalaryPaymentDialog({
     (s) => s.getCompanySettings(company).salaryBankAccount,
   );
   const paySalary = usePaySalary();
+
+  const [rateStr, setRateStr] = useState("1");
+  const [rateManuallyEdited, setRateManuallyEdited] = useState(false);
 
   const { data: companies } = useCompanies();
   const companyCurrency = companies?.find((c) => c.name === company)?.default_currency ?? "";
@@ -100,6 +117,8 @@ export function SalaryPaymentDialog({
         bank_account: defaultBankAccount,
         description: "",
       });
+      setRateStr("1");
+      setRateManuallyEdited(false);
     }
   }, [open, defaultAmount, defaultBankAccount, reset]);
 
@@ -117,41 +136,75 @@ export function SalaryPaymentDialog({
 
   const isMultiCurrency = bankCurrency !== "" && payableCurrency !== "" && bankCurrency !== payableCurrency;
 
-  // Auto-fetch exchange rate for suggesting payable amount
+  // Display pair: always anchor to company currency for readable rates
+  const [baseCurrency, quoteCurrency] = useMemo(
+    () => (isMultiCurrency ? getDisplayPair(payableCurrency, bankCurrency, companyCurrency) : ["", ""]),
+    [isMultiCurrency, payableCurrency, bankCurrency, companyCurrency],
+  );
+  const payableIsBase = baseCurrency === payableCurrency;
+
+  // Auto-fetch exchange rate: "1 base = X quote"
   const { data: fetchedRate } = useExchangeRate(
-    isMultiCurrency ? payableCurrency : "",
-    isMultiCurrency ? bankCurrency : "",
+    isMultiCurrency ? baseCurrency : "",
+    isMultiCurrency ? quoteCurrency : "",
     postingDate,
   );
 
-  // Derive suggested payable amount from bank amount + fetched rate
-  const suggestedPayable = useMemo(() => {
-    if (!isMultiCurrency || !fetchedRate || fetchedRate <= 0 || !amount) return null;
-    // fetchedRate = "1 payableCurrency = X bankCurrency"
-    return Math.round((amount / fetchedRate) * 100) / 100;
-  }, [isMultiCurrency, fetchedRate, amount]);
-
-  // Auto-fill payable amount when bank amount or rate changes (only if user hasn't manually edited)
+  // Reset manual flag when currencies or date change
   useEffect(() => {
-    if (suggestedPayable !== null && suggestedPayable > 0) {
-      setValue("payable_amount", suggestedPayable);
-    }
-  }, [suggestedPayable, setValue]);
+    setRateManuallyEdited(false);
+  }, [baseCurrency, quoteCurrency, postingDate]);
 
-  // Derived display rate for the exchange box
-  const displayRate = useMemo(() => {
-    if (!isMultiCurrency || !amount || !payableAmount) return "";
-    if (bankCurrency === companyCurrency) {
-      // "1 payableCurrency = X companyCurrency"
-      return formatNumber(amount / payableAmount, 2);
+  // Effective rate: use fetched unless user manually overrode
+  const effectiveRateStr =
+    !rateManuallyEdited && fetchedRate && fetchedRate > 0 ? String(fetchedRate) : rateStr;
+  const parsedRate = parseFloat(effectiveRateStr) || 1;
+
+  // Auto-derive payable when not manually edited
+  const autoPayable = useMemo(() => {
+    if (!isMultiCurrency || !amount || parsedRate <= 0) return 0;
+    return payableIsBase ? roundTo2(amount / parsedRate) : roundTo2(amount * parsedRate);
+  }, [isMultiCurrency, amount, parsedRate, payableIsBase]);
+
+  useEffect(() => {
+    if (!rateManuallyEdited && autoPayable > 0) {
+      setValue("payable_amount", autoPayable);
     }
-    if (payableCurrency === companyCurrency) {
-      // "1 bankCurrency = X companyCurrency"
-      return formatNumber(payableAmount / amount, 2);
-    }
-    // Neither is company currency — show "1 payableCurrency = X bankCurrency"
-    return formatNumber(amount / payableAmount, 4);
-  }, [isMultiCurrency, amount, payableAmount, bankCurrency, payableCurrency, companyCurrency]);
+  }, [rateManuallyEdited, autoPayable, setValue]);
+
+  // ── Bidirectional handlers ──────────────────────────────────
+  const handleRateChange = useCallback(
+    (value: string) => {
+      setRateStr(value);
+      setRateManuallyEdited(true);
+      const r = parseFloat(value) || 1;
+      if (amount <= 0 || r <= 0) return;
+      setValue("payable_amount", payableIsBase ? roundTo2(amount / r) : roundTo2(amount * r));
+    },
+    [amount, payableIsBase, setValue],
+  );
+
+  const handlePayableChange = useCallback(
+    (value: string) => {
+      const p = parseFloat(value) || 0;
+      setValue("payable_amount", p);
+      setRateManuallyEdited(true);
+      if (p <= 0 || amount <= 0) return;
+      setRateStr(String(payableIsBase ? amount / p : p / amount));
+    },
+    [amount, payableIsBase, setValue],
+  );
+
+  const handleRateBlur = useCallback(() => {
+    const r = parseFloat(effectiveRateStr) || 1;
+    if (amount <= 0 || r <= 0) return;
+    const raw = payableIsBase ? amount / r : amount * r;
+    const rounded = roundTo2(raw);
+    if (rounded <= 0) return;
+    setRateStr(String(payableIsBase ? amount / rounded : rounded / amount));
+    setRateManuallyEdited(true);
+    setValue("payable_amount", rounded);
+  }, [effectiveRateStr, amount, payableIsBase, setValue]);
 
   const handleSubmit = async () => {
     if (!salaryPayableAccount) {
@@ -250,29 +303,67 @@ export function SalaryPaymentDialog({
           {/* Exchange rate box — shown only when currencies differ */}
           {isMultiCurrency && (
             <div className="rounded-lg border border-dashed bg-muted/30 px-3 py-2.5 space-y-2.5">
-              <div className="space-y-1.5">
-                <Label className="text-xs">
-                  {t("payableAmount")} ({payableCurrency})
-                </Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  {...register("payable_amount", { valueAsNumber: true })}
-                  className="h-8"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                {/* Rate input */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs">{t("exchangeRate")}</Label>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                      1 {baseCurrency} =
+                    </span>
+                    <Input
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={effectiveRateStr}
+                      onChange={(e) => handleRateChange(e.target.value)}
+                      onBlur={handleRateBlur}
+                      className="h-8 min-w-0"
+                    />
+                    <span className="text-xs text-muted-foreground shrink-0">{quoteCurrency}</span>
+                  </div>
+                </div>
+
+                {/* Payable amount */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs">
+                    {t("payableAmount")} ({payableCurrency})
+                  </Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={payableAmount || ""}
+                    onChange={(e) => handlePayableChange(e.target.value)}
+                    className="h-8"
+                  />
+                </div>
               </div>
 
               {/* Conversion summary */}
-              {amount > 0 && payableAmount > 0 && displayRate && (
+              {amount > 0 && payableAmount > 0 && (
                 <p className="text-[11px] text-muted-foreground text-center">
                   {formatNumber(amount, 0)}&nbsp;{bankCurrency}
-                  <span className="mx-1.5 opacity-40">→</span>
+                  <span className="mx-1.5 opacity-40">&rarr;</span>
                   {formatNumber(payableAmount, 2)}&nbsp;{payableCurrency}
                   <span className="mx-1.5 opacity-40">@</span>
-                  {displayRate}
+                  {formatNumber(parsedRate, parsedRate < 1 ? 6 : 2)}
                 </p>
               )}
+
+              {/* Base currency equivalent */}
+              {amount > 0 &&
+                payableAmount > 0 &&
+                companyCurrency &&
+                (bankCurrency === companyCurrency ? (
+                  <p className="text-[11px] text-muted-foreground/60 text-center">
+                    &asymp; {formatCurrency(amount, companyCurrency, true)}
+                  </p>
+                ) : payableCurrency === companyCurrency ? (
+                  <p className="text-[11px] text-muted-foreground/60 text-center">
+                    &asymp; {formatCurrency(payableAmount, companyCurrency, true)}
+                  </p>
+                ) : null)}
             </div>
           )}
 
