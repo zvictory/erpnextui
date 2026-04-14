@@ -892,6 +892,7 @@
     "payAndSubmit": "Pay & Submit",
     "description": "Description",
     "descriptionPlaceholder": "Optional note for this payment",
+    "payableAmount": "Payable amount",
     "alreadyAccrued": "Already accrued",
     "salaryAccrued": "Salary accrued successfully",
     "salaryPaid": "Salary payment submitted",

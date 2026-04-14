@@ -61,6 +61,8 @@ interface CreatePaymentEntryInput {
   partyCurrency?: string;
   /** Original payment entry name when amending a cancelled payment */
   amendedFrom?: string;
+  /** Golden rule: caller-provided counter-amount when currencies differ (sacred, not derived) */
+  counterAmount?: number;
 }
 
 /** Fetch exchange rate: 1 fromCurrency = X toCurrency. Returns null if not found. */
@@ -176,28 +178,61 @@ export function useCreatePaymentEntry() {
       const paidFromCurrency = isReceive ? partyAccountCurrency : paymentAccountCurrency;
       const paidToCurrency = isReceive ? paymentAccountCurrency : partyAccountCurrency;
 
-      // Exchange rates: "1 account_currency = X company_currency"
+      // ── GOLDEN RULE ──
+      // Both amounts (paid_amount, received_amount) are SACRED user inputs.
+      // Never derive one from the other via exchange rate math.
+      // Exchange rates are derived from amounts so base values match exactly.
+
+      let paidAmount: number;
+      let receivedAmount: number;
       let sourceRate = 1;
       let targetRate = 1;
 
-      if (paidFromCurrency !== companyCurrency) {
-        sourceRate = (await fetchExchangeRate(paidFromCurrency, companyCurrency, postingDate)) ?? 1;
-      }
-      if (paidToCurrency !== companyCurrency) {
-        targetRate = (await fetchExchangeRate(paidToCurrency, companyCurrency, postingDate)) ?? 1;
-      }
-
-      // User enters amount in the bank account's currency.
-      // Receive: amount = received_amount (bank receives); Pay: amount = paid_amount (bank pays)
-      let paidAmount: number;
-      let receivedAmount: number;
-
-      if (isReceive) {
-        receivedAmount = amount;
-        paidAmount = sourceRate === 0 ? amount : (amount * targetRate) / sourceRate;
-      } else {
+      if (paidFromCurrency === paidToCurrency) {
         paidAmount = amount;
-        receivedAmount = targetRate === 0 ? amount : (amount * sourceRate) / targetRate;
+        receivedAmount = amount;
+        if (paidFromCurrency !== companyCurrency) {
+          sourceRate = (await fetchExchangeRate(paidFromCurrency, companyCurrency, postingDate)) ?? 1;
+          targetRate = sourceRate;
+        }
+      } else if (data.counterAmount !== undefined && data.counterAmount > 0) {
+        // Both amounts provided by caller — golden rule path
+        if (isReceive) {
+          receivedAmount = amount;
+          paidAmount = data.counterAmount;
+        } else {
+          paidAmount = amount;
+          receivedAmount = data.counterAmount;
+        }
+
+        // Derive exchange rates from amounts
+        if (paidFromCurrency === companyCurrency) {
+          sourceRate = 1;
+          targetRate = paidAmount / receivedAmount;
+        } else if (paidToCurrency === companyCurrency) {
+          targetRate = 1;
+          sourceRate = receivedAmount / paidAmount;
+        } else {
+          // Neither is company currency — fetch one rate, derive the other
+          sourceRate = (await fetchExchangeRate(paidFromCurrency, companyCurrency, postingDate)) ?? 1;
+          const baseAmount = paidAmount * sourceRate;
+          targetRate = receivedAmount > 0 ? baseAmount / receivedAmount : 1;
+        }
+      } else {
+        // Fallback: single amount, fetch rates and derive counter-amount (legacy)
+        if (paidFromCurrency !== companyCurrency) {
+          sourceRate = (await fetchExchangeRate(paidFromCurrency, companyCurrency, postingDate)) ?? 1;
+        }
+        if (paidToCurrency !== companyCurrency) {
+          targetRate = (await fetchExchangeRate(paidToCurrency, companyCurrency, postingDate)) ?? 1;
+        }
+        if (isReceive) {
+          receivedAmount = amount;
+          paidAmount = Math.round(((amount * targetRate) / sourceRate) * 100) / 100;
+        } else {
+          paidAmount = amount;
+          receivedAmount = Math.round(((amount * sourceRate) / targetRate) * 100) / 100;
+        }
       }
 
       const doc: Record<string, unknown> = {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useReducer } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
@@ -36,11 +36,42 @@ export function OpeningBalanceDialog({ account, open, onOpenChange }: OpeningBal
   const { data: equityAccounts = [] } = useEquityAccounts(company);
   const createJE = useCreateOpeningBalanceJE();
 
+  type RateState = { exchangeRate: string; baseAmount: string };
+  type RateAction =
+    | { type: "APPLY_FETCHED_RATE"; rate: number; amount: string }
+    | { type: "SET_RATE"; rate: string }
+    | { type: "SET_BASE_AMOUNT"; baseAmount: string }
+    | { type: "SET_BOTH"; rate: string; baseAmount: string };
+
+  const [rateState, dispatchRate] = useReducer(
+    (state: RateState, action: RateAction): RateState => {
+      switch (action.type) {
+        case "APPLY_FETCHED_RATE": {
+          const amt = parseFloat(action.amount);
+          const newBase =
+            amt > 0 ? String(Math.round(amt * action.rate * 100) / 100) : state.baseAmount;
+          return { exchangeRate: String(action.rate), baseAmount: newBase };
+        }
+        case "SET_RATE":
+          return { ...state, exchangeRate: action.rate };
+        case "SET_BASE_AMOUNT":
+          return { ...state, baseAmount: action.baseAmount };
+        case "SET_BOTH":
+          return { exchangeRate: action.rate, baseAmount: action.baseAmount };
+        default:
+          return state;
+      }
+    },
+    { exchangeRate: "1", baseAmount: "" },
+  );
+
+  const { exchangeRate, baseAmount } = rateState;
+  const setExchangeRate = (v: string) => dispatchRate({ type: "SET_RATE", rate: v });
+  const setBaseAmount = (v: string) => dispatchRate({ type: "SET_BASE_AMOUNT", baseAmount: v });
+
   const [date, setDate] = useState<string>(() => getToday());
   const [amount, setAmount] = useState("");
   const [equityAccount, setEquityAccount] = useState("");
-  const [exchangeRate, setExchangeRate] = useState("1");
-  const [baseAmount, setBaseAmount] = useState("");
   const [memo, setMemo] = useState("");
   const [error, setError] = useState("");
 
@@ -49,13 +80,13 @@ export function OpeningBalanceDialog({ account, open, onOpenChange }: OpeningBal
   // Auto-fetch exchange rate for the selected date
   const { data: fetchedRate } = useExchangeRate(account.account_currency, companyCurrency, date);
 
+  // Apply fetched rate (single dispatch — no cascading renders)
   useEffect(() => {
     if (fetchedRate && fetchedRate > 0) {
-      setExchangeRate(String(fetchedRate));
-      const amt = parseFloat(amount);
-      if (amt > 0) setBaseAmount(String(Math.round(amt * fetchedRate * 100) / 100));
+      dispatchRate({ type: "APPLY_FETCHED_RATE", rate: fetchedRate, amount });
     }
-  }, [fetchedRate]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchedRate]);
 
   function handleAmountChange(val: string) {
     setAmount(val);
@@ -67,20 +98,30 @@ export function OpeningBalanceDialog({ account, open, onOpenChange }: OpeningBal
   }
 
   function handleBaseAmountChange(val: string) {
-    setBaseAmount(val);
     const base = parseFloat(val);
     const amt = parseFloat(amount);
     if (base > 0 && amt > 0) {
-      setExchangeRate(String(Math.round((base / amt) * 10000) / 10000));
+      dispatchRate({
+        type: "SET_BOTH",
+        rate: String(Math.round((base / amt) * 10000) / 10000),
+        baseAmount: val,
+      });
+    } else {
+      setBaseAmount(val);
     }
   }
 
   function handleExchangeRateChange(val: string) {
-    setExchangeRate(val);
     const rate = parseFloat(val);
     const amt = parseFloat(amount);
     if (rate > 0 && amt > 0) {
-      setBaseAmount(String(Math.round(amt * rate * 100) / 100));
+      dispatchRate({
+        type: "SET_BOTH",
+        rate: val,
+        baseAmount: String(Math.round(amt * rate * 100) / 100),
+      });
+    } else {
+      setExchangeRate(val);
     }
   }
   const isDebitNormal = ["Asset", "Expense"].includes(account.root_type);
@@ -89,8 +130,7 @@ export function OpeningBalanceDialog({ account, open, onOpenChange }: OpeningBal
     setDate(getToday());
     setAmount("");
     setEquityAccount("");
-    setExchangeRate("1");
-    setBaseAmount("");
+    dispatchRate({ type: "SET_BOTH", rate: "1", baseAmount: "" });
     setMemo("");
     setError("");
   }
@@ -117,6 +157,7 @@ export function OpeningBalanceDialog({ account, open, onOpenChange }: OpeningBal
     const parsedExchangeRate = parseFloat(exchangeRate) || 1;
 
     try {
+      const parsedBaseAmount = parseFloat(baseAmount);
       const je = await createJE.mutateAsync({
         targetAccount: account.name,
         account: { root_type: account.root_type, account_currency: account.account_currency },
@@ -125,6 +166,7 @@ export function OpeningBalanceDialog({ account, open, onOpenChange }: OpeningBal
         date,
         memo,
         exchangeRate: parsedExchangeRate,
+        baseAmount: showExchangeRate && parsedBaseAmount > 0 ? parsedBaseAmount : undefined,
         company,
         companyCurrency,
       });

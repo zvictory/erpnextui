@@ -845,6 +845,7 @@
     "payAndSubmit": "Оплатить и провести",
     "description": "Описание",
     "descriptionPlaceholder": "Примечание к платежу (необязательно)",
+    "payableAmount": "Сумма к оплате",
     "alreadyAccrued": "Уже начислено",
     "salaryAccrued": "Зарплата успешно начислена",
     "salaryPaid": "Выплата зарплаты проведена",

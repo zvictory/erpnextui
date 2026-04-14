@@ -206,27 +206,32 @@ export function useAccrueSalary() {
 
       // Debit lines: one per unique expense account
       // Amount is in payable currency → convert to expense account currency if different
+      // Golden rule: compute a base amount first, then derive expense amount + adjusted rate
+      // so that expenseAmount × adjustedRate === baseAmount exactly.
       const debitLines = [...expenseGroups.entries()].map(([account, payableTotal]) => {
         const expCurrency = p.expenseCurrencies.get(account) ?? companyCurrency;
         const expRate = p.expenseExchangeRates.get(account) ?? 1;
         const payRate = p.payableExchangeRate;
 
-        // Convert payable-currency total → expense-account currency
         let expenseAmount: number;
+        let adjustedRate: number;
         if (expCurrency === p.payableCurrency) {
           expenseAmount = payableTotal;
+          adjustedRate = expRate;
         } else {
-          // payable → company → expense
-          const companyAmount = payableTotal * payRate;
+          // Anchor: base amount from credit side
+          const baseAmount = Math.round(payableTotal * payRate * 100) / 100;
           expenseAmount =
-            expRate > 0 ? Math.round((companyAmount / expRate) * 100) / 100 : payableTotal;
+            expRate > 0 ? Math.round((baseAmount / expRate) * 100) / 100 : payableTotal;
+          // Adjust rate so expenseAmount × adjustedRate = baseAmount exactly
+          adjustedRate = expenseAmount > 0 ? baseAmount / expenseAmount : expRate;
         }
 
         return {
           doctype: "Journal Entry Account" as const,
           account,
           debit_in_account_currency: expenseAmount,
-          exchange_rate: expRate,
+          exchange_rate: adjustedRate,
         };
       });
 
@@ -317,7 +322,10 @@ interface PaySalaryParams {
   company: string;
   employee: string;
   employeeName: string;
-  amount: number;
+  bankAmount: number; // sacred user input in bank currency
+  payableAmount: number; // sacred user input in payable currency
+  bankCurrency: string;
+  payableCurrency: string;
   salaryPayableAccount: string;
   bankAccount: string;
   description?: string;
@@ -328,37 +336,41 @@ export function usePaySalary() {
 
   return useMutation({
     mutationFn: async (p: PaySalaryParams) => {
-      // Fetch account currencies and enable multi-currency if needed
-      const [payableCurrency, bankCurrency] = await Promise.all([
-        getAccountCurrency(p.salaryPayableAccount),
-        getAccountCurrency(p.bankAccount),
-      ]);
-      const multiCurrency = await ensureMultiCurrencyEnabled(p.company, [
-        payableCurrency,
-        bankCurrency,
-      ]);
+      const isMultiCurrency = p.bankCurrency !== p.payableCurrency;
+      if (isMultiCurrency) {
+        await ensureMultiCurrencyEnabled(p.company, [p.payableCurrency, p.bankCurrency]);
+      }
 
-      // Fetch company default currency + exchange rates
-      const companyDoc = await frappe.getDoc<{ default_currency: string }>(
-        "Company",
-        p.company,
-      );
+      // Golden rule: both amounts are sacred. Derive exchange rates from amounts.
+      // ERPNext convention: exchange_rate = "1 account_currency = X company_currency"
+      // ERPNext computes base = amount_in_account_currency × exchange_rate
+      // Both sides must produce the SAME base amount.
+      const companyDoc = await frappe.getDoc<{ default_currency: string }>("Company", p.company);
       const companyCurrency = companyDoc.default_currency;
-      const [payableRate, bankRate] = await Promise.all([
-        fetchExchangeRate(payableCurrency, companyCurrency, p.postingDate),
-        fetchExchangeRate(bankCurrency, companyCurrency, p.postingDate),
-      ]);
 
-      // Amount entered is in bank-account currency. Convert for payable side
-      // so both rows produce the same base-currency total.
-      const bankAmountInBase =
-        Math.round(p.amount * bankRate * 100) / 100;
-      const payableAmount =
-        payableCurrency === bankCurrency
-          ? p.amount
-          : payableRate > 0
-            ? Math.round((bankAmountInBase / payableRate) * 100) / 100
-            : p.amount;
+      let bankRate: number;
+      let payableRate: number;
+
+      if (p.bankCurrency === p.payableCurrency) {
+        // Same currency — no conversion
+        bankRate = p.bankCurrency === companyCurrency ? 1 : (await fetchExchangeRate(p.bankCurrency, companyCurrency, p.postingDate)) ?? 1;
+        payableRate = bankRate;
+      } else if (p.bankCurrency === companyCurrency) {
+        // Bank is in company currency (e.g. UZS), payable is foreign (e.g. USD)
+        // base = bankAmount (already in company currency)
+        bankRate = 1;
+        payableRate = p.bankAmount / p.payableAmount;
+      } else if (p.payableCurrency === companyCurrency) {
+        // Payable is in company currency, bank is foreign
+        payableRate = 1;
+        bankRate = p.payableAmount / p.bankAmount;
+      } else {
+        // Neither is company currency — anchor to bank side via fetched rate
+        const fetchedBankRate = (await fetchExchangeRate(p.bankCurrency, companyCurrency, p.postingDate)) ?? 1;
+        const companyAmount = p.bankAmount * fetchedBankRate;
+        bankRate = fetchedBankRate;
+        payableRate = companyAmount / p.payableAmount;
+      }
 
       const userRemark = p.description
         ? `${p.description} — Salary payment to ${p.employeeName} [SALARY-PAY]`
@@ -370,15 +382,15 @@ export function usePaySalary() {
           account: p.salaryPayableAccount,
           party_type: "Employee" as const,
           party: p.employee,
-          account_currency: payableCurrency,
-          debit_in_account_currency: payableAmount,
+          account_currency: p.payableCurrency,
+          debit_in_account_currency: p.payableAmount,
           exchange_rate: payableRate,
         },
         {
           doctype: "Journal Entry Account" as const,
           account: p.bankAccount,
-          account_currency: bankCurrency,
-          credit_in_account_currency: p.amount,
+          account_currency: p.bankCurrency,
+          credit_in_account_currency: p.bankAmount,
           exchange_rate: bankRate,
         },
       ];
@@ -390,7 +402,7 @@ export function usePaySalary() {
         posting_date: p.postingDate,
         company: p.company,
         user_remark: userRemark,
-        multi_currency: multiCurrency ? 1 : 0,
+        multi_currency: isMultiCurrency ? 1 : 0,
         accounts,
       });
 

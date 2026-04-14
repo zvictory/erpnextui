@@ -80,6 +80,17 @@ async function fetchBalancesBatch(
   }
 }
 
+export function useAccountCurrency(accountName: string) {
+  return useQuery({
+    queryKey: ["accountCurrency", accountName],
+    queryFn: async () => {
+      const doc = await frappe.getDoc<{ account_currency: string }>("Account", accountName);
+      return doc.account_currency;
+    },
+    enabled: !!accountName,
+  });
+}
+
 export function useBankAccountsWithCurrency(company: string) {
   return useQuery({
     queryKey: queryKeys.accounts.bankWithCurrency(company),
@@ -134,12 +145,13 @@ export function useExpenseAccountsWithCurrency(company: string) {
     queryFn: async () => {
       return frappe.getList<AccountWithCurrency>("Account", {
         filters: [
-          ["account_type", "in", ["Expense Account", "Cost of Goods Sold"]],
+          ["root_type", "=", "Expense"],
           ["is_group", "=", 0],
           ["disabled", "=", 0],
           ["company", "=", company],
         ],
         fields: ["name", "account_currency"],
+        limitPageLength: 0,
       });
     },
     enabled: !!company,
@@ -152,12 +164,13 @@ export function useExpenseAccounts(company: string) {
     queryFn: async () => {
       const accounts = await frappe.getList<Account>("Account", {
         filters: [
-          ["account_type", "in", ["Expense Account", "Cost of Goods Sold"]],
+          ["root_type", "=", "Expense"],
           ["is_group", "=", 0],
           ["disabled", "=", 0],
           ["company", "=", company],
         ],
         fields: ["name"],
+        limitPageLength: 0,
       });
       return accounts.map((a) => a.name);
     },
@@ -691,6 +704,7 @@ export function useDeleteAccount() {
 }
 
 export function useCreateOpeningBalanceJE() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
       targetAccount,
@@ -700,6 +714,7 @@ export function useCreateOpeningBalanceJE() {
       date,
       memo,
       exchangeRate,
+      baseAmount,
       company,
       companyCurrency,
     }: {
@@ -710,22 +725,31 @@ export function useCreateOpeningBalanceJE() {
       date: string;
       memo?: string;
       exchangeRate: number;
+      baseAmount?: number;
       company: string;
       companyCurrency: string;
     }) => {
       const isDebitNormal = ["Asset", "Expense"].includes(account.root_type);
+
+      // Golden rule: use user-provided base amount when available, derive rate from amounts
+      const equityAmount = baseAmount ?? Math.round(amount * exchangeRate * 100) / 100;
+      const adjustedRate =
+        account.account_currency !== companyCurrency && equityAmount > 0 && amount > 0
+          ? equityAmount / amount
+          : exchangeRate;
+
       const accounts = [
         {
           account: targetAccount,
           debit_in_account_currency: isDebitNormal ? amount : 0,
           credit_in_account_currency: isDebitNormal ? 0 : amount,
-          exchange_rate: exchangeRate,
+          exchange_rate: adjustedRate,
           account_currency: account.account_currency,
         },
         {
           account: equityAccount,
-          debit_in_account_currency: isDebitNormal ? 0 : amount * exchangeRate,
-          credit_in_account_currency: isDebitNormal ? amount * exchangeRate : 0,
+          debit_in_account_currency: isDebitNormal ? 0 : equityAmount,
+          credit_in_account_currency: isDebitNormal ? equityAmount : 0,
           exchange_rate: 1,
           account_currency: companyCurrency,
         },
@@ -742,6 +766,13 @@ export function useCreateOpeningBalanceJE() {
       });
       await frappe.submit(je as Record<string, unknown>);
       return je as { name: string };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["journalEntries"] });
+      qc.invalidateQueries({ queryKey: ["ledger"] });
+      qc.invalidateQueries({ queryKey: ["glEntries"] });
+      qc.invalidateQueries({ queryKey: ["coaAccounts"] });
+      qc.invalidateQueries({ queryKey: ["partyBalances"] });
     },
   });
 }

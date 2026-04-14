@@ -829,6 +829,7 @@
     "payAndSubmit": "Тўлаш ва тасдиқлаш",
     "description": "Тавсиф",
     "descriptionPlaceholder": "Тўлов учун изоҳ (ихтиёрий)",
+    "payableAmount": "Тўланадиган сумма",
     "alreadyAccrued": "Аллақачон ҳисобланган",
     "salaryAccrued": "Иш ҳақи муваффақиятли ҳисобланди",
     "salaryPaid": "Иш ҳақи тўлови тасдиқланди",
