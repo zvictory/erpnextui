@@ -174,9 +174,17 @@ export function useCreatePaymentEntry() {
         partyAccountCurrency = accounts[0].account_currency;
       }
 
+      // Verify payment account currency from ERPNext (caller may pass stale value)
+      const [payAccDoc] = await frappe.getList<{ account_currency: string }>("Account", {
+        filters: [["name", "=", paymentAccount]],
+        fields: ["account_currency"],
+        limitPageLength: 1,
+      });
+      const verifiedPaymentCurrency = payAccDoc?.account_currency ?? paymentAccountCurrency;
+
       // Determine paid_from / paid_to currencies
-      const paidFromCurrency = isReceive ? partyAccountCurrency : paymentAccountCurrency;
-      const paidToCurrency = isReceive ? paymentAccountCurrency : partyAccountCurrency;
+      const paidFromCurrency = isReceive ? partyAccountCurrency : verifiedPaymentCurrency;
+      const paidToCurrency = isReceive ? verifiedPaymentCurrency : partyAccountCurrency;
 
       // ── GOLDEN RULE ──
       // Both amounts (paid_amount, received_amount) are SACRED user inputs.
@@ -220,6 +228,8 @@ export function useCreatePaymentEntry() {
         }
       } else {
         // Fallback: single amount, fetch rates and derive counter-amount (legacy)
+        // After rounding the derived amount, re-derive rates so
+        // paidAmount × sourceRate === receivedAmount × targetRate exactly.
         if (paidFromCurrency !== companyCurrency) {
           sourceRate = (await fetchExchangeRate(paidFromCurrency, companyCurrency, postingDate)) ?? 1;
         }
@@ -232,6 +242,18 @@ export function useCreatePaymentEntry() {
         } else {
           paidAmount = amount;
           receivedAmount = Math.round(((amount * sourceRate) / targetRate) * 100) / 100;
+        }
+        // Golden rule: re-derive rates from the now-rounded amounts
+        if (paidFromCurrency === companyCurrency) {
+          sourceRate = 1;
+          targetRate = paidAmount / receivedAmount;
+        } else if (paidToCurrency === companyCurrency) {
+          targetRate = 1;
+          sourceRate = receivedAmount / paidAmount;
+        } else {
+          // Neither is company currency — anchor source rate, adjust target
+          const baseAmount = paidAmount * sourceRate;
+          targetRate = receivedAmount > 0 ? baseAmount / receivedAmount : 1;
         }
       }
 
