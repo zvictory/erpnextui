@@ -197,28 +197,45 @@ export default function PayBillsPage() {
   );
   const { data: currencyMap } = useCurrencyMap();
 
-  // Compute outstanding balance per currency in invoice (document) currency.
-  // outstanding_amount is in company currency; scale by grand_total / base_grand_total
-  // to convert back to the invoice's original currency.
+  // Per-invoice outstanding in document currency for display and allocation.
+  // outstanding_amount from ERPNext is in payable account currency (typically company currency).
+  // When the invoice currency differs, convert via grand_total / base_grand_total.
+  const { docOutstandingMap, accountRateMap } = useMemo(() => {
+    const docMap = new Map<string, number>();
+    const rateMap = new Map<string, number>();
+    for (const inv of invoices) {
+      const needsConversion =
+        inv.currency != null &&
+        inv.currency !== companyCurrency &&
+        inv.base_grand_total > 0 &&
+        inv.outstanding_amount <= inv.base_grand_total * 1.01;
+      const raw = needsConversion
+        ? inv.grand_total * (inv.outstanding_amount / inv.base_grand_total)
+        : inv.outstanding_amount;
+      docMap.set(inv.name, inv.currency === "UZS" ? Math.round(raw) : raw);
+      rateMap.set(
+        inv.name,
+        needsConversion && inv.grand_total > 0 ? inv.base_grand_total / inv.grand_total : 1,
+      );
+    }
+    return { docOutstandingMap: docMap, accountRateMap: rateMap };
+  }, [invoices, companyCurrency]);
+
   const balances = useMemo(() => {
     if (!invoices.length) return [];
     const byCurrency = new Map<string, number>();
     for (const inv of invoices) {
       const curr = inv.currency ?? "";
       if (!curr) continue;
-      const docOutstanding =
-        inv.base_grand_total > 0
-          ? inv.grand_total * (inv.outstanding_amount / inv.base_grand_total)
-          : inv.outstanding_amount;
-      byCurrency.set(curr, (byCurrency.get(curr) ?? 0) + docOutstanding);
+      byCurrency.set(
+        curr,
+        (byCurrency.get(curr) ?? 0) + (docOutstandingMap.get(inv.name) ?? inv.outstanding_amount),
+      );
     }
     return Array.from(byCurrency.entries())
-      .map(([currency, amount]) => ({
-        currency,
-        amount: currency === "UZS" ? Math.round(amount) : amount,
-      }))
+      .map(([currency, amount]) => ({ currency, amount }))
       .filter((b) => Math.abs(b.amount) > 0.005);
-  }, [invoices]);
+  }, [invoices, docOutstandingMap]);
 
   const parsedAmount = parseFloat(amount) || 0;
   const parsedCounterAmount = parseFloat(counterAmount) || 0;
@@ -284,13 +301,14 @@ export default function PayBillsPage() {
   const isOverAllocated = totalAllocated > allocationPool + 0.005;
   const isBalanced = Math.abs(totalAllocated - allocationPool) < 0.005;
 
-  /** Distribute `total` across selected invoices FIFO (due_date asc). */
+  /** Distribute `total` across selected invoices FIFO (due_date asc), in document currency. */
   const computeAllocations = (selected: Record<string, boolean>, total: number) => {
     const alloc: Record<string, string> = {};
     let remaining = total;
     for (const inv of invoices) {
       if (!selected[inv.name]) continue;
-      const amt = Math.min(inv.outstanding_amount, remaining);
+      const docOut = docOutstandingMap.get(inv.name) ?? inv.outstanding_amount;
+      const amt = Math.min(docOut, remaining);
       alloc[inv.name] = String(amt);
       remaining = Math.max(0, remaining - amt);
     }
@@ -303,7 +321,10 @@ export default function PayBillsPage() {
       allSelected[inv.name] = true;
     });
 
-    const totalOutstanding = invoices.reduce((s, inv) => s + inv.outstanding_amount, 0);
+    const totalOutstanding = invoices.reduce(
+      (s, inv) => s + (docOutstandingMap.get(inv.name) ?? inv.outstanding_amount),
+      0,
+    );
 
     if (isMultiCurrency) {
       if (!parsedCounterAmount) {
@@ -350,13 +371,17 @@ export default function PayBillsPage() {
       (inv) => selections[inv.name] && (parseFloat(allocations[inv.name]) || 0) > 0,
     );
 
-    const refs: PaymentReference[] = checkedInvoices.map((inv) => ({
-      reference_doctype: "Purchase Invoice",
-      reference_name: inv.name,
-      total_amount: inv.grand_total,
-      outstanding_amount: inv.outstanding_amount,
-      allocated_amount: parseFloat(allocations[inv.name]) || 0,
-    }));
+    const refs: PaymentReference[] = checkedInvoices.map((inv) => {
+      const allocInDocCurrency = parseFloat(allocations[inv.name]) || 0;
+      const rate = accountRateMap.get(inv.name) ?? 1;
+      return {
+        reference_doctype: "Purchase Invoice",
+        reference_name: inv.name,
+        total_amount: inv.grand_total,
+        outstanding_amount: inv.outstanding_amount,
+        allocated_amount: Math.round(allocInDocCurrency * rate * 100) / 100,
+      };
+    });
 
     try {
       const acct = bankAccounts.find((a) => a.name === paymentAccount);
@@ -563,7 +588,11 @@ export default function PayBillsPage() {
                               setSelections(next);
                               const selectedOutstanding = invoices
                                 .filter((i) => next[i.name])
-                                .reduce((sum, i) => sum + i.outstanding_amount, 0);
+                                .reduce(
+                                  (sum, i) =>
+                                    sum + (docOutstandingMap.get(i.name) ?? i.outstanding_amount),
+                                  0,
+                                );
                               if (isMultiCurrency) {
                                 if (!parsedCounterAmount) {
                                   setCounterAmount(
@@ -600,7 +629,9 @@ export default function PayBillsPage() {
                           {formatNumber(inv.grand_total)}
                         </TableCell>
                         <TableCell className="text-right tabular-nums text-sm">
-                          {formatNumber(inv.outstanding_amount)}
+                          {formatNumber(
+                            docOutstandingMap.get(inv.name) ?? inv.outstanding_amount,
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <Input
