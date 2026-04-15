@@ -28,7 +28,6 @@ import {
   useCreatePaymentEntry,
   usePaymentEntry,
 } from "@/hooks/use-payment-entries";
-import { usePartyLedger } from "@/hooks/use-party-balances";
 import { useCustomer } from "@/hooks/use-customers";
 import { useExchangeRate } from "@/hooks/use-exchange-rate";
 import { useCompanyStore } from "@/stores/company-store";
@@ -68,9 +67,19 @@ export default function ReceivePaymentPage() {
     allocations: Record<string, string>;
   };
   type FormAction =
-    | { type: "APPLY_AMEND"; customer: string; amount: string; paymentAccount: string; remarks: string }
+    | {
+        type: "APPLY_AMEND";
+        customer: string;
+        amount: string;
+        paymentAccount: string;
+        remarks: string;
+      }
     | { type: "CHANGE_CUSTOMER"; customer: string }
-    | { type: "SET_FIELD"; field: keyof Omit<FormState, "amendApplied" | "selections" | "allocations">; value: string }
+    | {
+        type: "SET_FIELD";
+        field: keyof Omit<FormState, "amendApplied" | "selections" | "allocations">;
+        value: string;
+      }
     | { type: "SET_SELECTIONS"; selections: Record<string, boolean> }
     | { type: "SET_ALLOCATIONS"; allocations: Record<string, string> };
 
@@ -87,7 +96,14 @@ export default function ReceivePaymentPage() {
             amendApplied: true,
           };
         case "CHANGE_CUSTOMER":
-          return { ...state, customer: action.customer, selections: {}, allocations: {}, paymentAccount: "", counterAmount: "" };
+          return {
+            ...state,
+            customer: action.customer,
+            selections: {},
+            allocations: {},
+            paymentAccount: "",
+            counterAmount: "",
+          };
         case "SET_FIELD":
           return { ...state, [action.field]: action.value };
         case "SET_SELECTIONS":
@@ -112,21 +128,38 @@ export default function ReceivePaymentPage() {
     }),
   );
 
-  const { customer, postingDate, paymentAccount, amount, counterAmount, remarks, amendApplied, selections, allocations } = form;
+  const {
+    customer,
+    postingDate,
+    paymentAccount,
+    amount,
+    counterAmount,
+    remarks,
+    amendApplied,
+    selections,
+    allocations,
+  } = form;
   const setCustomer = (v: string) => dispatch({ type: "CHANGE_CUSTOMER", customer: v });
-  const setPostingDate = (v: string) => dispatch({ type: "SET_FIELD", field: "postingDate", value: v });
-  const setPaymentAccount = (v: string) => dispatch({ type: "SET_FIELD", field: "paymentAccount", value: v });
+  const setPostingDate = (v: string) =>
+    dispatch({ type: "SET_FIELD", field: "postingDate", value: v });
+  const setPaymentAccount = (v: string) =>
+    dispatch({ type: "SET_FIELD", field: "paymentAccount", value: v });
   const setAmount = (v: string) => dispatch({ type: "SET_FIELD", field: "amount", value: v });
-  const setCounterAmount = (v: string) => dispatch({ type: "SET_FIELD", field: "counterAmount", value: v });
+  const setCounterAmount = (v: string) =>
+    dispatch({ type: "SET_FIELD", field: "counterAmount", value: v });
   const setRemarks = (v: string) => dispatch({ type: "SET_FIELD", field: "remarks", value: v });
-  const setSelections = (v: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => {
+  const setSelections = (
+    v: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>),
+  ) => {
     if (typeof v === "function") {
       dispatch({ type: "SET_SELECTIONS", selections: v(selections) });
     } else {
       dispatch({ type: "SET_SELECTIONS", selections: v });
     }
   };
-  const setAllocations = (v: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => {
+  const setAllocations = (
+    v: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>),
+  ) => {
     if (typeof v === "function") {
       dispatch({ type: "SET_ALLOCATIONS", allocations: v(allocations) });
     } else {
@@ -155,24 +188,21 @@ export default function ReceivePaymentPage() {
     customer,
     company,
   );
-  const { data: ledgerEntries } = usePartyLedger("Customer", customer, company);
   const { data: currencyMap } = useCurrencyMap();
 
-  // Compute outstanding balance per currency from GL entries
+  // Compute outstanding balance per currency from invoices (original currency)
   const balances = useMemo(() => {
-    if (!ledgerEntries?.length) return [];
+    if (!invoices.length) return [];
     const byCurrency = new Map<string, number>();
-    for (const e of ledgerEntries) {
-      const prev = byCurrency.get(e.account_currency) ?? 0;
-      byCurrency.set(
-        e.account_currency,
-        prev + e.debit_in_account_currency - e.credit_in_account_currency,
-      );
+    for (const inv of invoices) {
+      const curr = inv.currency ?? "";
+      if (!curr) continue;
+      byCurrency.set(curr, (byCurrency.get(curr) ?? 0) + inv.outstanding_amount);
     }
     return Array.from(byCurrency.entries())
       .map(([currency, amount]) => ({ currency, amount }))
       .filter((b) => Math.abs(b.amount) > 0.005);
-  }, [ledgerEntries]);
+  }, [invoices]);
 
   const parsedAmount = parseFloat(amount) || 0;
   const parsedCounterAmount = parseFloat(counterAmount) || 0;
@@ -215,7 +245,14 @@ export default function ReceivePaymentPage() {
       return formatNumber(parsedCounterAmount / parsedAmount, 2);
     }
     return formatNumber(parsedAmount / parsedCounterAmount, 4);
-  }, [isMultiCurrency, parsedAmount, parsedCounterAmount, selectedCurrency, partyCurrency, companyCurrency]);
+  }, [
+    isMultiCurrency,
+    parsedAmount,
+    parsedCounterAmount,
+    selectedCurrency,
+    partyCurrency,
+    companyCurrency,
+  ]);
 
   // Allocation pool: in multi-currency mode, allocations are in party currency
   const allocationPool = isMultiCurrency ? parsedCounterAmount : parsedAmount;
@@ -264,8 +301,8 @@ export default function ReceivePaymentPage() {
     }
 
     const pool = isMultiCurrency
-      ? (parsedCounterAmount || totalOutstanding)
-      : (parsedAmount || totalOutstanding);
+      ? parsedCounterAmount || totalOutstanding
+      : parsedAmount || totalOutstanding;
     const alloc = computeAllocations(allSelected, pool);
 
     const next: Record<string, boolean> = {};
@@ -394,8 +431,8 @@ export default function ReceivePaymentPage() {
           <div className="space-y-1.5">
             <Label>
               {t("paymentAmount")}
-              {selectedCurrency ? ` (${selectedCurrency})` : ""}
-              {" "}<span className="text-destructive">*</span>
+              {selectedCurrency ? ` (${selectedCurrency})` : ""}{" "}
+              <span className="text-destructive">*</span>
             </Label>
             <NumberInput
               value={amount ? parseFloat(amount) : undefined}
@@ -508,20 +545,25 @@ export default function ReceivePaymentPage() {
                                 .reduce((sum, i) => sum + i.outstanding_amount, 0);
                               if (isMultiCurrency) {
                                 if (!parsedCounterAmount) {
-                                  setCounterAmount(selectedOutstanding > 0 ? String(selectedOutstanding) : "");
+                                  setCounterAmount(
+                                    selectedOutstanding > 0 ? String(selectedOutstanding) : "",
+                                  );
                                 }
                                 if (!parsedAmount && fetchedRate && fetchedRate > 0) {
-                                  const suggested = Math.round(selectedOutstanding * fetchedRate * 100) / 100;
+                                  const suggested =
+                                    Math.round(selectedOutstanding * fetchedRate * 100) / 100;
                                   setAmount(suggested > 0 ? String(suggested) : "");
                                 }
                               } else {
                                 if (!parsedAmount) {
-                                  setAmount(selectedOutstanding > 0 ? String(selectedOutstanding) : "");
+                                  setAmount(
+                                    selectedOutstanding > 0 ? String(selectedOutstanding) : "",
+                                  );
                                 }
                               }
                               const pool = isMultiCurrency
-                                ? (parsedCounterAmount || selectedOutstanding)
-                                : (parsedAmount || selectedOutstanding);
+                                ? parsedCounterAmount || selectedOutstanding
+                                : parsedAmount || selectedOutstanding;
                               setAllocations(computeAllocations(next, pool));
                             }}
                           />

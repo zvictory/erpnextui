@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { InvoiceDetailDialog } from "@/components/shared/invoice-detail-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -40,7 +40,7 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
-import { usePartyLedger, usePartyLedgerCount } from "@/hooks/use-party-balances";
+import { usePartyLedger } from "@/hooks/use-party-balances";
 import type { GLEntry } from "@/types/gl-entry";
 import { useCurrencyMap } from "@/hooks/use-accounts";
 import { useCompanyStore } from "@/stores/company-store";
@@ -103,8 +103,6 @@ interface PartyDetailPanelProps {
   className?: string;
   onEdit?: () => void;
   onDelete?: () => void;
-  /** Called when corrected balance is computed from ledger — lets parent sync sidebar */
-  onBalanceUpdate?: (balances: CurrencyBalance[]) => void;
 }
 
 export function PartyDetailPanel({
@@ -117,7 +115,6 @@ export function PartyDetailPanel({
   className,
   onEdit,
   onDelete,
-  onBalanceUpdate,
 }: PartyDetailPanelProps) {
   const tCommon = useTranslations("common");
   const tCustomers = useTranslations("customers");
@@ -130,62 +127,17 @@ export function PartyDetailPanel({
     voucherNo: string;
   }>({ open: false, voucherType: "Sales Invoice", voucherNo: "" });
   const [sortAsc, setSortAsc] = useState(true);
-  const [ledgerPage, setLedgerPage] = useState(1);
   const [cancelTarget, setCancelTarget] = useState<{
     voucherType: string;
     voucherNo: string;
   } | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
-  const { data: entries, isLoading } = usePartyLedger(partyType, partyName, company, ledgerPage);
-  const { data: ledgerCount = 0 } = usePartyLedgerCount(partyType, partyName, company);
+  const { data: entries, isLoading } = usePartyLedger(partyType, partyName, company);
 
-  // Draft invoices and orders for this party
+  // Recent submitted orders (not in GL ledger)
   const invoiceDoctype = partyType === "Customer" ? "Sales Invoice" : "Purchase Invoice";
   const orderDoctype = partyType === "Customer" ? "Sales Order" : "Purchase Order";
   const partyField = partyType === "Customer" ? "customer" : "supplier";
-  const { data: draftInvoices = [] } = useQuery({
-    queryKey: ["draftInvoices", invoiceDoctype, partyName, company],
-    queryFn: () =>
-      frappe.getList<{
-        name: string;
-        posting_date: string;
-        grand_total: number;
-        currency: string;
-      }>(invoiceDoctype, {
-        filters: [
-          [partyField, "=", partyName],
-          ["company", "=", company],
-          ["docstatus", "=", 0],
-        ],
-        fields: ["name", "posting_date", "grand_total", "currency"],
-        orderBy: "posting_date desc",
-        limitPageLength: 20,
-      }),
-    enabled: !!partyName && !!company,
-  });
-
-  const { data: draftOrders = [] } = useQuery({
-    queryKey: ["draftOrders", orderDoctype, partyName, company],
-    queryFn: () =>
-      frappe.getList<{
-        name: string;
-        transaction_date: string;
-        grand_total: number;
-        currency: string;
-      }>(orderDoctype, {
-        filters: [
-          [partyField, "=", partyName],
-          ["company", "=", company],
-          ["docstatus", "=", 0],
-        ],
-        fields: ["name", "transaction_date", "grand_total", "currency"],
-        orderBy: "transaction_date desc",
-        limitPageLength: 20,
-      }),
-    enabled: !!partyName && !!company,
-  });
-
-  // Recent submitted orders (not in GL ledger)
   const { data: recentOrders = [] } = useQuery({
     queryKey: ["recentOrders", orderDoctype, partyName, company],
     queryFn: () =>
@@ -229,8 +181,6 @@ export function PartyDetailPanel({
     },
     enabled: !!partyName,
   });
-
-  const totalPages = Math.max(1, Math.ceil(ledgerCount / 50));
 
   // Compute balance from GL entries as fallback when balanceMap data is zero/missing
   const computedFromLedger = useMemo(() => {
@@ -330,6 +280,42 @@ export function PartyDetailPanel({
     [peAmounts],
   );
 
+  // Fetch invoice currency + grand_total so "Original" columns show party currency
+  const invoiceVouchers = useMemo(
+    () =>
+      (entries ?? [])
+        .filter((e) => e.voucher_type === "Purchase Invoice" || e.voucher_type === "Sales Invoice")
+        .map((e) => e.voucher_no)
+        .filter((v, i, a) => a.indexOf(v) === i),
+    [entries],
+  );
+  interface InvoiceCurrencyInfo {
+    name: string;
+    currency: string;
+    grand_total: number;
+  }
+  const { data: invoiceCurrencyData } = useQuery({
+    queryKey: ["invoiceCurrency", partyType, ...invoiceVouchers],
+    queryFn: () => {
+      if (!invoiceVouchers.length) return Promise.resolve([]);
+      const doctype = partyType === "Supplier" ? "Purchase Invoice" : "Sales Invoice";
+      return frappe.getList<InvoiceCurrencyInfo>(doctype, {
+        filters: [["name", "in", invoiceVouchers]],
+        fields: ["name", "currency", "grand_total"],
+        limitPageLength: invoiceVouchers.length,
+      });
+    },
+    enabled: invoiceVouchers.length > 0,
+    staleTime: 10 * 60 * 1000,
+  });
+  const invoiceCurrencyMap = useMemo(
+    () =>
+      new Map<string, InvoiceCurrencyInfo>(
+        (invoiceCurrencyData ?? []).map((inv) => [inv.name, inv]),
+      ),
+    [invoiceCurrencyData],
+  );
+
   const displayEntries = useMemo(() => {
     if (!entries?.length) return [];
 
@@ -350,10 +336,10 @@ export function PartyDetailPanel({
     }
 
     const merged = Array.from(grouped.values());
-    // Fix PE amounts: use actual paid/received amount from Payment Entry (avoids exchange rate rounding)
-    // Match the GL entry's account_currency to the correct PE amount side
+    // Enrich amounts: replace account-currency values with original voucher currency
     for (const e of merged) {
       if (e.voucher_type === "Payment Entry") {
+        // Use actual paid/received amount from PE (avoids exchange rate rounding)
         const pe = peAmountMap.get(e.voucher_no);
         if (pe) {
           let actual: number | undefined;
@@ -366,6 +352,18 @@ export function PartyDetailPanel({
             if (e.credit_in_account_currency > 0) e.credit_in_account_currency = actual;
             if (e.debit_in_account_currency > 0) e.debit_in_account_currency = actual;
           }
+        }
+      } else if (e.voucher_type === "Purchase Invoice" || e.voucher_type === "Sales Invoice") {
+        // Replace account-currency amounts with the invoice's original currency
+        const inv = invoiceCurrencyMap.get(e.voucher_no);
+        if (inv && inv.currency !== e.account_currency) {
+          e.account_currency = inv.currency;
+          if (e.debit_in_account_currency > 0) e.debit_in_account_currency = inv.grand_total;
+          if (e.credit_in_account_currency > 0) e.credit_in_account_currency = inv.grand_total;
+        }
+        if (e.account_currency === "UZS") {
+          e.debit_in_account_currency = Math.round(e.debit_in_account_currency);
+          e.credit_in_account_currency = Math.round(e.credit_in_account_currency);
         }
       } else if (e.account_currency === "UZS") {
         e.debit_in_account_currency = Math.round(e.debit_in_account_currency);
@@ -382,7 +380,7 @@ export function PartyDetailPanel({
       return { ...e, balance: newBal, balanceCurrency: curr };
     });
     return sortAsc ? withBalance : [...withBalance].reverse();
-  }, [entries, sortAsc, peAmountMap]);
+  }, [entries, sortAsc, peAmountMap, invoiceCurrencyMap]);
 
   // Use corrected ledger balance (with PE amount fixes) for the balance card
   const ledgerFinalBalances = useMemo(() => {
@@ -398,22 +396,13 @@ export function PartyDetailPanel({
     return balances;
   }, [displayEntries, sortAsc]);
 
+  // Prefer the canonical AR/AP Summary value supplied by the parent. Fall back
+  // to ledger-derived balances only when the parent has none (party not
+  // enumerated by the report — e.g. zero-balance cases).
   const effectiveCurrencyBalances =
-    ledgerFinalBalances && ledgerFinalBalances.length > 0
-      ? ledgerFinalBalances
-      : currencyBalances.length === 0 && computedFromLedger
-        ? computedFromLedger.balances
-        : currencyBalances;
-
-  // Sync corrected balance to parent (sidebar) when ledger computes it
-  // Use ref for callback to avoid infinite re-render loop
-  const balanceUpdateRef = useRef(onBalanceUpdate);
-  balanceUpdateRef.current = onBalanceUpdate;
-  useEffect(() => {
-    if (ledgerFinalBalances && ledgerFinalBalances.length > 0 && balanceUpdateRef.current) {
-      balanceUpdateRef.current(ledgerFinalBalances);
-    }
-  }, [ledgerFinalBalances]);
+    currencyBalances.length > 0
+      ? currencyBalances
+      : (ledgerFinalBalances ?? computedFromLedger?.balances ?? []);
 
   const formattedBalance =
     effectiveBalance != null
@@ -549,62 +538,6 @@ export function PartyDetailPanel({
 
         {/* ── All transactions in one scrollable area ── */}
         <ScrollArea className="flex-1 px-4 pb-4">
-          {/* Drafts — amber tint */}
-          {(draftOrders.length > 0 || draftInvoices.length > 0) && (
-            <div className="mb-2 rounded-md bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30 p-2 space-y-1">
-              <p className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
-                Drafts ({draftOrders.length + draftInvoices.length})
-              </p>
-              {draftOrders.map((d) => {
-                const info = currencyMap?.get(d.currency);
-                const href =
-                  partyType === "Customer"
-                    ? `/sales-orders/${encodeURIComponent(d.name)}`
-                    : `/purchase-orders/${encodeURIComponent(d.name)}`;
-                return (
-                  <Link
-                    key={d.name}
-                    href={href}
-                    className="flex items-center justify-between rounded px-1.5 py-1 text-xs hover:bg-amber-100/50 dark:hover:bg-amber-900/20"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <Badge
-                        variant="outline"
-                        className="text-[9px] h-3.5 px-1 text-blue-600 border-blue-300"
-                      >
-                        SO
-                      </Badge>
-                      <span className="font-mono text-muted-foreground text-[11px]">{d.name}</span>
-                    </div>
-                    <span className="font-medium tabular-nums text-[11px]">
-                      {formatInvoiceCurrency(d.grand_total, d.currency, info)}
-                    </span>
-                  </Link>
-                );
-              })}
-              {draftInvoices.map((d) => {
-                const info = currencyMap?.get(d.currency);
-                return (
-                  <Link
-                    key={d.name}
-                    href={`/${partyType === "Customer" ? "sales-invoices" : "purchase-invoices"}/${encodeURIComponent(d.name)}`}
-                    className="flex items-center justify-between rounded px-1.5 py-1 text-xs hover:bg-amber-100/50 dark:hover:bg-amber-900/20"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <Badge variant="secondary" className="text-[9px] h-3.5 px-1">
-                        SI
-                      </Badge>
-                      <span className="font-mono text-muted-foreground text-[11px]">{d.name}</span>
-                    </div>
-                    <span className="font-medium tabular-nums text-[11px]">
-                      {formatInvoiceCurrency(d.grand_total, d.currency, info)}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-
           {/* Recent orders — compact */}
           {recentOrders.length > 0 && (
             <div className="mb-2 space-y-1">
@@ -830,33 +763,6 @@ export function PartyDetailPanel({
               )}
             </TableBody>
           </Table>
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-3 pb-1">
-              <span className="text-xs text-muted-foreground">
-                {tCommon("page")} {ledgerPage} / {totalPages} ({ledgerCount})
-              </span>
-              <div className="flex gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2 text-xs"
-                  disabled={ledgerPage <= 1}
-                  onClick={() => setLedgerPage((p) => Math.max(1, p - 1))}
-                >
-                  {tCommon("previous")}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2 text-xs"
-                  disabled={ledgerPage >= totalPages}
-                  onClick={() => setLedgerPage((p) => Math.min(totalPages, p + 1))}
-                >
-                  {tCommon("next")}
-                </Button>
-              </div>
-            </div>
-          )}
         </ScrollArea>
       </div>
 

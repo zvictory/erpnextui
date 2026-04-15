@@ -29,9 +29,10 @@ async function fetchBalancesFromReport(
       range2: 60,
       range3: 90,
       range4: 120,
-      // Do NOT pass in_party_currency: 1 — it causes ERPNext to round-trip
-      // UZS → USD → UZS at report-date rate, producing rounding errors (e.g.
-      // 179,975 instead of 180,000). Company-currency figures are exact.
+      // in_party_currency returns amounts in each party's native currency
+      // (e.g. UZS instead of company-currency USD). Minor rounding (~0.01%)
+      // may occur for large-denomination currencies; Math.round below handles it.
+      in_party_currency: 1,
     },
   });
 
