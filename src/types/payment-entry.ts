@@ -3,6 +3,7 @@ export interface OutstandingInvoice {
   posting_date: string;
   due_date: string;
   grand_total: number;
+  base_grand_total: number;
   outstanding_amount: number;
   currency?: string;
 }

@@ -197,17 +197,26 @@ export default function PayBillsPage() {
   );
   const { data: currencyMap } = useCurrencyMap();
 
-  // Compute outstanding balance per currency from invoices (original currency)
+  // Compute outstanding balance per currency in invoice (document) currency.
+  // outstanding_amount is in company currency; scale by grand_total / base_grand_total
+  // to convert back to the invoice's original currency.
   const balances = useMemo(() => {
     if (!invoices.length) return [];
     const byCurrency = new Map<string, number>();
     for (const inv of invoices) {
       const curr = inv.currency ?? "";
       if (!curr) continue;
-      byCurrency.set(curr, (byCurrency.get(curr) ?? 0) + inv.outstanding_amount);
+      const docOutstanding =
+        inv.base_grand_total > 0
+          ? inv.grand_total * (inv.outstanding_amount / inv.base_grand_total)
+          : inv.outstanding_amount;
+      byCurrency.set(curr, (byCurrency.get(curr) ?? 0) + docOutstanding);
     }
     return Array.from(byCurrency.entries())
-      .map(([currency, amount]) => ({ currency, amount }))
+      .map(([currency, amount]) => ({
+        currency,
+        amount: currency === "UZS" ? Math.round(amount) : amount,
+      }))
       .filter((b) => Math.abs(b.amount) > 0.005);
   }, [invoices]);
 

@@ -35,6 +35,7 @@ export function useOutstandingInvoices(
           "posting_date",
           "due_date",
           "grand_total",
+          "base_grand_total",
           "outstanding_amount",
           "currency",
         ],

@@ -396,13 +396,16 @@ export function PartyDetailPanel({
     return balances;
   }, [displayEntries, sortAsc]);
 
-  // Prefer the canonical AR/AP Summary value supplied by the parent. Fall back
-  // to ledger-derived balances only when the parent has none (party not
-  // enumerated by the report — e.g. zero-balance cases).
+  // Prefer ledger-derived balances (enriched with invoice currency data) because
+  // the AP/AR report returns amounts in the payable/receivable account currency,
+  // which may differ from the invoice currency (e.g. USD account but UZS invoices).
+  // Fall back to the parent-supplied report balances while the ledger is loading.
   const effectiveCurrencyBalances =
-    currencyBalances.length > 0
-      ? currencyBalances
-      : (ledgerFinalBalances ?? computedFromLedger?.balances ?? []);
+    ledgerFinalBalances && ledgerFinalBalances.length > 0
+      ? ledgerFinalBalances
+      : currencyBalances.length > 0
+        ? currencyBalances
+        : (computedFromLedger?.balances ?? []);
 
   const formattedBalance =
     effectiveBalance != null
