@@ -47,6 +47,10 @@ import {
   Tags,
   ShieldCheck,
   Calculator,
+  HardDrive,
+  Wrench,
+  CalendarCheck,
+  Hammer,
 } from "lucide-react";
 import {
   Sidebar,
@@ -134,6 +138,14 @@ const manufacturingNav: NavItem[] = [
   { tKey: "jobCards", href: "/manufacturing/job-cards", icon: Timer, navCapability: "nav.jobCards" },
   { tKey: "workstations", href: "/manufacturing/workstations", icon: Monitor, navCapability: "nav.workstations" },
   { tKey: "costingDashboard", href: "/manufacturing/costing-dashboard", icon: Calculator, navCapability: "nav.costingDashboard" },
+];
+
+const assetMaintenanceNav: NavItem[] = [
+  { tKey: "assets", href: "/assets", icon: HardDrive, navCapability: "nav.assets" },
+  { tKey: "maintenanceDashboard", href: "/maintenance", icon: Wrench, navCapability: "nav.maintenanceDashboard" },
+  { tKey: "maintenanceLogs", href: "/maintenance/logs", icon: ClipboardList, navCapability: "nav.maintenanceLogs" },
+  { tKey: "maintenanceSchedule", href: "/maintenance/schedule", icon: CalendarCheck, navCapability: "nav.maintenanceSchedule" },
+  { tKey: "spareParts", href: "/maintenance/spare-parts", icon: Hammer, navCapability: "nav.spareParts" },
 ];
 
 const adminNav: NavItem[] = [
@@ -289,6 +301,9 @@ export function AppSidebar() {
             <NavGroup labelKey="oee" items={oeeNav} />
             <NavGroup labelKey="manufacturing" items={manufacturingNav} />
           </>
+        )}
+        {isSidebarGroupEnabled("assetMaintenance", enabledModules) && (
+          <NavGroup labelKey="assetMaintenance" items={assetMaintenanceNav} />
         )}
         {isSidebarGroupEnabled("reports", enabledModules) && (
           <NavGroup labelKey="reports" items={reportNav} />

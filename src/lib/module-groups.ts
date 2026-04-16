@@ -7,7 +7,8 @@ export type ModuleGroupKey =
   | "reports"
   | "warehouse"
   | "manufacturing"
-  | "factory";
+  | "factory"
+  | "asset-maintenance";
 
 export interface ModuleGroup {
   label: string;
@@ -26,7 +27,7 @@ export const MODULE_GROUPS: Record<ModuleGroupKey, ModuleGroup> = {
   "master-data": {
     label: "Master Data",
     description: "Products, Customers, Vendors, Employees",
-    routes: ["/products", "/customers", "/vendors", "/employees"],
+    routes: ["/products", "/customers", "/vendors", "/partners", "/employees", "/price-lists"],
   },
   transactions: {
     label: "Transactions",
@@ -71,6 +72,11 @@ export const MODULE_GROUPS: Record<ModuleGroupKey, ModuleGroup> = {
     description: "OEE Dashboard, Production, Downtime, Energy",
     routes: ["/manufacturing"],
   },
+  "asset-maintenance": {
+    label: "Asset & Maintenance",
+    description: "Assets, Maintenance Logs, Preventive Schedule, Spare Parts",
+    routes: ["/assets", "/maintenance"],
+  },
 };
 
 export const ALL_MODULE_GROUP_KEYS = Object.keys(MODULE_GROUPS) as ModuleGroupKey[];
@@ -105,7 +111,9 @@ export function isSidebarGroupEnabled(
     reports: "reports",
     warehouse: "warehouse",
     factory: "factory",
+    oee: "manufacturing",
     manufacturing: "manufacturing",
+    assetMaintenance: "asset-maintenance",
   };
 
   const key = labelToKey[sidebarLabelKey];

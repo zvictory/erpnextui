@@ -8,6 +8,13 @@
       "when": 1775923878300,
       "tag": "0000_flawless_meteorite",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1776330570882,
+      "tag": "0001_flawless_cable",
+      "breakpoints": true
     }
   ]
 }

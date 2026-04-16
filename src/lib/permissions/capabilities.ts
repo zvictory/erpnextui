@@ -196,6 +196,18 @@ export const BUILTIN_CAPABILITIES = {
 
   "nav.settings": { module: "nav", labelKey: "nav.settings", scopeDim: null },
   "nav.permissions": { module: "nav", labelKey: "nav.permissions", scopeDim: null },
+
+  "nav.assets": { module: "nav", labelKey: "nav.assets", scopeDim: null },
+  "nav.maintenanceDashboard": { module: "nav", labelKey: "nav.maintenanceDashboard", scopeDim: null },
+  "nav.maintenanceLogs": { module: "nav", labelKey: "nav.maintenanceLogs", scopeDim: null },
+  "nav.maintenanceSchedule": { module: "nav", labelKey: "nav.maintenanceSchedule", scopeDim: null },
+  "nav.spareParts": { module: "nav", labelKey: "nav.spareParts", scopeDim: null },
+
+  // ── Asset & Maintenance data capabilities ──
+  "asset.read": { module: "assets", labelKey: "cap.asset.read", scopeDim: null },
+  "asset.write": { module: "assets", labelKey: "cap.asset.write", scopeDim: null },
+  "maintenance.read": { module: "assets", labelKey: "cap.maintenance.read", scopeDim: null },
+  "maintenance.write": { module: "assets", labelKey: "cap.maintenance.write", scopeDim: null },
 } as const satisfies Record<string, CapabilityDef>;
 
 export type BuiltinCapabilityId = keyof typeof BUILTIN_CAPABILITIES;

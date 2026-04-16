@@ -99,6 +99,16 @@ export const NAV_GROUPS: NavGroupDef[] = [
     ],
   },
   {
+    groupKey: "assetMaintenance",
+    items: [
+      { tKey: "assets", navCapability: "nav.assets" },
+      { tKey: "maintenanceDashboard", navCapability: "nav.maintenanceDashboard" },
+      { tKey: "maintenanceLogs", navCapability: "nav.maintenanceLogs" },
+      { tKey: "maintenanceSchedule", navCapability: "nav.maintenanceSchedule" },
+      { tKey: "spareParts", navCapability: "nav.spareParts" },
+    ],
+  },
+  {
     groupKey: "reports",
     items: [
       { tKey: "sales", navCapability: "nav.sales" },
