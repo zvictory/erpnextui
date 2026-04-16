@@ -1053,7 +1053,8 @@
       "qtyToManufacture": "Ишлаб чиқариш миқдори",
       "sourceWarehouse": "Хомашё склади",
       "wipWarehouse": "НЗП склади",
-      "fgWarehouse": "Тайёр маҳсулот склади"
+      "fgWarehouse": "Тайёр маҳсулот склади",
+      "laborCost": "Меҳнат харажати"
     },
     "bom": {
       "title": "Спецификациялар",

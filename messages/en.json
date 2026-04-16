@@ -1115,7 +1115,8 @@
       "qtyToManufacture": "Quantity to manufacture",
       "sourceWarehouse": "Source Warehouse",
       "wipWarehouse": "WIP Warehouse",
-      "fgWarehouse": "FG Warehouse"
+      "fgWarehouse": "FG Warehouse",
+      "laborCost": "Labor Cost"
     },
     "bom": {
       "title": "Bills of Material",

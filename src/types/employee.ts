@@ -25,6 +25,8 @@ export interface EmployeeListItem {
   designation: string;
   department: string;
   status: string;
+  custom_hourly_cost?: number;
+  custom_cost_classification?: "Direct Labor" | "Period Cost";
 }
 
 export interface EmployeeWithBalance extends EmployeeListItem {

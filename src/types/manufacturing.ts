@@ -12,6 +12,8 @@ export interface WorkOrderListItem {
   expected_delivery_date: string;
   company: string;
   docstatus: number;
+  custom_total_labor_cost?: number;
+  custom_labor_hours?: number;
 }
 
 export type WorkOrderStatus =

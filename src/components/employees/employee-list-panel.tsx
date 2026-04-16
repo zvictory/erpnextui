@@ -19,6 +19,8 @@ interface EmployeeRow {
   designation: string;
   outstanding_balance: number;
   currency_balances: CurrencyBalance[];
+  custom_hourly_cost?: number;
+  custom_cost_classification?: "Direct Labor" | "Period Cost";
 }
 
 interface EmployeeListPanelProps {
@@ -163,6 +165,14 @@ export function EmployeeListPanel({
                 >
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">{emp.employee_name}</div>
+                    {emp.custom_hourly_cost ? (
+                      <div className="text-[11px] text-muted-foreground truncate">
+                        {formatNumber(emp.custom_hourly_cost, 0)}/hr
+                        {emp.custom_cost_classification === "Direct Labor" && (
+                          <span className="ml-1 text-blue-600 dark:text-blue-400">DL</span>
+                        )}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="text-xs text-right flex-shrink-0">
                     {balancesLoading ? (

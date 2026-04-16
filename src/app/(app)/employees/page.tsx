@@ -15,10 +15,11 @@ import { useCompanyStore } from "@/stores/company-store";
 import type { EmployeeWithBalance } from "@/types/employee";
 
 function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.innerWidth < 768,
+  );
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
-    check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
@@ -63,11 +64,9 @@ export default function EmployeesPage() {
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeWithBalance | null>(null);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
 
-  useEffect(() => {
-    if (!selectedEmployee && employeesWithBalance.length > 0) {
-      setSelectedEmployee(employeesWithBalance[0]);
-    }
-  }, [employeesWithBalance]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Derive effective selection — auto-pick first item if nothing is selected yet
+  const effectiveSelectedEmployee =
+    selectedEmployee ?? (employeesWithBalance.length > 0 ? employeesWithBalance[0] : null);
 
   const handleSelect = (emp: EmployeeWithBalance) => {
     setSelectedEmployee(emp);
@@ -80,6 +79,8 @@ export default function EmployeesPage() {
     designation: e.designation,
     outstanding_balance: e.outstanding_balance,
     currency_balances: e.currency_balances,
+    custom_hourly_cost: e.custom_hourly_cost,
+    custom_cost_classification: e.custom_cost_classification,
   }));
 
   return (
@@ -101,7 +102,7 @@ export default function EmployeesPage() {
             balancesLoading={balancesLoading}
             search={listState.search}
             onSearchChange={listState.setSearch}
-            selectedName={selectedEmployee?.name ?? null}
+            selectedName={effectiveSelectedEmployee?.name ?? null}
             onSelect={(row) => {
               const full = employeesWithBalance.find((e) => e.name === row.name);
               if (full) handleSelect(full);
@@ -117,14 +118,14 @@ export default function EmployeesPage() {
         </div>
 
         <div className="hidden md:flex flex-1 overflow-hidden">
-          {selectedEmployee ? (
+          {effectiveSelectedEmployee ? (
             <EmployeeDetailPanel
-              employeeName={selectedEmployee.name}
-              employeeDisplayName={selectedEmployee.employee_name}
-              designation={selectedEmployee.designation}
-              department={selectedEmployee.department}
-              outstandingBalance={selectedEmployee.outstanding_balance}
-              currencyBalances={selectedEmployee.currency_balances}
+              employeeName={effectiveSelectedEmployee.name}
+              employeeDisplayName={effectiveSelectedEmployee.employee_name}
+              designation={effectiveSelectedEmployee.designation}
+              department={effectiveSelectedEmployee.department}
+              outstandingBalance={effectiveSelectedEmployee.outstanding_balance}
+              currencyBalances={effectiveSelectedEmployee.currency_balances}
               className="w-full"
             />
           ) : (
@@ -135,16 +136,16 @@ export default function EmployeesPage() {
         </div>
       </div>
 
-      {selectedEmployee && (
+      {effectiveSelectedEmployee && (
         <EmployeeTransactionsPane
           open={mobileSheetOpen}
           onOpenChange={setMobileSheetOpen}
-          employeeName={selectedEmployee.name}
-          employeeDisplayName={selectedEmployee.employee_name}
-          designation={selectedEmployee.designation}
-          department={selectedEmployee.department}
-          outstandingBalance={selectedEmployee.outstanding_balance}
-          currencyBalances={selectedEmployee.currency_balances}
+          employeeName={effectiveSelectedEmployee.name}
+          employeeDisplayName={effectiveSelectedEmployee.employee_name}
+          designation={effectiveSelectedEmployee.designation}
+          department={effectiveSelectedEmployee.department}
+          outstandingBalance={effectiveSelectedEmployee.outstanding_balance}
+          currencyBalances={effectiveSelectedEmployee.currency_balances}
         />
       )}
     </>

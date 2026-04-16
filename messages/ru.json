@@ -1068,7 +1068,8 @@
       "qtyToManufacture": "Кол-во к производству",
       "sourceWarehouse": "Склад сырья",
       "wipWarehouse": "Склад НЗП",
-      "fgWarehouse": "Склад ГП"
+      "fgWarehouse": "Склад ГП",
+      "laborCost": "Затраты на труд"
     },
     "bom": {
       "title": "Спецификации",

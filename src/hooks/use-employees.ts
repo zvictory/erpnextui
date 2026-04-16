@@ -11,7 +11,15 @@ export function useEmployeeList(page: number, search: string, sort: string) {
     queryFn: () =>
       frappe.getList<EmployeeListItem>("Employee", {
         filters: search ? [["employee_name", "like", `%${search}%`]] : [],
-        fields: ["name", "employee_name", "designation", "department", "status"],
+        fields: [
+          "name",
+          "employee_name",
+          "designation",
+          "department",
+          "status",
+          "custom_hourly_cost",
+          "custom_cost_classification",
+        ],
         orderBy: sort || "employee_name asc",
         limitPageLength: PAGE_SIZE,
         limitStart: (page - 1) * PAGE_SIZE,

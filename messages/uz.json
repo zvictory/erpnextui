@@ -1053,7 +1053,8 @@
       "qtyToManufacture": "Ishlab chiqarish miqdori",
       "sourceWarehouse": "Xomashyo skladi",
       "wipWarehouse": "NZP skladi",
-      "fgWarehouse": "Tayyor mahsulot skladi"
+      "fgWarehouse": "Tayyor mahsulot skladi",
+      "laborCost": "Mehnat xarajati"
     },
     "bom": {
       "title": "Spetsifikatsiyalar",

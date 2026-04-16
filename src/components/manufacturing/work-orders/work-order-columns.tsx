@@ -60,6 +60,17 @@ export function getWorkOrderColumns(t: (key: string) => string): ColumnDef<WorkO
       render: (row) => <span className="text-sm">{formatDate(row.planned_start_date)}</span>,
     },
     {
+      key: "custom_total_labor_cost",
+      header: t("laborCost"),
+      className: "text-right w-[100px]",
+      render: (row) =>
+        row.custom_total_labor_cost ? (
+          <span className="tabular-nums text-sm">{formatNumber(row.custom_total_labor_cost, 0)}</span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
+    {
       key: "expected_delivery_date",
       header: t("deliveryDate"),
       sortKey: "expected_delivery_date",
