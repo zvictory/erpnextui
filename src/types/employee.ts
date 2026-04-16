@@ -12,6 +12,10 @@ export interface Employee {
   date_of_joining: string;
   image: string;
   custom_monthly_salary?: number;
+  custom_standard_hours?: number;
+  custom_hourly_cost?: number;
+  custom_cost_classification?: "Direct Labor" | "Period Cost";
+  custom_default_workstation?: string;
   [key: string]: unknown;
 }
 

@@ -182,6 +182,7 @@ export const BUILTIN_CAPABILITIES = {
   "nav.bom": { module: "nav", labelKey: "nav.bom", scopeDim: null },
   "nav.jobCards": { module: "nav", labelKey: "nav.jobCards", scopeDim: null },
   "nav.workstations": { module: "nav", labelKey: "nav.workstations", scopeDim: null },
+  "nav.costingDashboard": { module: "nav", labelKey: "nav.costingDashboard", scopeDim: null },
 
   "nav.sales": { module: "nav", labelKey: "nav.sales", scopeDim: null },
   "nav.profitLoss": { module: "nav", labelKey: "nav.profitLoss", scopeDim: null },

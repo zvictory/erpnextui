@@ -115,10 +115,8 @@ export const queryKeys = {
     employee: (company: string) => ["partyBalances", "employee", company] as const,
   },
   partyLedger: {
-    list: (partyType: string, party: string, company: string, page?: number) =>
-      ["partyLedger", partyType, party, company, page ?? 1] as const,
-    count: (partyType: string, party: string, company: string) =>
-      ["partyLedger", "count", partyType, party, company] as const,
+    list: (partyType: string, party: string, company: string) =>
+      ["partyLedger", partyType, party, company] as const,
     drafts: (partyType: string, party: string, company: string) =>
       ["partyLedger", "drafts", partyType, party, company] as const,
   },
@@ -133,6 +131,7 @@ export const queryKeys = {
   },
   permissions: {
     all: (user: string) => ["permissions", "all", user] as const,
+    grants: ["permissions", "grants"] as const,
   },
   paymentEntries: {
     outstanding: (partyType: string, partyName: string, company: string) =>
@@ -310,5 +309,17 @@ export const queryKeys = {
     active: (doctype: string) => ["workflow", "active", doctype] as const,
     transitions: (doctype: string, docname: string) =>
       ["workflow", "transitions", doctype, docname] as const,
+  },
+  costing: {
+    employeeCost: (name: string) => ["costing", "employeeCost", name] as const,
+    directLaborEmployees: ["costing", "directLaborEmployees"] as const,
+    woTabel: (workOrder: string) => ["costing", "woTabel", workOrder] as const,
+    cumulativeCosts: (from: string, to: string) =>
+      ["costing", "cumulativeCosts", from, to] as const,
+    productBreakdown: (from: string, to: string, method: string) =>
+      ["costing", "productBreakdown", from, to, method] as const,
+    variance: (from: string, to: string) => ["costing", "variance", from, to] as const,
+    workstationEnergy: (from: string, to: string) =>
+      ["costing", "workstationEnergy", from, to] as const,
   },
 };

@@ -46,6 +46,7 @@ import {
   Handshake,
   Tags,
   ShieldCheck,
+  Calculator,
 } from "lucide-react";
 import {
   Sidebar,
@@ -132,6 +133,7 @@ const manufacturingNav: NavItem[] = [
   { tKey: "bom", href: "/manufacturing/bom", icon: Layers, navCapability: "nav.bom" },
   { tKey: "jobCards", href: "/manufacturing/job-cards", icon: Timer, navCapability: "nav.jobCards" },
   { tKey: "workstations", href: "/manufacturing/workstations", icon: Monitor, navCapability: "nav.workstations" },
+  { tKey: "costingDashboard", href: "/manufacturing/costing-dashboard", icon: Calculator, navCapability: "nav.costingDashboard" },
 ];
 
 const adminNav: NavItem[] = [

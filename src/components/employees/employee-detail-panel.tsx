@@ -37,6 +37,7 @@ import { useCurrencyMap } from "@/hooks/use-accounts";
 import { useCompanyStore } from "@/stores/company-store";
 import { formatCurrency, formatInvoiceCurrency, formatDate } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
+import { EmployeeCostSetup } from "./employee-cost-setup";
 import { EmployeeAdvanceDialog } from "./employee-advance-dialog";
 import { IceCreamSaleDialog } from "./ice-cream-sale-dialog";
 import { IceCreamSaleDetailDialog } from "./ice-cream-sale-detail-dialog";
@@ -176,8 +177,14 @@ export function EmployeeDetailPanel({
       name: d.name,
       posting_date: d.posting_date,
       account: "",
-      debit: d.debit_in_account_currency * d.exchange_rate,
-      credit: d.credit_in_account_currency * d.exchange_rate,
+      debit:
+        d.exchange_rate === 1
+          ? d.debit_in_account_currency
+          : Math.round(d.debit_in_account_currency * d.exchange_rate * 100) / 100,
+      credit:
+        d.exchange_rate === 1
+          ? d.credit_in_account_currency
+          : Math.round(d.credit_in_account_currency * d.exchange_rate * 100) / 100,
       account_currency: d.account_currency,
       debit_in_account_currency: d.debit_in_account_currency,
       credit_in_account_currency: d.credit_in_account_currency,
@@ -340,6 +347,8 @@ export function EmployeeDetailPanel({
               {t("newAdvance")}
             </Button>
           </div>
+
+          <EmployeeCostSetup employeeId={employeeName} />
         </div>
 
         <Separator />
