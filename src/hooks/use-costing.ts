@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { frappe } from "@/lib/frappe-client";
 import { queryKeys } from "@/hooks/query-keys";
+import { getMaintenanceCostsForPeriod } from "@/actions/maintenance-logs";
 import type { EmployeeCostInfo, TimesheetEntry, CostingPeriod } from "@/types/costing";
 import type { WorkOrderListItem } from "@/types/manufacturing";
 
@@ -542,5 +543,19 @@ export function useWorkstationEnergyAllocation(period: CostingPeriod, company: s
         });
     },
     enabled: !!company && !!period.from && !!period.to,
+  });
+}
+
+// ── Maintenance Costs (from local DB) ──────────────────────────
+
+export function useMaintenanceCosts(period: CostingPeriod) {
+  return useQuery({
+    queryKey: queryKeys.costing.maintenanceCosts(period.from, period.to),
+    queryFn: async () => {
+      const result = await getMaintenanceCostsForPeriod(period.from, period.to);
+      if (!result.success) throw new Error(result.error);
+      return result.data;
+    },
+    enabled: !!period.from && !!period.to,
   });
 }

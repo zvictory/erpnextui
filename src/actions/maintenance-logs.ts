@@ -205,6 +205,90 @@ export async function createMaintenanceLog(data: MaintenanceLogFormValues) {
   }
 }
 
+// ─── Maintenance costs for costing dashboard ─────────────────────
+
+export async function getMaintenanceCostsForPeriod(dateFrom: string, dateTo: string) {
+  try {
+    await requireGrant({
+      capability: "maintenance.read",
+      scope: { dim: null },
+      actionName: "getMaintenanceCostsForPeriod",
+    });
+
+    const logs = await db
+      .select({
+        totalCost: maintenanceLogs.totalCost,
+        costClassification: maintenanceLogs.costClassification,
+        maintenanceType: maintenanceLogs.maintenanceType,
+      })
+      .from(maintenanceLogs)
+      .where(and(gte(maintenanceLogs.date, dateFrom), lte(maintenanceLogs.date, dateTo)));
+
+    // Routine (preventive, cleaning, calibration) → part of COGS
+    // Corrective/capital → period cost
+    let routineCost = 0;
+    let correctiveCost = 0;
+    for (const log of logs) {
+      const cost = log.totalCost ?? 0;
+      if (
+        log.maintenanceType === "preventive" ||
+        log.maintenanceType === "cleaning" ||
+        log.maintenanceType === "calibration"
+      ) {
+        routineCost += cost;
+      } else {
+        correctiveCost += cost;
+      }
+    }
+
+    return {
+      success: true as const,
+      data: {
+        total: routineCost + correctiveCost,
+        routine: routineCost,
+        corrective: correctiveCost,
+      },
+    };
+  } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Failed to fetch maintenance costs",
+    };
+  }
+}
+
+// ─── Link Stock Entry to maintenance log parts ───────────────────
+
+export async function linkStockEntryToLog(
+  logId: number,
+  stockEntryName: string,
+  sourceWarehouse: string,
+) {
+  try {
+    await requireGrant({
+      capability: "maintenance.write",
+      scope: { dim: null },
+      actionName: "linkStockEntryToLog",
+    });
+
+    db.update(maintenancePartsUsed)
+      .set({ stockEntryName, sourceWarehouse })
+      .where(eq(maintenancePartsUsed.maintenanceLogId, logId))
+      .run();
+
+    return { success: true as const };
+  } catch (error) {
+    const perm = toActionError(error);
+    if (perm) return perm;
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Failed to link stock entry",
+    };
+  }
+}
+
 // ─── Dashboard KPIs ────────────────────────────────────────────────
 
 export async function getMaintenanceDashboardKPIs(month?: string) {

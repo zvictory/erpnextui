@@ -8,6 +8,9 @@ import { z } from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
+import { frappe } from "@/lib/frappe-client";
+import { useCompanyStore } from "@/stores/company-store";
+import type { StockEntry } from "@/types/stock-entry";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,7 +32,7 @@ import {
 import { DateInput } from "@/components/shared/date-input";
 import { getAssets } from "@/actions/assets";
 import { getMechanics } from "@/actions/mechanics";
-import { createMaintenanceLog } from "@/actions/maintenance-logs";
+import { createMaintenanceLog, linkStockEntryToLog } from "@/actions/maintenance-logs";
 import type { MaintenanceLogFormValues } from "@/types/maintenance";
 
 const partSchema = z.object({
@@ -83,6 +86,7 @@ export function MaintenanceLogDialog({
 }: MaintenanceLogDialogProps) {
   const t = useTranslations("maintenance");
   const qc = useQueryClient();
+  const company = useCompanyStore((s) => s.company);
   const [open, setOpen] = useState(false);
 
   const { data: assetsResult } = useQuery({
@@ -128,12 +132,51 @@ export function MaintenanceLogDialog({
   });
 
   const mutation = useMutation({
-    mutationFn: (data: MaintenanceLogFormValues) => createMaintenanceLog(data),
+    mutationFn: async (data: MaintenanceLogFormValues) => {
+      const res = await createMaintenanceLog(data);
+      if (!res.success) return res;
+
+      // Create ERPNext Stock Entry (Material Issue) for parts with item codes
+      const partsWithCodes = data.partsUsed.filter((p) => p.partCode);
+      if (partsWithCodes.length > 0 && company) {
+        try {
+          const warehouse = "Maintenance Store - AN";
+          const doc = await frappe.createDoc<StockEntry>("Stock Entry", {
+            doctype: "Stock Entry",
+            stock_entry_type: "Material Issue",
+            posting_date: data.date,
+            company,
+            from_warehouse: warehouse,
+            items: partsWithCodes.map((p) => ({
+              doctype: "Stock Entry Detail",
+              item_code: p.partCode!,
+              qty: p.qty,
+              s_warehouse: warehouse,
+              basic_rate: p.unitPrice,
+              amount: p.qty * p.unitPrice,
+            })),
+          });
+          const full = await frappe.getDoc<StockEntry>("Stock Entry", doc.name);
+          await frappe.submit(full as unknown as Record<string, unknown>);
+
+          // Link the stock entry back to the maintenance log parts
+          await linkStockEntryToLog(res.data.id, doc.name, warehouse);
+        } catch (err) {
+          // Stock Entry failed but maintenance log was saved — warn, don't fail
+          console.error("Stock Entry creation failed:", err);
+          toast.warning(t("stockEntryFailed"));
+        }
+      }
+
+      return res;
+    },
     onSuccess: (res) => {
       if (res.success) {
         toast.success(t("logCreated"));
         qc.invalidateQueries({ queryKey: ["maintenanceLogs"] });
         qc.invalidateQueries({ queryKey: ["maintenanceKPIs"] });
+        qc.invalidateQueries({ queryKey: ["stockEntries"] });
+        qc.invalidateQueries({ queryKey: ["bins"] });
         reset();
         setOpen(false);
       } else {

@@ -8,6 +8,7 @@ import {
   HardHat,
   Zap,
   Landmark,
+  Wrench,
   AlertTriangle,
   CheckCircle2,
   TrendingDown,
@@ -30,6 +31,7 @@ import {
   useProductCostBreakdown,
   useVarianceAnalysis,
   useWorkstationEnergyAllocation,
+  useMaintenanceCosts,
 } from "@/hooks/use-costing";
 import { useCompanyStore } from "@/stores/company-store";
 import { formatNumber, formatCurrency } from "@/lib/formatters";
@@ -80,8 +82,12 @@ export default function CostingDashboardPage() {
     period,
     company,
   );
+  const { data: maintCosts, isLoading: maintLoading } = useMaintenanceCosts(period);
 
   const fmt = (n: number) => formatCurrency(n, currencySymbol, symbolOnRight);
+
+  const maintenanceTotal = maintCosts?.total ?? 0;
+  const grandTotal = (costs?.total ?? 0) + maintenanceTotal;
 
   // Product totals
   const productTotals = useMemo(() => {
@@ -124,7 +130,7 @@ export default function CostingDashboardPage() {
       {/* Section A — Cumulative Costs */}
       <div>
         <h2 className="text-sm font-medium text-muted-foreground mb-3">{t("cumulative_costs")}</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           <CostMetricCard
             icon={<Boxes className="h-4 w-4" />}
             label={t("raw_materials")}
@@ -153,50 +159,70 @@ export default function CostingDashboardPage() {
             loading={costsLoading}
             fmt={fmt}
           />
+          <CostMetricCard
+            icon={<Wrench className="h-4 w-4" />}
+            label={t("maintenanceCost")}
+            value={maintCosts?.total}
+            loading={maintLoading}
+            fmt={fmt}
+          />
         </div>
 
         {/* Cost composition bar */}
-        {costs && costs.total > 0 && (
+        {costs && grandTotal > 0 && (
           <div className="mt-4">
             <div className="flex h-3 rounded-full overflow-hidden">
               <div
                 className="bg-blue-500"
-                style={{ width: `${(costs.raw_materials / costs.total) * 100}%` }}
+                style={{ width: `${(costs.raw_materials / grandTotal) * 100}%` }}
                 title={t("raw_materials")}
               />
               <div
                 className="bg-amber-500"
-                style={{ width: `${(costs.labor / costs.total) * 100}%` }}
+                style={{ width: `${(costs.labor / grandTotal) * 100}%` }}
                 title={t("labor")}
               />
               <div
                 className="bg-emerald-500"
-                style={{ width: `${(costs.energy / costs.total) * 100}%` }}
+                style={{ width: `${(costs.energy / grandTotal) * 100}%` }}
                 title={t("energy")}
               />
               <div
                 className="bg-purple-500"
-                style={{ width: `${(costs.depreciation / costs.total) * 100}%` }}
+                style={{ width: `${(costs.depreciation / grandTotal) * 100}%` }}
                 title={t("depreciation")}
               />
+              {maintenanceTotal > 0 && (
+                <div
+                  className="bg-rose-500"
+                  style={{ width: `${(maintenanceTotal / grandTotal) * 100}%` }}
+                  title={t("maintenanceCost")}
+                />
+              )}
             </div>
-            <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
+            <div className="flex flex-wrap gap-4 mt-2 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <span className="h-2 w-2 rounded-full bg-blue-500" />
-                {t("raw_materials")} {((costs.raw_materials / costs.total) * 100).toFixed(1)}%
+                {t("raw_materials")} {((costs.raw_materials / grandTotal) * 100).toFixed(1)}%
               </span>
               <span className="flex items-center gap-1">
                 <span className="h-2 w-2 rounded-full bg-amber-500" />
-                {t("labor")} {((costs.labor / costs.total) * 100).toFixed(1)}%
+                {t("labor")} {((costs.labor / grandTotal) * 100).toFixed(1)}%
               </span>
               <span className="flex items-center gap-1">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                {t("energy")} {((costs.energy / costs.total) * 100).toFixed(1)}%
+                {t("energy")} {((costs.energy / grandTotal) * 100).toFixed(1)}%
               </span>
               <span className="flex items-center gap-1">
                 <span className="h-2 w-2 rounded-full bg-purple-500" />
-                {t("depreciation")} {((costs.depreciation / costs.total) * 100).toFixed(1)}%
+                {t("depreciation")} {((costs.depreciation / grandTotal) * 100).toFixed(1)}%
               </span>
+              {maintenanceTotal > 0 && (
+                <span className="flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-full bg-rose-500" />
+                  {t("maintenanceCost")} {((maintenanceTotal / grandTotal) * 100).toFixed(1)}%
+                </span>
+              )}
             </div>
           </div>
         )}

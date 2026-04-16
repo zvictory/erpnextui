@@ -321,5 +321,7 @@ export const queryKeys = {
     variance: (from: string, to: string) => ["costing", "variance", from, to] as const,
     workstationEnergy: (from: string, to: string) =>
       ["costing", "workstationEnergy", from, to] as const,
+    maintenanceCosts: (from: string, to: string) =>
+      ["costing", "maintenanceCosts", from, to] as const,
   },
 };
