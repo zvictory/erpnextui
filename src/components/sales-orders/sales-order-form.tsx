@@ -26,6 +26,7 @@ import {
 } from "@/lib/schemas/sales-order-schema";
 import type { SalesOrder } from "@/types/sales-order";
 import { useCompanyStore } from "@/stores/company-store";
+import { useUISettingsStore } from "@/stores/ui-settings-store";
 import { useCurrencyMap } from "@/hooks/use-accounts";
 import { useCompanies } from "@/hooks/use-companies";
 import { useCustomer } from "@/hooks/use-customers";
@@ -68,6 +69,9 @@ export function SalesOrderForm({
     symbolOnRight: companySymbolOnRight,
     currencyCode: companyCurrencyCode,
   } = useCompanyStore();
+  const sellingWarehouse = useUISettingsStore(
+    (s) => s.getCompanySettings(company).sellingWarehouse,
+  );
   const { data: currencyMap } = useCurrencyMap();
   const { data: companiesList } = useCompanies();
   const companyDefaultCurrency = companiesList?.find((c) => c.name === company)?.default_currency;
@@ -96,15 +100,26 @@ export function SalesOrderForm({
             rate: item.rate,
             amount: item.amount,
             uom: (item as Record<string, unknown>).uom as string | undefined,
-            discount_percentage: (item as Record<string, unknown>).discount_percentage as number | undefined,
-            discount_amount: (item as Record<string, unknown>).discount_amount as number | undefined,
+            discount_percentage: (item as Record<string, unknown>).discount_percentage as
+              | number
+              | undefined,
+            discount_amount: (item as Record<string, unknown>).discount_amount as
+              | number
+              | undefined,
+            conversion_factor: (item as Record<string, unknown>).conversion_factor as
+              | number
+              | undefined,
           })),
         }
       : {
           customer: "",
           transaction_date: getToday(),
           delivery_date: getToday(),
-          items: [{ item_code: "", qty: 1, rate: 0, amount: 0, uom: "" }],
+          items: [
+            { item_code: "", qty: 1, rate: 0, amount: 0, uom: "", conversion_factor: 1 },
+            { item_code: "", qty: 1, rate: 0, amount: 0, uom: "", conversion_factor: 1 },
+            { item_code: "", qty: 1, rate: 0, amount: 0, uom: "", conversion_factor: 1 },
+          ],
         },
   });
 
@@ -122,14 +137,24 @@ export function SalesOrderForm({
   const { data: customerDoc } = useCustomer(watchedCustomer);
   const effectiveCurrency =
     docstatus > 0
-      ? defaultValues?.currency || customerDoc?.default_currency || companyDefaultCurrency || companyCurrencyCode
-      : customerDoc?.default_currency || defaultValues?.currency || companyDefaultCurrency || companyCurrencyCode;
-  const currInfo = typeof effectiveCurrency === "string" ? currencyMap?.get(effectiveCurrency) : undefined;
+      ? defaultValues?.currency ||
+        customerDoc?.default_currency ||
+        companyDefaultCurrency ||
+        companyCurrencyCode
+      : customerDoc?.default_currency ||
+        defaultValues?.currency ||
+        companyDefaultCurrency ||
+        companyCurrencyCode;
+  const currInfo =
+    typeof effectiveCurrency === "string" ? currencyMap?.get(effectiveCurrency) : undefined;
   const currencySymbol = currInfo?.symbol ?? companyCurrencySymbol;
   const symbolOnRight = currInfo?.onRight ?? companySymbolOnRight;
 
   function handleFormSubmit(data: SalesOrderFormValues) {
-    onSubmit({ ...data, currency: typeof effectiveCurrency === "string" ? effectiveCurrency : undefined });
+    onSubmit({
+      ...data,
+      currency: typeof effectiveCurrency === "string" ? effectiveCurrency : undefined,
+    });
   }
 
   useEffect(() => {
@@ -159,6 +184,7 @@ export function SalesOrderForm({
               value={watch("customer")}
               onChange={(v) => setValue("customer", v, { shouldValidate: true })}
               disabled={isReadOnly}
+              displayValue={customerDoc?.customer_name}
             />
             {errors.customer && (
               <p className="text-sm text-destructive">{errors.customer.message}</p>
@@ -238,6 +264,8 @@ export function SalesOrderForm({
           priceList={selectedPriceList}
           currencySymbol={currencySymbol}
           symbolOnRight={symbolOnRight}
+          showStockAvailability={!isReadOnly}
+          sellingWarehouse={sellingWarehouse}
         />
 
         {errors.items && (

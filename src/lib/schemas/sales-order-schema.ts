@@ -7,6 +7,7 @@ const orderItemSchema = z.object({
   rate: z.number().min(0, "Rate must be >= 0"),
   amount: z.number(),
   uom: z.string().optional(),
+  conversion_factor: z.number().optional(),
   discount_percentage: z.number().min(0).max(100).optional(),
   discount_amount: z.number().min(0).optional(),
 });

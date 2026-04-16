@@ -171,7 +171,11 @@ function ItemRow({
         <LinkField
           doctype="Item"
           value={itemCode ?? ""}
-          onChange={(v) => setValue(`${prefix}.${index}.item_code`, v)}
+          onChange={(v) => {
+            setValue(`${prefix}.${index}.item_code`, v);
+            // Reset conversion_factor immediately to prevent stale values from a previous item
+            setValue(`${prefix}.${index}.conversion_factor`, 1);
+          }}
           placeholder="Select item..."
           disabled={disabled}
           descriptionField="item_name"
