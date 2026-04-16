@@ -1,12 +1,21 @@
 "use client";
 
+import { Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { WoStatusBadge } from "@/components/manufacturing/work-orders/wo-status-badge";
 import { formatDate, formatNumber } from "@/lib/formatters";
 import type { ColumnDef } from "@/components/shared/data-table";
 import type { WorkOrderListItem } from "@/types/manufacturing";
 
-export function getWorkOrderColumns(t: (key: string) => string): ColumnDef<WorkOrderListItem>[] {
+interface WorkOrderColumnCallbacks {
+  onLaborClick?: (row: WorkOrderListItem) => void;
+}
+
+export function getWorkOrderColumns(
+  t: (key: string) => string,
+  callbacks?: WorkOrderColumnCallbacks,
+): ColumnDef<WorkOrderListItem>[] {
   return [
     {
       key: "name",
@@ -77,5 +86,34 @@ export function getWorkOrderColumns(t: (key: string) => string): ColumnDef<WorkO
       className: "w-[110px]",
       render: (row) => <span className="text-sm">{formatDate(row.expected_delivery_date)}</span>,
     },
+    ...(callbacks?.onLaborClick
+      ? [
+          {
+            key: "labor_action",
+            header: "",
+            className: "w-[48px]",
+            render: (row: WorkOrderListItem) => {
+              const canAct = row.status === "In Process" || row.status === "Not Started";
+              const hasLabor = (row.custom_total_labor_cost ?? 0) > 0;
+              return (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={!canAct}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    callbacks.onLaborClick!(row);
+                  }}
+                >
+                  <Clock
+                    className={`h-4 w-4 ${hasLabor ? "text-primary" : "text-muted-foreground"}`}
+                  />
+                </Button>
+              );
+            },
+          } satisfies ColumnDef<WorkOrderListItem>,
+        ]
+      : []),
   ];
 }

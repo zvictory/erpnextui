@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Plus, LayoutGrid, Table2 } from "lucide-react";
@@ -7,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/shared/data-table";
 import { KanbanBoard } from "@/components/manufacturing/work-orders/kanban-board";
 import { getWorkOrderColumns } from "@/components/manufacturing/work-orders/work-order-columns";
-import { useWorkOrderList, useWorkOrderCount } from "@/hooks/use-manufacturing";
+import { WoTabelDialog } from "@/components/manufacturing/work-orders/wo-tabel-dialog";
+import { useWorkOrderList, useWorkOrderCount, useWorkOrder } from "@/hooks/use-manufacturing";
 import { useListState } from "@/hooks/use-list-state";
 import { useCompanyStore } from "@/stores/company-store";
 import { useManufacturingStore } from "@/stores/manufacturing-store";
@@ -19,6 +21,8 @@ export default function WorkOrdersPage() {
   const { company } = useCompanyStore();
   const { woViewMode, setWoViewMode } = useManufacturingStore();
   const listState = useListState("planned_start_date desc");
+  const [tabelWO, setTabelWO] = useState<string | null>(null);
+  const { data: tabelWorkOrder } = useWorkOrder(tabelWO ?? "");
 
   const { data: workOrders = [], isLoading } = useWorkOrderList(
     company,
@@ -28,7 +32,9 @@ export default function WorkOrdersPage() {
   );
   const { data: totalCount = 0 } = useWorkOrderCount(company, listState.debouncedSearch);
 
-  const columns = getWorkOrderColumns(t);
+  const columns = getWorkOrderColumns(t, {
+    onLaborClick: (row) => setTabelWO(row.name),
+  });
 
   function handleRowClick(row: WorkOrderListItem) {
     router.push(`/manufacturing/work-orders/${encodeURIComponent(row.name)}`);
@@ -104,6 +110,16 @@ export default function WorkOrdersPage() {
           </div>
           <KanbanBoard workOrders={workOrders} isLoading={isLoading} />
         </>
+      )}
+
+      {tabelWorkOrder && (
+        <WoTabelDialog
+          open={!!tabelWO}
+          onOpenChange={(open) => {
+            if (!open) setTabelWO(null);
+          }}
+          workOrder={tabelWorkOrder}
+        />
       )}
     </div>
   );

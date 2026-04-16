@@ -37,6 +37,8 @@ import { formatNumber } from "@/lib/formatters";
 import type { EmployeeCostInfo, TimesheetEntry } from "@/types/costing";
 import type { WorkOrder } from "@/types/manufacturing";
 
+const EMPTY_ENTRIES: never[] = [];
+
 interface WoTabelDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -47,7 +49,7 @@ export function WoTabelDialog({ open, onOpenChange, workOrder }: WoTabelDialogPr
   const t = useTranslations("costing");
   const tCommon = useTranslations("common");
   const { data: laborEmployees = [] } = useDirectLaborEmployees();
-  const { data: existingEntries = [] } = useWorkOrderTabel(workOrder.name);
+  const { data: existingEntries = EMPTY_ENTRIES } = useWorkOrderTabel(workOrder.name);
   const saveTabel = useSaveWorkOrderTabel();
 
   const store = useTimesheetStore();
