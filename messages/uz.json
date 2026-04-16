@@ -1282,6 +1282,10 @@
     "editTitle": "Ruxsatlarni tahrirlash",
     "saveToast": "Saqlandi — {added} qo'shildi, {removed} olib tashlandi",
     "saveFailed": "Saqlash amalga oshmadi",
+    "menuAccess": "Menyu ruxsatlari",
+    "dataOps": "Ma'lumot operatsiyalari",
+    "dataOpsHint": "Foydalanuvchilar qanday operatsiyalar bajarishi mumkinligini boshqaradi (yaratish, tahrirlash, yuborish)",
+    "selectAll": "Hammasini tanlash",
     "tpl": {
       "name": "Nomi",
       "namePlaceholder": "masalan, Liniya boshlig'i",
@@ -1386,7 +1390,8 @@
     "manufacturing": "Ishlab chiqarish",
     "sales": "Sotuv",
     "purchases": "Xarid",
-    "stock": "Ombor"
+    "stock": "Ombor",
+    "nav": "Menyu ko'rinishi"
   },
   "scopeDim": {
     "line": "liniya",

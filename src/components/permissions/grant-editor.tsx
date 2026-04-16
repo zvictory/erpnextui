@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
+import { ChevronDown } from "lucide-react";
 import { listAllCapabilities } from "@/lib/permissions/capabilities";
 import { SCOPE_WILDCARD } from "@/lib/permissions/constants";
+import { NAV_GROUPS, ALL_NAV_CAPABILITY_IDS } from "@/lib/permissions/nav-items";
 import {
   useAdminUserGrants,
   useUpdateUserGrants,
@@ -23,6 +25,11 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 type GrantKey = string;
 
@@ -36,6 +43,7 @@ type Props = {
 
 export function GrantEditor({ userEmail, onClose }: Props) {
   const t = useTranslations();
+  const tNav = useTranslations("nav");
   const tPerm = useTranslations("permissions");
   const tModule = useTranslations("module");
   const tScope = useTranslations("scopeDim");
@@ -94,13 +102,15 @@ export function GrantEditor({ userEmail, onClose }: Props) {
     setSelected(new Set(currentGrants?.map(keyOf) ?? []));
   }
 
+  // Non-nav capabilities for the "Data Operations" section
   const capabilities = useMemo(
     () => listAllCapabilities(customCaps.map((c) => ({ ...c }))),
     [customCaps],
   );
-  const byModule = useMemo(() => {
+  const nonNavByModule = useMemo(() => {
     const map = new Map<string, typeof capabilities>();
     for (const c of capabilities) {
+      if (ALL_NAV_CAPABILITY_IDS.has(c.id)) continue;
       const bucket = map.get(c.module) ?? [];
       bucket.push(c);
       map.set(c.module, bucket);
@@ -155,90 +165,194 @@ export function GrantEditor({ userEmail, onClose }: Props) {
           </div>
         ) : (
           <div className="space-y-6 p-4">
-            {[...byModule.entries()].map(([module, caps]) => (
-              <section key={module} className="space-y-2">
-                <h3 className="text-sm font-semibold uppercase text-muted-foreground">
-                  {tModule(module)}
-                </h3>
-                <div className="space-y-3">
-                  {caps.map((cap) => {
-                    if (cap.scopeDim === null) {
-                      const k = keyOf({
-                        capabilityId: cap.id,
-                        scopeDim: "*",
-                        scopeValue: "*",
-                      });
-                      return (
-                        <div key={cap.id} className="flex items-center gap-2">
-                          <Checkbox
-                            checked={selected.has(k)}
-                            onCheckedChange={() => toggleGrant(k)}
-                          />
-                          <label className="flex-1 text-sm">{t(cap.labelKey)}</label>
-                          <Badge variant="outline" className="text-xs">
-                            {tPerm("unscoped")}
-                          </Badge>
-                          {cap.isCustom && (
-                            <Badge variant="secondary" className="text-xs">
-                              custom
-                            </Badge>
-                          )}
-                        </div>
-                      );
-                    }
+            {/* Section A: Menu Access */}
+            <section className="space-y-3">
+              <h3 className="text-sm font-semibold uppercase text-muted-foreground">
+                {tPerm("menuAccess")}
+              </h3>
+              <div className="space-y-2">
+                {NAV_GROUPS.map((group) => {
+                  const itemKeys = group.items.map((item) =>
+                    keyOf({ capabilityId: item.navCapability, scopeDim: "*", scopeValue: "*" }),
+                  );
+                  const checkedCount = itemKeys.filter((k) => selected.has(k)).length;
+                  const allChecked = checkedCount === group.items.length;
+                  const someChecked = checkedCount > 0 && !allChecked;
 
-                    const wildcardKey = keyOf({
-                      capabilityId: cap.id,
-                      scopeDim: cap.scopeDim,
-                      scopeValue: SCOPE_WILDCARD,
+                  const toggleAll = () => {
+                    setSelected((prev) => {
+                      const next = new Set(prev);
+                      if (allChecked) {
+                        for (const k of itemKeys) next.delete(k);
+                      } else {
+                        for (const k of itemKeys) next.add(k);
+                      }
+                      return next;
                     });
+                  };
 
-                    const dimOptions = scopeValuesForDim(cap.scopeDim);
-
-                    return (
-                      <div key={cap.id} className="rounded border border-border/60 p-2">
-                        <div className="flex items-center gap-2">
-                          <span className="flex-1 text-sm font-medium">{t(cap.labelKey)}</span>
-                          <Badge variant="outline" className="text-xs">
-                            {tScope(cap.scopeDim)}
-                          </Badge>
-                          {cap.isCustom && (
-                            <Badge variant="secondary" className="text-xs">
-                              custom
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="mt-2 flex flex-wrap gap-3">
-                          <label className="flex items-center gap-1.5 text-xs">
+                  return (
+                    <Collapsible key={group.groupKey} defaultOpen>
+                      <div className="rounded border border-border/60">
+                        <CollapsibleTrigger asChild>
+                          <button
+                            type="button"
+                            className="flex w-full items-center gap-2 px-3 py-2 hover:bg-muted/50 transition-colors"
+                          >
                             <Checkbox
-                              checked={selected.has(wildcardKey)}
-                              onCheckedChange={() => toggleGrant(wildcardKey)}
+                              checked={allChecked ? true : someChecked ? "indeterminate" : false}
+                              onCheckedChange={() => toggleAll()}
+                              onClick={(e) => e.stopPropagation()}
                             />
-                            {tPerm("allOf", { dim: tScope(cap.scopeDim) })}
-                          </label>
-                          {dimOptions.map((opt) => {
+                            <span className="flex-1 text-left text-sm font-medium">
+                              {tNav(`groups.${group.groupKey}`)}
+                            </span>
+                            <Badge variant="outline" className="text-xs tabular-nums">
+                              {checkedCount}/{group.items.length}
+                            </Badge>
+                            <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform [[data-state=open]>&]:rotate-180" />
+                          </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="border-t border-border/40 px-3 py-2 space-y-1.5">
+                            {group.items.map((item) => {
+                              const k = keyOf({
+                                capabilityId: item.navCapability,
+                                scopeDim: "*",
+                                scopeValue: "*",
+                              });
+                              return (
+                                <label
+                                  key={item.tKey}
+                                  className="flex items-center gap-2 rounded px-1 py-0.5 hover:bg-muted/30 cursor-pointer"
+                                >
+                                  <Checkbox
+                                    checked={selected.has(k)}
+                                    onCheckedChange={() => toggleGrant(k)}
+                                  />
+                                  <span className="text-sm">{tNav(item.tKey)}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </CollapsibleContent>
+                      </div>
+                    </Collapsible>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* Section B: Data Operations */}
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 py-2"
+                >
+                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform [[data-state=open]>&]:rotate-180" />
+                  <h3 className="text-sm font-semibold uppercase text-muted-foreground">
+                    {tPerm("dataOps")}
+                  </h3>
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <p className="text-xs text-muted-foreground mb-3">
+                  {tPerm("dataOpsHint")}
+                </p>
+                <div className="space-y-4">
+                  {[...nonNavByModule.entries()].map(([module, caps]) => (
+                    <section key={module} className="space-y-2">
+                      <h4 className="text-xs font-semibold uppercase text-muted-foreground">
+                        {tModule(module)}
+                      </h4>
+                      <div className="space-y-3">
+                        {caps.map((cap) => {
+                          if (cap.scopeDim === null) {
                             const k = keyOf({
                               capabilityId: cap.id,
-                              scopeDim: cap.scopeDim!,
-                              scopeValue: opt.value,
+                              scopeDim: "*",
+                              scopeValue: "*",
                             });
                             return (
-                              <label key={opt.value} className="flex items-center gap-1.5 text-xs">
+                              <div key={cap.id} className="flex items-center gap-2">
                                 <Checkbox
                                   checked={selected.has(k)}
                                   onCheckedChange={() => toggleGrant(k)}
                                 />
-                                {opt.label}
-                              </label>
+                                <label className="flex-1 text-sm">{t(cap.labelKey)}</label>
+                                <Badge variant="outline" className="text-xs">
+                                  {tPerm("unscoped")}
+                                </Badge>
+                                {cap.isCustom && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    custom
+                                  </Badge>
+                                )}
+                              </div>
                             );
-                          })}
-                        </div>
+                          }
+
+                          const wildcardKey = keyOf({
+                            capabilityId: cap.id,
+                            scopeDim: cap.scopeDim,
+                            scopeValue: SCOPE_WILDCARD,
+                          });
+
+                          const dimOptions = scopeValuesForDim(cap.scopeDim);
+
+                          return (
+                            <div key={cap.id} className="rounded border border-border/60 p-2">
+                              <div className="flex items-center gap-2">
+                                <span className="flex-1 text-sm font-medium">
+                                  {t(cap.labelKey)}
+                                </span>
+                                <Badge variant="outline" className="text-xs">
+                                  {tScope(cap.scopeDim)}
+                                </Badge>
+                                {cap.isCustom && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    custom
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="mt-2 flex flex-wrap gap-3">
+                                <label className="flex items-center gap-1.5 text-xs">
+                                  <Checkbox
+                                    checked={selected.has(wildcardKey)}
+                                    onCheckedChange={() => toggleGrant(wildcardKey)}
+                                  />
+                                  {tPerm("allOf", { dim: tScope(cap.scopeDim) })}
+                                </label>
+                                {dimOptions.map((opt) => {
+                                  const k = keyOf({
+                                    capabilityId: cap.id,
+                                    scopeDim: cap.scopeDim!,
+                                    scopeValue: opt.value,
+                                  });
+                                  return (
+                                    <label
+                                      key={opt.value}
+                                      className="flex items-center gap-1.5 text-xs"
+                                    >
+                                      <Checkbox
+                                        checked={selected.has(k)}
+                                        onCheckedChange={() => toggleGrant(k)}
+                                      />
+                                      {opt.label}
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
+                    </section>
+                  ))}
                 </div>
-              </section>
-            ))}
+              </CollapsibleContent>
+            </Collapsible>
           </div>
         )}
 

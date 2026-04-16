@@ -131,6 +131,70 @@ export const BUILTIN_CAPABILITIES = {
     labelKey: "cap.settings.write",
     scopeDim: null,
   },
+
+  // ── Nav visibility capabilities ──
+  // Each maps 1:1 to a sidebar menu item. Module "nav" groups them separately.
+  "nav.dashboard": { module: "nav", labelKey: "nav.dashboard", scopeDim: null },
+  "nav.expense": { module: "nav", labelKey: "nav.expense", scopeDim: null },
+  "nav.fundTransfer": { module: "nav", labelKey: "nav.fundTransfer", scopeDim: null },
+
+  "nav.products": { module: "nav", labelKey: "nav.products", scopeDim: null },
+  "nav.customers": { module: "nav", labelKey: "nav.customers", scopeDim: null },
+  "nav.vendors": { module: "nav", labelKey: "nav.vendors", scopeDim: null },
+  "nav.partners": { module: "nav", labelKey: "nav.partners", scopeDim: null },
+  "nav.employees": { module: "nav", labelKey: "nav.employees", scopeDim: null },
+  "nav.priceLists": { module: "nav", labelKey: "nav.priceLists", scopeDim: null },
+
+  "nav.quotations": { module: "nav", labelKey: "nav.quotations", scopeDim: null },
+  "nav.salesOrders": { module: "nav", labelKey: "nav.salesOrders", scopeDim: null },
+  "nav.deliveryNotes": { module: "nav", labelKey: "nav.deliveryNotes", scopeDim: null },
+  "nav.salesInvoices": { module: "nav", labelKey: "nav.salesInvoices", scopeDim: null },
+  "nav.purchaseOrders": { module: "nav", labelKey: "nav.purchaseOrders", scopeDim: null },
+  "nav.purchaseInvoices": { module: "nav", labelKey: "nav.purchaseInvoices", scopeDim: null },
+  "nav.payments": { module: "nav", labelKey: "nav.payments", scopeDim: null },
+
+  "nav.warehouses": { module: "nav", labelKey: "nav.warehouses", scopeDim: null },
+  "nav.stockEntries": { module: "nav", labelKey: "nav.stockEntries", scopeDim: null },
+  "nav.stockLedger": { module: "nav", labelKey: "nav.stockLedger", scopeDim: null },
+
+  "nav.banks": { module: "nav", labelKey: "nav.banks", scopeDim: null },
+  "nav.chartOfAccounts": { module: "nav", labelKey: "nav.chartOfAccounts", scopeDim: null },
+
+  "nav.whDashboard": { module: "nav", labelKey: "nav.whDashboard", scopeDim: null },
+  "nav.whPicking": { module: "nav", labelKey: "nav.whPicking", scopeDim: null },
+  "nav.whStockCheck": { module: "nav", labelKey: "nav.whStockCheck", scopeDim: null },
+  "nav.whPacking": { module: "nav", labelKey: "nav.whPacking", scopeDim: null },
+  "nav.whInvoicing": { module: "nav", labelKey: "nav.whInvoicing", scopeDim: null },
+
+  "nav.oeeDashboard": { module: "nav", labelKey: "nav.oeeDashboard", scopeDim: null },
+  "nav.layoutEditor": { module: "nav", labelKey: "nav.layoutEditor", scopeDim: null },
+
+  "nav.mfgDashboard": { module: "nav", labelKey: "nav.mfgDashboard", scopeDim: null },
+  "nav.production": { module: "nav", labelKey: "nav.production", scopeDim: null },
+  "nav.downtime": { module: "nav", labelKey: "nav.downtime", scopeDim: null },
+  "nav.energy": { module: "nav", labelKey: "nav.energy", scopeDim: null },
+  "nav.mfgProducts": { module: "nav", labelKey: "nav.mfgProducts", scopeDim: null },
+  "nav.mfgLines": { module: "nav", labelKey: "nav.mfgLines", scopeDim: null },
+  "nav.mfgSettings": { module: "nav", labelKey: "nav.mfgSettings", scopeDim: null },
+
+  "nav.mfgErpDashboard": { module: "nav", labelKey: "nav.mfgErpDashboard", scopeDim: null },
+  "nav.workOrders": { module: "nav", labelKey: "nav.workOrders", scopeDim: null },
+  "nav.bom": { module: "nav", labelKey: "nav.bom", scopeDim: null },
+  "nav.jobCards": { module: "nav", labelKey: "nav.jobCards", scopeDim: null },
+  "nav.workstations": { module: "nav", labelKey: "nav.workstations", scopeDim: null },
+
+  "nav.sales": { module: "nav", labelKey: "nav.sales", scopeDim: null },
+  "nav.profitLoss": { module: "nav", labelKey: "nav.profitLoss", scopeDim: null },
+  "nav.balanceSheet": { module: "nav", labelKey: "nav.balanceSheet", scopeDim: null },
+  "nav.trialBalance": { module: "nav", labelKey: "nav.trialBalance", scopeDim: null },
+  "nav.cashFlow": { module: "nav", labelKey: "nav.cashFlow", scopeDim: null },
+  "nav.accountsReceivable": { module: "nav", labelKey: "nav.accountsReceivable", scopeDim: null },
+  "nav.customerBalanceSummary": { module: "nav", labelKey: "nav.customerBalanceSummary", scopeDim: null },
+  "nav.accountsPayable": { module: "nav", labelKey: "nav.accountsPayable", scopeDim: null },
+  "nav.generalLedger": { module: "nav", labelKey: "nav.generalLedger", scopeDim: null },
+
+  "nav.settings": { module: "nav", labelKey: "nav.settings", scopeDim: null },
+  "nav.permissions": { module: "nav", labelKey: "nav.permissions", scopeDim: null },
 } as const satisfies Record<string, CapabilityDef>;
 
 export type BuiltinCapabilityId = keyof typeof BUILTIN_CAPABILITIES;

@@ -1344,6 +1344,10 @@
     "editTitle": "Edit permissions",
     "saveToast": "Saved — {added} added, {removed} removed",
     "saveFailed": "Save failed",
+    "menuAccess": "Menu Access",
+    "dataOps": "Data Operations",
+    "dataOpsHint": "Controls what operations users can perform (create, edit, submit)",
+    "selectAll": "Select all",
     "tpl": {
       "name": "Name",
       "namePlaceholder": "e.g. Line Supervisor",
@@ -1448,7 +1452,8 @@
     "manufacturing": "Manufacturing",
     "sales": "Sales",
     "purchases": "Purchases",
-    "stock": "Stock"
+    "stock": "Stock",
+    "nav": "Menu Visibility"
   },
   "scopeDim": {
     "line": "line",
