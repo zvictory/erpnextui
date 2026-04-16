@@ -149,6 +149,12 @@ export function useStopWorkOrder() {
   });
 }
 
+export interface AdditionalCost {
+  expense_account: string;
+  description: string;
+  amount: number;
+}
+
 export function useMakeStockEntry() {
   const qc = useQueryClient();
   return useMutation({
@@ -156,15 +162,39 @@ export function useMakeStockEntry() {
       workOrder,
       purpose,
       qty,
+      additionalCosts,
     }: {
       workOrder: string;
       purpose: "Manufacture" | "Material Transfer for Manufacture";
       qty?: number;
+      additionalCosts?: AdditionalCost[];
     }) => {
       const se = await frappe.call<Record<string, unknown>>(
         "erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry",
         { work_order: workOrder, purpose, qty },
       );
+
+      // Inject labor / overhead costs into the Stock Entry before submission
+      if (additionalCosts?.length && purpose === "Manufacture") {
+        // Resolve expense account for rows that don't specify one
+        let defaultExpenseAccount = "";
+        const needsDefault = additionalCosts.some((c) => !c.expense_account);
+        if (needsDefault) {
+          const companyDoc = await frappe.getDoc<{
+            expenses_included_in_valuation: string;
+          }>("Company", se.company as string);
+          defaultExpenseAccount = companyDoc.expenses_included_in_valuation || "";
+        }
+
+        const resolved = additionalCosts.map((c) => ({
+          ...c,
+          expense_account: c.expense_account || defaultExpenseAccount,
+        }));
+
+        const existing = (se.additional_costs as AdditionalCost[]) ?? [];
+        se.additional_costs = [...existing, ...resolved];
+      }
+
       return frappe.submit(se);
     },
     onSuccess: () => {
