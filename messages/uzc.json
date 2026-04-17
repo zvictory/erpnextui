@@ -204,7 +204,9 @@
     "shortcutClose": "Ёпиш",
     "draft": "Қоралама",
     "amend": "Тузатиш",
-    "insufficientBalance": "Маблағ етарли эмас. Мавжуд: {balance}"
+    "insufficientBalance": "Маблағ етарли эмас. Мавжуд: {balance}",
+    "error": "Хатолик",
+    "total": "Жами"
   },
   "status": {
     "draft": "Қоралама",
@@ -1060,7 +1062,17 @@
       "sourceWarehouse": "Хомашё склади",
       "wipWarehouse": "НЗП склади",
       "fgWarehouse": "Тайёр маҳсулот склади",
-      "laborCost": "Меҳнат харажати"
+      "laborCost": "Меҳнат харажати",
+      "workers": "Ишчилар",
+      "machine": "Машина (Актив)",
+      "selectMachine": "Машина танлаш",
+      "searchMachine": "Машина қидириш...",
+      "noMachines": "Машина топилмади",
+      "select": "Танлаш",
+      "changeMachine": "Ўзгартириш",
+      "noMachineSelected": "Машина танланмаган",
+      "machineSaved": "Машина сақланди",
+      "machineRemoved": "Машина олиб ташланди"
     },
     "bom": {
       "title": "Спецификациялар",

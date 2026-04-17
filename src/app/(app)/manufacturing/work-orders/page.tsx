@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Plus, LayoutGrid, Table2 } from "lucide-react";
@@ -10,6 +10,7 @@ import { KanbanBoard } from "@/components/manufacturing/work-orders/kanban-board
 import { getWorkOrderColumns } from "@/components/manufacturing/work-orders/work-order-columns";
 import { WoTabelDialog } from "@/components/manufacturing/work-orders/wo-tabel-dialog";
 import { useWorkOrderList, useWorkOrderCount, useWorkOrder } from "@/hooks/use-manufacturing";
+import { useWoTabelSummaries } from "@/hooks/use-costing";
 import { useListState } from "@/hooks/use-list-state";
 import { useCompanyStore } from "@/stores/company-store";
 import { useManufacturingStore } from "@/stores/manufacturing-store";
@@ -32,9 +33,18 @@ export default function WorkOrdersPage() {
   );
   const { data: totalCount = 0 } = useWorkOrderCount(company, listState.debouncedSearch);
 
-  const columns = getWorkOrderColumns(t, {
-    onLaborClick: (row) => setTabelWO(row.name),
-  });
+  // Collect WO names that have labor hours for bulk tabel summary fetch
+  const woNamesWithLabor = useMemo(
+    () => workOrders.filter((wo) => (wo.custom_labor_hours ?? 0) > 0).map((wo) => wo.name),
+    [workOrders],
+  );
+  const { data: tabelSummaries } = useWoTabelSummaries(woNamesWithLabor);
+
+  const columns = getWorkOrderColumns(
+    t,
+    { onLaborClick: (row) => setTabelWO(row.name) },
+    tabelSummaries,
+  );
 
   function handleRowClick(row: WorkOrderListItem) {
     router.push(`/manufacturing/work-orders/${encodeURIComponent(row.name)}`);

@@ -204,7 +204,9 @@
     "shortcutClose": "Закрыть",
     "draft": "Черновик",
     "amend": "Исправить",
-    "insufficientBalance": "Недостаточно средств. Доступно: {balance}"
+    "insufficientBalance": "Недостаточно средств. Доступно: {balance}",
+    "error": "Ошибка",
+    "total": "Итого"
   },
   "status": {
     "draft": "Черновик",
@@ -1075,7 +1077,17 @@
       "sourceWarehouse": "Склад сырья",
       "wipWarehouse": "Склад НЗП",
       "fgWarehouse": "Склад ГП",
-      "laborCost": "Затраты на труд"
+      "laborCost": "Затраты на труд",
+      "workers": "Работники",
+      "machine": "Станок (Актив)",
+      "selectMachine": "Выбрать станок",
+      "searchMachine": "Поиск станков...",
+      "noMachines": "Станки не найдены",
+      "select": "Выбрать",
+      "changeMachine": "Изменить",
+      "noMachineSelected": "Станок не выбран",
+      "machineSaved": "Станок сохранён",
+      "machineRemoved": "Станок удалён"
     },
     "bom": {
       "title": "Спецификации",

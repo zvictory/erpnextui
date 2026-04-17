@@ -182,6 +182,58 @@ export function useSaveWorkOrderTabel() {
   });
 }
 
+// ── Tabel Summaries (bulk for list view) ───────────────────
+
+export interface TabelSummary {
+  employees: { id: string; name: string; initials: string }[];
+  totalHours: number;
+}
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+export function useWoTabelSummaries(workOrderNames: string[]) {
+  // Only fetch for WOs that actually have labor hours > 0
+  return useQuery({
+    queryKey: queryKeys.costing.tabelSummaries(workOrderNames),
+    queryFn: async () => {
+      if (workOrderNames.length === 0) return {} as Record<string, TabelSummary>;
+      const entries = await frappe.getList<{
+        work_order: string;
+        employee: string;
+        employee_name: string;
+        hours: number;
+      }>("Work Order Timesheet", {
+        filters: [["work_order", "in", workOrderNames]],
+        fields: ["work_order", "employee", "employee_name", "hours"],
+        limitPageLength: 0,
+      });
+
+      const map: Record<string, TabelSummary> = {};
+      for (const entry of entries) {
+        if (!map[entry.work_order]) {
+          map[entry.work_order] = { employees: [], totalHours: 0 };
+        }
+        const summary = map[entry.work_order];
+        summary.totalHours += entry.hours;
+        // Add unique employees only
+        if (!summary.employees.some((e) => e.id === entry.employee)) {
+          summary.employees.push({
+            id: entry.employee,
+            name: entry.employee_name,
+            initials: getInitials(entry.employee_name),
+          });
+        }
+      }
+      return map;
+    },
+    enabled: workOrderNames.length > 0,
+  });
+}
+
 // ── Costing Dashboard ───────────────────────────────────────
 
 export function useCumulativeCosts(period: CostingPeriod, company: string) {

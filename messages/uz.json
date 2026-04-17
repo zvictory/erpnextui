@@ -204,7 +204,9 @@
     "shortcutClose": "Yopish",
     "draft": "Qoralama",
     "amend": "Tuzatish",
-    "insufficientBalance": "Mablag' yetarli emas. Mavjud: {balance}"
+    "insufficientBalance": "Mablag' yetarli emas. Mavjud: {balance}",
+    "error": "Xatolik",
+    "total": "Jami"
   },
   "status": {
     "draft": "Qoralama",
@@ -1060,7 +1062,17 @@
       "sourceWarehouse": "Xomashyo skladi",
       "wipWarehouse": "NZP skladi",
       "fgWarehouse": "Tayyor mahsulot skladi",
-      "laborCost": "Mehnat xarajati"
+      "laborCost": "Mehnat xarajati",
+      "workers": "Ishchilar",
+      "machine": "Mashina (Aktiv)",
+      "selectMachine": "Mashina tanlash",
+      "searchMachine": "Mashina qidirish...",
+      "noMachines": "Mashina topilmadi",
+      "select": "Tanlash",
+      "changeMachine": "O'zgartirish",
+      "noMachineSelected": "Mashina tanlanmagan",
+      "machineSaved": "Mashina saqlandi",
+      "machineRemoved": "Mashina olib tashlandi"
     },
     "bom": {
       "title": "Spetsifikatsiyalar",

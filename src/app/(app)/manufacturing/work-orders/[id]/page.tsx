@@ -11,6 +11,7 @@ import { WoMaterialsTab } from "@/components/manufacturing/work-orders/wo-materi
 import { WoOperationsTab } from "@/components/manufacturing/work-orders/wo-operations-tab";
 import { WoQuickActions } from "@/components/manufacturing/work-orders/wo-quick-actions";
 import { WoTabelDialog } from "@/components/manufacturing/work-orders/wo-tabel-dialog";
+import { WoMachineCard } from "@/components/manufacturing/work-orders/wo-machine-card";
 import { useWorkOrder } from "@/hooks/use-manufacturing";
 
 export default function WorkOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -60,6 +61,9 @@ export default function WorkOrderDetailPage({ params }: { params: Promise<{ id: 
 
         {/* Header with progress + metric cards */}
         <WoHeader workOrder={workOrder} />
+
+        {/* Machine (Asset) section */}
+        <WoMachineCard workOrderName={workOrder.name} />
 
         {/* Tabs */}
         <Tabs defaultValue="materials">

@@ -331,6 +331,15 @@ export const oeeMeasurements = sqliteTable("oee_measurements", {
   createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
 });
 
+// ─── Work Order → Asset link ────────────────────────────────────────
+export const workOrderAssets = sqliteTable("work_order_assets", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  workOrder: text("work_order").notNull(),
+  assetId: integer("asset_id").references(() => assets.id),
+  notes: text("notes"),
+  createdAt: text("created_at").default(sql`(CURRENT_TIMESTAMP)`),
+});
+
 // ─── Downtime → Work Order Impact ───────────────────────────────────
 export const downtimeWorkOrderImpact = sqliteTable("downtime_work_order_impact", {
   id: integer("id").primaryKey({ autoIncrement: true }),

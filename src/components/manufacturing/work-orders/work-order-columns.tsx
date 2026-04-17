@@ -1,12 +1,20 @@
 "use client";
 
-import { Clock } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { WoStatusBadge } from "@/components/manufacturing/work-orders/wo-status-badge";
 import { formatDate, formatNumber } from "@/lib/formatters";
 import type { ColumnDef } from "@/components/shared/data-table";
 import type { WorkOrderListItem } from "@/types/manufacturing";
+import type { TabelSummary } from "@/hooks/use-costing";
+
+const AVATAR_COLORS = [
+  "bg-blue-100 text-blue-700",
+  "bg-green-100 text-green-700",
+  "bg-purple-100 text-purple-700",
+  "bg-amber-100 text-amber-700",
+];
 
 interface WorkOrderColumnCallbacks {
   onLaborClick?: (row: WorkOrderListItem) => void;
@@ -15,6 +23,7 @@ interface WorkOrderColumnCallbacks {
 export function getWorkOrderColumns(
   t: (key: string) => string,
   callbacks?: WorkOrderColumnCallbacks,
+  tabelSummaries?: Record<string, TabelSummary>,
 ): ColumnDef<WorkOrderListItem>[] {
   return [
     {
@@ -61,6 +70,70 @@ export function getWorkOrderColumns(
       className: "w-[120px]",
       render: (row) => <WoStatusBadge status={row.status} />,
     },
+    // Ishchilar column
+    ...(callbacks?.onLaborClick
+      ? [
+          {
+            key: "ishchilar",
+            header: t("workers"),
+            className: "min-w-[140px]",
+            render: (row: WorkOrderListItem) => {
+              const summary = tabelSummaries?.[row.name];
+              const hasLabor = (row.custom_labor_hours ?? 0) > 0 && summary;
+
+              if (hasLabor) {
+                return (
+                  <div
+                    className="flex items-center gap-1 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      callbacks.onLaborClick!(row);
+                    }}
+                  >
+                    {summary.employees.slice(0, 3).map((emp) => {
+                      const colorIdx = emp.name.charCodeAt(0) % AVATAR_COLORS.length;
+                      return (
+                        <span
+                          key={emp.id}
+                          className={`inline-flex items-center justify-center h-6 w-6 rounded-full text-[10px] font-semibold ${AVATAR_COLORS[colorIdx]}`}
+                          title={emp.name}
+                        >
+                          {emp.initials}
+                        </span>
+                      );
+                    })}
+                    {summary.employees.length > 3 && (
+                      <span className="text-[10px] text-muted-foreground">
+                        +{summary.employees.length - 3}
+                      </span>
+                    )}
+                    <span className="text-xs text-muted-foreground ml-1 tabular-nums">
+                      {summary.totalHours.toFixed(1)} s
+                    </span>
+                    <Pencil className="h-3 w-3 text-muted-foreground ml-1" />
+                  </div>
+                );
+              }
+
+              const canAct = row.status === "In Process" || row.status === "Not Started";
+              return (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  disabled={!canAct}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    callbacks.onLaborClick!(row);
+                  }}
+                >
+                  + Tabel
+                </Button>
+              );
+            },
+          } satisfies ColumnDef<WorkOrderListItem>,
+        ]
+      : []),
     {
       key: "planned_start_date",
       header: t("startDate"),
@@ -86,34 +159,5 @@ export function getWorkOrderColumns(
       className: "w-[110px]",
       render: (row) => <span className="text-sm">{formatDate(row.expected_delivery_date)}</span>,
     },
-    ...(callbacks?.onLaborClick
-      ? [
-          {
-            key: "labor_action",
-            header: "",
-            className: "w-[48px]",
-            render: (row: WorkOrderListItem) => {
-              const canAct = row.status === "In Process" || row.status === "Not Started";
-              const hasLabor = (row.custom_total_labor_cost ?? 0) > 0;
-              return (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  disabled={!canAct}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    callbacks.onLaborClick!(row);
-                  }}
-                >
-                  <Clock
-                    className={`h-4 w-4 ${hasLabor ? "text-primary" : "text-muted-foreground"}`}
-                  />
-                </Button>
-              );
-            },
-          } satisfies ColumnDef<WorkOrderListItem>,
-        ]
-      : []),
   ];
 }

@@ -204,7 +204,9 @@
     "shortcutClose": "Close",
     "draft": "Draft",
     "amend": "Amend",
-    "insufficientBalance": "Insufficient balance. Available: {balance}"
+    "insufficientBalance": "Insufficient balance. Available: {balance}",
+    "error": "Error",
+    "total": "Total"
   },
   "status": {
     "draft": "Draft",
@@ -1122,7 +1124,17 @@
       "sourceWarehouse": "Source Warehouse",
       "wipWarehouse": "WIP Warehouse",
       "fgWarehouse": "FG Warehouse",
-      "laborCost": "Labor Cost"
+      "laborCost": "Labor Cost",
+      "workers": "Workers",
+      "machine": "Machine (Asset)",
+      "selectMachine": "Select Machine",
+      "searchMachine": "Search machines...",
+      "noMachines": "No machines found",
+      "select": "Select",
+      "changeMachine": "Change",
+      "noMachineSelected": "No machine selected",
+      "machineSaved": "Machine saved",
+      "machineRemoved": "Machine removed"
     },
     "bom": {
       "title": "Bills of Material",

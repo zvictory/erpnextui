@@ -323,5 +323,11 @@ export const queryKeys = {
       ["costing", "workstationEnergy", from, to] as const,
     maintenanceCosts: (from: string, to: string) =>
       ["costing", "maintenanceCosts", from, to] as const,
+    tabelSummaries: (woNames: string[]) =>
+      ["costing", "tabelSummaries", ...woNames] as const,
+  },
+  workOrderAssets: {
+    byWo: (workOrder: string) => ["workOrderAssets", workOrder] as const,
+    allAssets: (search: string) => ["workOrderAssets", "allAssets", search] as const,
   },
 };
