@@ -120,6 +120,7 @@ export const NAV_GROUPS: NavGroupDef[] = [
       { tKey: "customerBalanceSummary", navCapability: "nav.customerBalanceSummary" },
       { tKey: "accountsPayable", navCapability: "nav.accountsPayable" },
       { tKey: "generalLedger", navCapability: "nav.generalLedger" },
+      { tKey: "currencyAudit", navCapability: "nav.currencyAudit" },
     ],
   },
   {

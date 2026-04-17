@@ -26,6 +26,7 @@
     "customerBalanceSummary": "Баланс клиентов",
     "accountsPayable": "Кредиторская задолженность",
     "generalLedger": "Главная книга",
+    "currencyAudit": "Аудит валют",
     "warehouses": "Склады",
     "stockEntries": "Складские операции",
     "stockLedger": "Складской реестр",

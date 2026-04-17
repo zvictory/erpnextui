@@ -26,6 +26,7 @@
     "customerBalanceSummary": "Customer Balances",
     "accountsPayable": "Payable Aging",
     "generalLedger": "General Ledger",
+    "currencyAudit": "Currency Audit",
     "warehouses": "Warehouses",
     "stockEntries": "Stock Entries",
     "stockLedger": "Stock Ledger",

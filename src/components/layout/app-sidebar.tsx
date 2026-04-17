@@ -51,6 +51,7 @@ import {
   Wrench,
   CalendarCheck,
   Hammer,
+  AlertTriangle,
 } from "lucide-react";
 import {
   Sidebar,
@@ -163,6 +164,7 @@ const reportNav: NavItem[] = [
   { tKey: "customerBalanceSummary", href: "/reports/customer-balance-summary", icon: Users, navCapability: "nav.customerBalanceSummary" },
   { tKey: "accountsPayable", href: "/reports/accounts-payable", icon: ArrowUpRight, navCapability: "nav.accountsPayable" },
   { tKey: "generalLedger", href: "/reports/general-ledger", icon: FileSearch, navCapability: "nav.generalLedger" },
+  { tKey: "currencyAudit", href: "/reports/currency-audit", icon: AlertTriangle, navCapability: "nav.currencyAudit" },
 ];
 
 type NavItem = {

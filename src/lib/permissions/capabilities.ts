@@ -193,6 +193,7 @@ export const BUILTIN_CAPABILITIES = {
   "nav.customerBalanceSummary": { module: "nav", labelKey: "nav.customerBalanceSummary", scopeDim: null },
   "nav.accountsPayable": { module: "nav", labelKey: "nav.accountsPayable", scopeDim: null },
   "nav.generalLedger": { module: "nav", labelKey: "nav.generalLedger", scopeDim: null },
+  "nav.currencyAudit": { module: "nav", labelKey: "nav.currencyAudit", scopeDim: null },
 
   "nav.settings": { module: "nav", labelKey: "nav.settings", scopeDim: null },
   "nav.permissions": { module: "nav", labelKey: "nav.permissions", scopeDim: null },
