@@ -840,6 +840,7 @@
     "salaryAccrual": "Ish haqi hisoblash",
     "salaryAccrualDesc": "Oy oxirida xodimlar uchun ish haqi hisoblab chiqish",
     "paySalary": "Ish haqi to'lash",
+    "costSetup": "Xarajat sozlamalari",
     "monthlySalary": "Oylik ish haqi",
     "accrueAndSubmit": "Hisoblash va tasdiqlash",
     "payAndSubmit": "To'lash va tasdiqlash",

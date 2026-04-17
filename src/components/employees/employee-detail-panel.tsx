@@ -13,6 +13,7 @@ import {
   Send,
   Trash2,
   Banknote,
+  Settings,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,12 @@ import {
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { getInitials, getVoucherIcon } from "@/components/shared/party-detail-panel";
@@ -91,6 +98,7 @@ export function EmployeeDetailPanel({
   const [advanceDialogOpen, setAdvanceDialogOpen] = useState(false);
   const [iceCreamDialogOpen, setIceCreamDialogOpen] = useState(false);
   const [salaryPayDialogOpen, setSalaryPayDialogOpen] = useState(false);
+  const [costSetupOpen, setCostSetupOpen] = useState(false);
   const [sortAsc, setSortAsc] = useState(true);
   const [confirmAction, setConfirmAction] = useState<{
     type: "submit" | "delete";
@@ -342,13 +350,15 @@ export function EmployeeDetailPanel({
               <Banknote className="h-4 w-4 mr-1" />
               {t("paySalary")}
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setCostSetupOpen(true)}>
+              <Settings className="h-4 w-4 mr-1" />
+              {t("costSetup")}
+            </Button>
             <Button size="sm" onClick={handleNewAdvance}>
               <Plus className="h-4 w-4 mr-1" />
               {t("newAdvance")}
             </Button>
           </div>
-
-          <EmployeeCostSetup employeeId={employeeName} />
         </div>
 
         <Separator />
@@ -560,6 +570,15 @@ export function EmployeeDetailPanel({
       />
 
       <JEDetailDialog open={jeDetailOpen} onOpenChange={setJEDetailOpen} jeName={jeDetailName} />
+
+      <Dialog open={costSetupOpen} onOpenChange={setCostSetupOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("costSetup")}</DialogTitle>
+          </DialogHeader>
+          <EmployeeCostSetup employeeId={employeeName} />
+        </DialogContent>
+      </Dialog>
 
       <SalaryPaymentDialog
         open={salaryPayDialogOpen}

@@ -902,6 +902,7 @@
     "salaryAccrual": "Salary Accrual",
     "salaryAccrualDesc": "Create month-end salary accrual entries for employees",
     "paySalary": "Pay Salary",
+    "costSetup": "Cost Setup",
     "monthlySalary": "Monthly salary",
     "accrueAndSubmit": "Accrue & Submit",
     "payAndSubmit": "Pay & Submit",
