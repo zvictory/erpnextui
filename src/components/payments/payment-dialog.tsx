@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { CheckCircle2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -51,7 +51,8 @@ export function PaymentDialog({ open, onOpenChange, partyType, partyName }: Paym
   const { data: customerDoc } = useCustomer(partyType === "Customer" ? partyName : "");
   const { data: supplierDoc } = useSupplier(partyType === "Supplier" ? partyName : "");
   const partyCurrency =
-    (partyType === "Customer" ? customerDoc?.default_currency : supplierDoc?.default_currency) ?? "";
+    (partyType === "Customer" ? customerDoc?.default_currency : supplierDoc?.default_currency) ??
+    "";
   const filteredBankAccounts = useMemo(
     () =>
       partyCurrency
@@ -153,6 +154,27 @@ export function PaymentDialog({ open, onOpenChange, partyType, partyName }: Paym
     const pool = parsedAmount || selectedOutstanding;
     setAllocations(computeAllocations(next, pool));
   };
+
+  // Auto-select all outstanding invoices on open — prevents PEs being submitted with empty
+  // references (the "unallocated payment" bug). User can still deselect manually afterwards.
+  useEffect(() => {
+    if (!open || invoices.length === 0) return;
+    if (Object.keys(selections).length > 0) return;
+    const next: Record<string, boolean> = {};
+    invoices.forEach((inv) => {
+      next[inv.name] = true;
+    });
+    const totalOutstanding = invoices.reduce((s, inv) => s + inv.outstanding_amount, 0);
+    const pool = parsedAmount || totalOutstanding;
+    if (!parsedAmount && totalOutstanding > 0) {
+      setAmount(String(totalOutstanding));
+    }
+    setSelections(next);
+    setAllocations(computeAllocations(next, pool));
+    // `selections` and the computed values are intentionally omitted from deps — this effect
+    // should fire only when the dialog opens or the invoice list first becomes available.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, invoices]);
 
   const resetForm = () => {
     setPostingDate(getToday());

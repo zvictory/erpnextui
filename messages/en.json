@@ -744,7 +744,11 @@
     "currency": "Currency",
     "submit": "Submit",
     "amend": "Amend",
-    "counterAmount": "Counter amount"
+    "counterAmount": "Counter amount",
+    "autoAllocate": "Auto-Allocate",
+    "autoAllocateConfirm": "Cancel this payment and re-submit with outstanding invoices allocated FIFO (oldest due first)? The paid amount stays the same.",
+    "autoAllocateSuccess": "Payment re-allocated against outstanding invoices.",
+    "autoAllocateNoOutstanding": "Party has no outstanding invoices to allocate against."
   },
   "orders": {
     "salesOrders": "Sales Orders",

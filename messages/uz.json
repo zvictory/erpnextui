@@ -682,7 +682,11 @@
     "currency": "Valyuta",
     "submit": "Tasdiqlash",
     "amend": "Tuzatish",
-    "counterAmount": "Kontragent summasi"
+    "counterAmount": "Kontragent summasi",
+    "autoAllocate": "Avto-taqsimlash",
+    "autoAllocateConfirm": "Bu to'lovni bekor qilib, to'lanmagan hisoblar bo'yicha FIFO tartibida (eng eskisi birinchi) qayta taqsimlab yuboraymi? To'lov summasi o'zgarmaydi.",
+    "autoAllocateSuccess": "To'lov to'lanmagan hisoblar bo'yicha taqsimlandi.",
+    "autoAllocateNoOutstanding": "Kontragentda taqsimlash uchun to'lanmagan hisoblar yo'q."
   },
   "orders": {
     "salesOrders": "Sotish buyurtmalari",

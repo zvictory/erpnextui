@@ -4,12 +4,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { frappe } from "@/lib/frappe-client";
 import { fetchExchangeRate } from "@/lib/multi-currency";
 import { queryKeys } from "@/hooks/query-keys";
+import { useCompanyStore } from "@/stores/company-store";
 import type {
   OutstandingInvoice,
   PaymentReference,
   PaymentEntryListItem,
   PaymentEntry,
 } from "@/types/payment-entry";
+
+/** Sentinel thrown when the party has no outstanding invoices to allocate against. */
+export const NO_OUTSTANDING_ERROR = "NO_OUTSTANDING";
 
 const PAGE_SIZE = 20;
 
@@ -381,6 +385,118 @@ export function useDeletePaymentEntry() {
     mutationFn: (name: string) => frappe.deleteDoc("Payment Entry", name),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["paymentEntries"] });
+    },
+  });
+}
+
+/**
+ * Auto-allocate a submitted Payment Entry against the party's outstanding invoices FIFO.
+ *
+ * Flow: cancel original → amend with sacred amounts + fresh refs[] built by FIFO-distributing
+ * the party-side amount across outstanding invoices (oldest due first). Fixes PEs that were
+ * submitted without references (showing up as "unallocated") and collapses base-currency drift
+ * by re-deriving the exchange rate from the amounts in useCreatePaymentEntry's Golden Rule path.
+ *
+ * Throws `Error(NO_OUTSTANDING_ERROR)` if the party has no open invoices.
+ */
+export function useAutoAllocatePaymentEntry() {
+  const qc = useQueryClient();
+  const createPayment = useCreatePaymentEntry();
+  const cancelPayment = useCancelPaymentEntry();
+  return useMutation({
+    mutationFn: async (name: string) => {
+      const pe = await frappe.getDoc<PaymentEntry>("Payment Entry", name);
+
+      if (pe.payment_type === "Internal Transfer") {
+        throw new Error("Auto-allocate is not supported for Internal Transfer");
+      }
+
+      const isReceive = pe.payment_type === "Receive";
+      const invoiceDoctype: "Sales Invoice" | "Purchase Invoice" = isReceive
+        ? "Sales Invoice"
+        : "Purchase Invoice";
+      const partyField = isReceive ? "customer" : "supplier";
+
+      const outstanding = await frappe.getList<OutstandingInvoice>(invoiceDoctype, {
+        filters: [
+          [partyField, "=", pe.party],
+          ["docstatus", "=", 1],
+          ["outstanding_amount", ">", 0],
+          ["company", "=", pe.company],
+        ],
+        fields: [
+          "name",
+          "posting_date",
+          "due_date",
+          "grand_total",
+          "base_grand_total",
+          "outstanding_amount",
+          "currency",
+        ],
+        orderBy: "due_date asc",
+      });
+
+      if (outstanding.length === 0) {
+        throw new Error(NO_OUTSTANDING_ERROR);
+      }
+
+      // Pool = party-side amount (matches invoice currency for FIFO distribution).
+      // Receive: paid_from = AR (party). Pay: paid_to = AP (party).
+      const pool = isReceive ? pe.paid_amount : pe.received_amount;
+
+      let remaining = pool;
+      const refs: PaymentReference[] = [];
+      for (const inv of outstanding) {
+        if (remaining <= 0.001) break;
+        const allocated = Math.min(inv.outstanding_amount, remaining);
+        if (allocated <= 0) continue;
+        refs.push({
+          reference_doctype: invoiceDoctype,
+          reference_name: inv.name,
+          total_amount: inv.grand_total,
+          outstanding_amount: inv.outstanding_amount,
+          allocated_amount: allocated,
+        });
+        remaining = Math.max(0, remaining - allocated);
+      }
+
+      await cancelPayment.mutateAsync(name);
+
+      // Bank-side is what the user originally typed (amount); counterAmount is party-side.
+      const paymentAccount = isReceive ? pe.paid_to : pe.paid_from;
+      const paymentAccountCurrency = isReceive
+        ? pe.paid_to_account_currency
+        : pe.paid_from_account_currency;
+      const amount = isReceive ? pe.received_amount : pe.paid_amount;
+      const counterAmount = isReceive ? pe.paid_amount : pe.received_amount;
+
+      const companyCurrency = useCompanyStore.getState().currencyCode;
+
+      return createPayment.mutateAsync({
+        partyType: pe.party_type,
+        party: pe.party,
+        company: pe.company,
+        companyCurrency,
+        postingDate: pe.posting_date,
+        paymentAccount,
+        paymentAccountCurrency: paymentAccountCurrency ?? "",
+        amount,
+        counterAmount: amount !== counterAmount ? counterAmount : undefined,
+        referenceNo: pe.reference_no ?? "",
+        referenceDate: pe.reference_date ?? "",
+        remarks: pe.remarks ?? "",
+        allocations: refs,
+        amendedFrom: name,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["paymentEntries"] });
+      qc.invalidateQueries({ queryKey: ["partyBalances"] });
+      qc.invalidateQueries({ queryKey: ["partyLedger"] });
+      qc.invalidateQueries({ queryKey: ["salesInvoices"] });
+      qc.invalidateQueries({ queryKey: ["purchaseInvoices"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["currencyAudit"] });
     },
   });
 }
