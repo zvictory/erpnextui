@@ -572,8 +572,8 @@ export function EmployeeDetailPanel({
       <JEDetailDialog open={jeDetailOpen} onOpenChange={setJEDetailOpen} jeName={jeDetailName} />
 
       <Dialog open={costSetupOpen} onOpenChange={setCostSetupOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-lg p-0 border-0 bg-transparent shadow-none">
+          <DialogHeader className="sr-only">
             <DialogTitle>{t("costSetup")}</DialogTitle>
           </DialogHeader>
           <EmployeeCostSetup employeeId={employeeName} />
