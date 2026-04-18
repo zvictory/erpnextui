@@ -55,7 +55,7 @@ export function useUpdateEmployeeCost() {
         "Employee",
         params.employeeId,
       );
-      return frappe.save({
+      return frappe.save<EmployeeCostInfo>({
         ...doc,
         custom_monthly_salary: params.monthly_salary,
         custom_standard_hours: params.standard_hours,
@@ -64,8 +64,8 @@ export function useUpdateEmployeeCost() {
         custom_default_workstation: params.default_workstation || undefined,
       });
     },
-    onSuccess: (_, vars) => {
-      qc.invalidateQueries({ queryKey: queryKeys.costing.employeeCost(vars.employeeId) });
+    onSuccess: (savedDoc, vars) => {
+      qc.setQueryData(queryKeys.costing.employeeCost(vars.employeeId), savedDoc);
       qc.invalidateQueries({ queryKey: queryKeys.costing.directLaborEmployees });
       qc.invalidateQueries({ queryKey: ["employees"] });
     },
