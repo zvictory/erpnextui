@@ -15,9 +15,11 @@ interface TimesheetState {
 
   setWorkOrder: (wo: string) => void;
   toggleEmployee: (employeeId: string) => void;
-  addEntry: (entry: Omit<TimesheetEntry, "hours" | "amount">) => void;
+  addEntry: (entry: Omit<TimesheetEntry, "hours" | "amount"> & { hours?: number }) => void;
   updateEntry: (index: number, updates: Partial<TimesheetEntry>) => void;
+  updateHours: (index: number, hours: number) => void;
   removeEntry: (index: number) => void;
+  setDateForAll: (date: string) => void;
   getTotals: () => { hours: number; amount: number };
   reset: () => void;
 }
@@ -37,7 +39,8 @@ export const useTimesheetStore = create<TimesheetState>((set, get) => ({
     })),
 
   addEntry: (entry) => {
-    const hours = calcHours(entry.start_time, entry.end_time);
+    const hours =
+      entry.hours !== undefined ? entry.hours : calcHours(entry.start_time, entry.end_time);
     const amount = Math.round(hours * entry.hourly_rate);
     set((s) => ({ entries: [...s.entries, { ...entry, hours, amount }] }));
   },
@@ -56,10 +59,22 @@ export const useTimesheetStore = create<TimesheetState>((set, get) => ({
       return { entries: newEntries };
     }),
 
+  updateHours: (i, hours) =>
+    set((s) => {
+      const newEntries = [...s.entries];
+      const e = { ...newEntries[i], hours };
+      e.amount = Math.round(hours * e.hourly_rate);
+      newEntries[i] = e;
+      return { entries: newEntries };
+    }),
+
   removeEntry: (i) =>
     set((s) => ({
       entries: s.entries.filter((_, idx) => idx !== i),
     })),
+
+  setDateForAll: (date) =>
+    set((s) => ({ entries: s.entries.map((e) => ({ ...e, date })) })),
 
   getTotals: () => {
     const entries = get().entries;

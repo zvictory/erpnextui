@@ -115,13 +115,11 @@ export function getWorkOrderColumns(
                 );
               }
 
-              const canAct = row.status === "In Process" || row.status === "Not Started";
               return (
                 <Button
                   variant="outline"
                   size="sm"
                   className="h-7 text-xs"
-                  disabled={!canAct}
                   onClick={(e) => {
                     e.stopPropagation();
                     callbacks.onLaborClick!(row);

@@ -139,6 +139,7 @@ const manufacturingNav: NavItem[] = [
   { tKey: "jobCards", href: "/manufacturing/job-cards", icon: Timer, navCapability: "nav.jobCards" },
   { tKey: "workstations", href: "/manufacturing/workstations", icon: Monitor, navCapability: "nav.workstations" },
   { tKey: "costingDashboard", href: "/manufacturing/costing-dashboard", icon: Calculator, navCapability: "nav.costingDashboard" },
+  { tKey: "laborReport", href: "/manufacturing/labor-report", icon: Users, navCapability: "nav.laborReport" },
 ];
 
 const assetMaintenanceNav: NavItem[] = [

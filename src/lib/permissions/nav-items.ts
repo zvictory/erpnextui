@@ -96,6 +96,7 @@ export const NAV_GROUPS: NavGroupDef[] = [
       { tKey: "jobCards", navCapability: "nav.jobCards" },
       { tKey: "workstations", navCapability: "nav.workstations" },
       { tKey: "costingDashboard", navCapability: "nav.costingDashboard" },
+      { tKey: "laborReport", navCapability: "nav.laborReport" },
     ],
   },
   {

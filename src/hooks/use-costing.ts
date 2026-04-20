@@ -178,6 +178,7 @@ export function useSaveWorkOrderTabel() {
         queryKey: queryKeys.manufacturing.workOrders.detail(vars.work_order),
       });
       qc.invalidateQueries({ queryKey: ["manufacturing", "workOrders"] });
+      qc.invalidateQueries({ queryKey: ["costing", "laborReport"] });
     },
   });
 }
