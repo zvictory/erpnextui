@@ -48,6 +48,7 @@ import {
   useSaveWorkOrderTabel,
   useWorkOrderTabel,
 } from "@/hooks/use-costing";
+import { useCompanyStore } from "@/stores/company-store";
 import { useTimesheetStore } from "@/stores/timesheet-store";
 import { formatNumber } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
@@ -70,6 +71,7 @@ export function WoTabelDialog({ open, onOpenChange, workOrder }: WoTabelDialogPr
   const { data: laborEmployees = [] } = useDirectLaborEmployees();
   const { data: existingEntries = EMPTY_ENTRIES } = useWorkOrderTabel(workOrder.name);
   const saveTabel = useSaveWorkOrderTabel();
+  const company = useCompanyStore((s) => s.company);
 
   const store = useTimesheetStore();
 
@@ -153,6 +155,7 @@ export function WoTabelDialog({ open, onOpenChange, workOrder }: WoTabelDialogPr
     saveTabel.mutate(
       {
         work_order: workOrder.name,
+        company,
         entries: valid.map((e) => ({
           ...e,
           start_time: TIME_PLACEHOLDER,
@@ -160,8 +163,20 @@ export function WoTabelDialog({ open, onOpenChange, workOrder }: WoTabelDialogPr
         })),
       },
       {
-        onSuccess: () => {
-          toast.success(t("tabelSaved"));
+        onSuccess: ({ accruals, accrualErrors }) => {
+          const postedEmployees = accruals.reduce((s, a) => s + a.employeeCount, 0);
+          if (accrualErrors.length > 0) {
+            const first = accrualErrors[0];
+            toast.warning(
+              first.configError
+                ? `${t("tabelSaved")} — ${first.message}`
+                : `${t("tabelSaved")} — accrual failed: ${first.message}`,
+            );
+          } else if (postedEmployees > 0) {
+            toast.success(`${t("tabelSaved")} (+${postedEmployees})`);
+          } else {
+            toast.success(t("tabelSaved"));
+          }
           onOpenChange(false);
         },
         onError: () => toast.error(tCommon("error")),
@@ -314,8 +329,19 @@ function HoursRow({ index, operations }: { index: number; operations: string[] }
           className="h-8 text-xs text-right tabular-nums"
         />
       </TableCell>
-      <TableCell className="text-right tabular-nums text-xs text-muted-foreground">
-        {formatNumber(entry.hourly_rate)}
+      <TableCell>
+        <Input
+          type="number"
+          inputMode="decimal"
+          step={100}
+          min={0}
+          value={entry.hourly_rate}
+          onChange={(e) => {
+            const n = Number(e.target.value);
+            if (Number.isFinite(n)) store.updateEntry(index, { hourly_rate: Math.max(0, n) });
+          }}
+          className="h-8 text-xs text-right tabular-nums"
+        />
       </TableCell>
       <TableCell className="text-right tabular-nums text-sm font-medium">
         {formatNumber(entry.amount)}

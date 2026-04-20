@@ -327,6 +327,8 @@ export const queryKeys = {
       ["costing", "tabelSummaries", ...woNames] as const,
     laborReport: (from: string, to: string, company: string) =>
       ["costing", "laborReport", from, to, company] as const,
+    laborAccrual: (workOrder: string, date: string) =>
+      ["costing", "laborAccrual", workOrder, date] as const,
   },
   workOrderAssets: {
     byWo: (workOrder: string) => ["workOrderAssets", workOrder] as const,

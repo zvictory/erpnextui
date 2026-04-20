@@ -2,8 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { frappe } from "@/lib/frappe-client";
 import { queryKeys } from "@/hooks/query-keys";
 import { getMaintenanceCostsForPeriod } from "@/actions/maintenance-logs";
+import { useUISettingsStore } from "@/stores/ui-settings-store";
+import { roundTo2 } from "@/lib/utils/multi-currency";
 import type { EmployeeCostInfo, TimesheetEntry, CostingPeriod } from "@/types/costing";
 import type { WorkOrderListItem } from "@/types/manufacturing";
+import type { JournalEntry } from "@/types/journal-entry";
 
 // ── Employee Cost Info ──────────────────────────────────────
 
@@ -114,17 +117,162 @@ export function useWorkOrderTabel(workOrderName: string) {
   });
 }
 
+// ── Labor Accrual (auto-posted JE per WO+date) ─────────────
+// Mirrors the salary-accrual pattern: tag the JE in user_remark with
+// `[LABOR-ACCRUAL:<WO>:<date>]` so we can find-cancel-delete-recreate on
+// every tabel save. Debits labor expense, credits Employee Payable per
+// employee (party_type=Employee) so `/employees` balances grow as hours
+// are logged.
+
+export class LaborAccrualConfigError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "LaborAccrualConfigError";
+  }
+}
+
+export interface LaborAccrualResult {
+  date: string;
+  employeeCount: number;
+  totalAmount: number;
+  jeName: string | null;
+  error?: string;
+}
+
+async function findLaborAccrualJE(
+  workOrder: string,
+  date: string,
+  company: string,
+): Promise<{ name: string; docstatus: 0 | 1 | 2 } | null> {
+  const tag = `[LABOR-ACCRUAL:${workOrder}:${date}]`;
+  const results = await frappe.getList<{ name: string; docstatus: 0 | 1 | 2 }>(
+    "Journal Entry",
+    {
+      filters: [
+        ["company", "=", company],
+        ["user_remark", "like", `%${tag}%`],
+      ],
+      fields: ["name", "docstatus"],
+      limitPageLength: 5,
+    },
+  );
+  return results[0] ?? null;
+}
+
+async function accrueLaborForDate(
+  workOrder: string,
+  date: string,
+  company: string,
+): Promise<LaborAccrualResult> {
+  const settings = useUISettingsStore.getState().getCompanySettings(company);
+  const expenseAccount = settings.salaryExpenseAccount;
+  const payableAccount = settings.salaryPayableAccount;
+  if (!expenseAccount || !payableAccount) {
+    throw new LaborAccrualConfigError(
+      "Configure Salary Expense + Payable accounts in Company settings.",
+    );
+  }
+
+  const entries = await frappe.getList<{
+    employee: string;
+    employee_name: string;
+    amount: number;
+  }>("Work Order Timesheet", {
+    filters: [
+      ["work_order", "=", workOrder],
+      ["date", "=", date],
+    ],
+    fields: ["employee", "employee_name", "amount"],
+    limitPageLength: 0,
+  });
+
+  const employeeTotals = new Map<string, number>();
+  for (const row of entries) {
+    const prev = employeeTotals.get(row.employee) ?? 0;
+    employeeTotals.set(row.employee, roundTo2(prev + (row.amount || 0)));
+  }
+  const totalAmount = roundTo2(
+    Array.from(employeeTotals.values()).reduce((s, a) => s + a, 0),
+  );
+
+  const existing = await findLaborAccrualJE(workOrder, date, company);
+
+  // No labor remaining for this (WO, date) — tear down any existing JE.
+  if (employeeTotals.size === 0 || totalAmount === 0) {
+    if (existing) {
+      if (existing.docstatus === 1) {
+        await frappe.cancel("Journal Entry", existing.name);
+      }
+      if (existing.docstatus !== 2) {
+        await frappe.deleteDoc("Journal Entry", existing.name);
+      }
+    }
+    return { date, employeeCount: 0, totalAmount: 0, jeName: null };
+  }
+
+  // Rebuild: cancel+delete any prior tagged JE, then create fresh.
+  if (existing) {
+    if (existing.docstatus === 1) {
+      await frappe.cancel("Journal Entry", existing.name);
+    }
+    await frappe.deleteDoc("Journal Entry", existing.name);
+  }
+
+  const userRemark = `Labor accrual ${workOrder} on ${date} [LABOR-ACCRUAL:${workOrder}:${date}]`;
+
+  const accounts = [
+    {
+      doctype: "Journal Entry Account" as const,
+      account: expenseAccount,
+      debit_in_account_currency: totalAmount,
+    },
+    ...Array.from(employeeTotals.entries()).map(([empId, amount]) => ({
+      doctype: "Journal Entry Account" as const,
+      account: payableAccount,
+      party_type: "Employee" as const,
+      party: empId,
+      credit_in_account_currency: amount,
+    })),
+  ];
+
+  const created = await frappe.createDoc<JournalEntry>("Journal Entry", {
+    doctype: "Journal Entry",
+    voucher_type: "Journal Entry",
+    naming_series: "ACC-JV-.YYYY.-",
+    posting_date: date,
+    company,
+    user_remark: userRemark,
+    accounts,
+  });
+
+  await frappe.submitWithRetry<JournalEntry>("Journal Entry", created.name);
+
+  return {
+    date,
+    employeeCount: employeeTotals.size,
+    totalAmount,
+    jeName: created.name,
+  };
+}
+
+export interface SaveWorkOrderTabelResult {
+  accruals: LaborAccrualResult[];
+  accrualErrors: Array<{ date: string; message: string; configError: boolean }>;
+}
+
 export function useSaveWorkOrderTabel() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (params: {
       work_order: string;
+      company: string;
       entries: TimesheetEntry[];
-    }) => {
-      const totalAmount = params.entries.reduce((s, e) => s + e.amount, 0);
-      const totalHours = params.entries.reduce((s, e) => s + e.hours, 0);
-
-      // Save each entry
+    }): Promise<SaveWorkOrderTabelResult> => {
+      // Labor totals are aggregated client-side from Work Order Timesheet
+      // rows (see useWoTabelSummaries) — we do NOT write them back to the
+      // Work Order, since submitted (Completed) WOs would reject the update
+      // unless the custom fields carry allow_on_submit.
+      const dirtyDates = new Set<string>();
       for (const entry of params.entries) {
         if (entry.name) {
           // Update existing
@@ -132,6 +280,9 @@ export function useSaveWorkOrderTabel() {
             "Work Order Timesheet",
             entry.name,
           );
+          // The row's previous date may differ from the new one — accrue both.
+          const prevDate = typeof doc.date === "string" ? doc.date : null;
+          if (prevDate && prevDate !== entry.date) dirtyDates.add(prevDate);
           await frappe.save({
             ...doc,
             date: entry.date,
@@ -159,18 +310,28 @@ export function useSaveWorkOrderTabel() {
             amount: entry.amount,
           });
         }
+        dirtyDates.add(entry.date);
       }
 
-      // Update Work Order with total labor cost
-      const woDoc = await frappe.getDoc<Record<string, unknown>>(
-        "Work Order",
-        params.work_order,
-      );
-      await frappe.save({
-        ...woDoc,
-        custom_total_labor_cost: totalAmount,
-        custom_labor_hours: totalHours,
-      });
+      // Auto-post labor accrual JE per unique (WO, date). Failures do not
+      // roll back the tabel save — they surface as warnings on the toast.
+      const accruals: LaborAccrualResult[] = [];
+      const accrualErrors: SaveWorkOrderTabelResult["accrualErrors"] = [];
+      for (const date of dirtyDates) {
+        try {
+          const result = await accrueLaborForDate(params.work_order, date, params.company);
+          accruals.push(result);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          accrualErrors.push({
+            date,
+            message,
+            configError: err instanceof LaborAccrualConfigError,
+          });
+        }
+      }
+
+      return { accruals, accrualErrors };
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: queryKeys.costing.woTabel(vars.work_order) });
@@ -179,6 +340,13 @@ export function useSaveWorkOrderTabel() {
       });
       qc.invalidateQueries({ queryKey: ["manufacturing", "workOrders"] });
       qc.invalidateQueries({ queryKey: ["costing", "laborReport"] });
+      // List view reads labor totals from this derived summary.
+      qc.invalidateQueries({ queryKey: ["costing", "tabelSummaries"] });
+      // Accrual JE touches employee ledger → refresh balance-aware views.
+      qc.invalidateQueries({ queryKey: ["journalEntries"] });
+      qc.invalidateQueries({ queryKey: ["partyBalances"] });
+      qc.invalidateQueries({ queryKey: ["partyLedger"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -188,6 +356,7 @@ export function useSaveWorkOrderTabel() {
 export interface TabelSummary {
   employees: { id: string; name: string; initials: string }[];
   totalHours: number;
+  totalCost: number;
 }
 
 function getInitials(name: string): string {
@@ -207,19 +376,21 @@ export function useWoTabelSummaries(workOrderNames: string[]) {
         employee: string;
         employee_name: string;
         hours: number;
+        amount: number;
       }>("Work Order Timesheet", {
         filters: [["work_order", "in", workOrderNames]],
-        fields: ["work_order", "employee", "employee_name", "hours"],
+        fields: ["work_order", "employee", "employee_name", "hours", "amount"],
         limitPageLength: 0,
       });
 
       const map: Record<string, TabelSummary> = {};
       for (const entry of entries) {
         if (!map[entry.work_order]) {
-          map[entry.work_order] = { employees: [], totalHours: 0 };
+          map[entry.work_order] = { employees: [], totalHours: 0, totalCost: 0 };
         }
         const summary = map[entry.work_order];
         summary.totalHours += entry.hours;
+        summary.totalCost += entry.amount || 0;
         // Add unique employees only
         if (!summary.employees.some((e) => e.id === entry.employee)) {
           summary.employees.push({
@@ -235,6 +406,35 @@ export function useWoTabelSummaries(workOrderNames: string[]) {
   });
 }
 
+// ── Labor Totals (shared helper) ────────────────────────────
+// Aggregates labor cost + hours per Work Order directly from the
+// `Work Order Timesheet` doctype. We don't cache these on the WO any more
+// because writing back fails on submitted (Completed) WOs without the
+// `allow_on_submit=1` flag on the custom fields. See useSaveWorkOrderTabel.
+
+export async function fetchLaborTotalsByWorkOrder(
+  workOrderNames: string[],
+): Promise<Map<string, { cost: number; hours: number }>> {
+  const map = new Map<string, { cost: number; hours: number }>();
+  if (workOrderNames.length === 0) return map;
+  const rows = await frappe.getList<{
+    work_order: string;
+    hours: number;
+    amount: number;
+  }>("Work Order Timesheet", {
+    filters: [["work_order", "in", workOrderNames]],
+    fields: ["work_order", "hours", "amount"],
+    limitPageLength: 0,
+  });
+  for (const r of rows) {
+    const entry = map.get(r.work_order) ?? { cost: 0, hours: 0 };
+    entry.cost += r.amount || 0;
+    entry.hours += r.hours || 0;
+    map.set(r.work_order, entry);
+  }
+  return map;
+}
+
 // ── Costing Dashboard ───────────────────────────────────────
 
 export function useCumulativeCosts(period: CostingPeriod, company: string) {
@@ -244,8 +444,6 @@ export function useCumulativeCosts(period: CostingPeriod, company: string) {
       // Fetch completed work orders in the period with their costs
       const workOrders = await frappe.getList<
         WorkOrderListItem & {
-          custom_total_labor_cost?: number;
-          custom_labor_hours?: number;
           total_operating_cost?: number;
         }
       >("Work Order", {
@@ -261,8 +459,6 @@ export function useCumulativeCosts(period: CostingPeriod, company: string) {
           "item_name",
           "qty",
           "produced_qty",
-          "custom_total_labor_cost",
-          "custom_labor_hours",
           "total_operating_cost",
         ],
         limitPageLength: 0,
@@ -286,8 +482,13 @@ export function useCumulativeCosts(period: CostingPeriod, company: string) {
         limitPageLength: 0,
       });
 
+      const laborTotals = await fetchLaborTotalsByWorkOrder(workOrders.map((w) => w.name));
+
       const rawMaterials = stockEntries.reduce((s, e) => s + (e.total_amount || 0), 0);
-      const labor = workOrders.reduce((s, wo) => s + (wo.custom_total_labor_cost || 0), 0);
+      const labor = workOrders.reduce(
+        (s, wo) => s + (laborTotals.get(wo.name)?.cost ?? 0),
+        0,
+      );
 
       // Energy and depreciation are approximations from operating cost minus labor
       const totalOperating = workOrders.reduce(
@@ -319,8 +520,6 @@ export function useProductCostBreakdown(
     queryFn: async () => {
       const workOrders = await frappe.getList<
         WorkOrderListItem & {
-          custom_total_labor_cost?: number;
-          custom_labor_hours?: number;
           total_operating_cost?: number;
           bom_no: string;
         }
@@ -337,13 +536,13 @@ export function useProductCostBreakdown(
           "item_name",
           "qty",
           "produced_qty",
-          "custom_total_labor_cost",
-          "custom_labor_hours",
           "total_operating_cost",
           "bom_no",
         ],
         limitPageLength: 0,
       });
+
+      const laborTotals = await fetchLaborTotalsByWorkOrder(workOrders.map((w) => w.name));
 
       // Group by production item
       const byProduct = new Map<
@@ -368,9 +567,10 @@ export function useProductCostBreakdown(
           labor_hours: 0,
           operating_cost: 0,
         };
+        const labor = laborTotals.get(wo.name);
         existing.produced_qty += wo.produced_qty || 0;
-        existing.labor_cost += wo.custom_total_labor_cost || 0;
-        existing.labor_hours += wo.custom_labor_hours || 0;
+        existing.labor_cost += labor?.cost ?? 0;
+        existing.labor_hours += labor?.hours ?? 0;
         existing.operating_cost += wo.total_operating_cost || 0;
         byProduct.set(key, existing);
       }
@@ -472,7 +672,6 @@ export function useVarianceAnalysis(period: CostingPeriod, company: string) {
         name: string;
         bom_no: string;
         produced_qty: number;
-        custom_total_labor_cost: number;
         total_operating_cost: number;
       }>("Work Order", {
         filters: [
@@ -481,15 +680,11 @@ export function useVarianceAnalysis(period: CostingPeriod, company: string) {
           ["modified", ">=", period.from],
           ["modified", "<=", period.to],
         ],
-        fields: [
-          "name",
-          "bom_no",
-          "produced_qty",
-          "custom_total_labor_cost",
-          "total_operating_cost",
-        ],
+        fields: ["name", "bom_no", "produced_qty", "total_operating_cost"],
         limitPageLength: 0,
       });
+
+      const laborTotals = await fetchLaborTotalsByWorkOrder(workOrders.map((w) => w.name));
 
       // Get BOM costs
       const bomNames = [...new Set(workOrders.map((w) => w.bom_no).filter(Boolean))];
@@ -523,7 +718,7 @@ export function useVarianceAnalysis(period: CostingPeriod, company: string) {
 
       const rawMaterial = stockEntries.reduce((s, e) => s + (e.total_amount || 0), 0);
       const laborTotal = workOrders.reduce(
-        (s, wo) => s + (wo.custom_total_labor_cost || 0),
+        (s, wo) => s + (laborTotals.get(wo.name)?.cost ?? 0),
         0,
       );
       const operatingTotal = workOrders.reduce(
