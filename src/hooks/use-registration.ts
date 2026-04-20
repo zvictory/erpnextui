@@ -10,6 +10,8 @@ interface RegistrationData {
   phone: string;
   country: string;
   currency: string;
+  plan?: string;
+  referralCode?: string;
 }
 
 export function useRegister() {

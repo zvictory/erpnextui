@@ -48,21 +48,10 @@ const logSchema = z.object({
   startTime: z.string().min(1, "Required"),
   endTime: z.string().min(1, "Required"),
   mechanicId: z.string().min(1, "Required"),
-  maintenanceType: z.enum([
-    "corrective",
-    "preventive",
-    "calibration",
-    "cleaning",
-    "capital",
-  ]),
+  maintenanceType: z.enum(["corrective", "preventive", "calibration", "cleaning", "capital"]),
   reason: z.string().min(1, "Required"),
   workDone: z.string().optional(),
-  resolutionStatus: z.enum([
-    "resolved",
-    "partially_resolved",
-    "unresolved",
-    "needs_replacement",
-  ]),
+  resolutionStatus: z.enum(["resolved", "partially_resolved", "unresolved", "needs_replacement"]),
   costClassification: z.enum(["operating_expense", "capitalized"]).optional(),
   notes: z.string().optional(),
   partsUsed: z.array(partSchema),
@@ -80,10 +69,7 @@ interface MaintenanceLogDialogProps {
   trigger?: React.ReactNode;
 }
 
-export function MaintenanceLogDialog({
-  assetId,
-  trigger,
-}: MaintenanceLogDialogProps) {
+export function MaintenanceLogDialog({ assetId, trigger }: MaintenanceLogDialogProps) {
   const t = useTranslations("maintenance");
   const qc = useQueryClient();
   const company = useCompanyStore((s) => s.company);
@@ -187,18 +173,13 @@ export function MaintenanceLogDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? <Button>{t("newLog")}</Button>}
-      </DialogTrigger>
+      <DialogTrigger asChild>{trigger ?? <Button>{t("newLog")}</Button>}</DialogTrigger>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("newLog")}</DialogTitle>
         </DialogHeader>
 
-        <form
-          onSubmit={handleSubmit((data) => mutation.mutate(data))}
-          className="space-y-4"
-        >
+        <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
           {/* Asset & Date */}
           <div className="grid gap-4 sm:grid-cols-2">
             {!assetId && (
@@ -222,9 +203,7 @@ export function MaintenanceLogDialog({
                   </SelectContent>
                 </Select>
                 {errors.assetId && (
-                  <p className="text-sm text-destructive">
-                    {errors.assetId.message}
-                  </p>
+                  <p className="text-sm text-destructive">{errors.assetId.message}</p>
                 )}
               </div>
             )}
@@ -232,10 +211,7 @@ export function MaintenanceLogDialog({
               <Label>
                 {t("date")} <span className="text-destructive">*</span>
               </Label>
-              <DateInput
-                value={watch("date")}
-                onChange={(e) => setValue("date", e.target.value)}
-              />
+              <DateInput value={watch("date")} onChange={(e) => setValue("date", e.target.value)} />
             </div>
           </div>
 
@@ -257,10 +233,7 @@ export function MaintenanceLogDialog({
               <Label>
                 {t("mechanic")} <span className="text-destructive">*</span>
               </Label>
-              <Select
-                value={watch("mechanicId")}
-                onValueChange={(v) => setValue("mechanicId", v)}
-              >
+              <Select value={watch("mechanicId")} onValueChange={(v) => setValue("mechanicId", v)}>
                 <SelectTrigger>
                   <SelectValue placeholder={t("selectMechanic")} />
                 </SelectTrigger>
@@ -282,10 +255,7 @@ export function MaintenanceLogDialog({
               <Select
                 value={watch("maintenanceType")}
                 onValueChange={(v) =>
-                  setValue(
-                    "maintenanceType",
-                    v as FormValues["maintenanceType"],
-                  )
+                  setValue("maintenanceType", v as FormValues["maintenanceType"])
                 }
               >
                 <SelectTrigger>
@@ -293,13 +263,7 @@ export function MaintenanceLogDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {(
-                    [
-                      "corrective",
-                      "preventive",
-                      "calibration",
-                      "cleaning",
-                      "capital",
-                    ] as const
+                    ["corrective", "preventive", "calibration", "cleaning", "capital"] as const
                   ).map((type) => (
                     <SelectItem key={type} value={type}>
                       {t(`type.${type}`)}
@@ -313,10 +277,7 @@ export function MaintenanceLogDialog({
               <Select
                 value={watch("resolutionStatus")}
                 onValueChange={(v) =>
-                  setValue(
-                    "resolutionStatus",
-                    v as FormValues["resolutionStatus"],
-                  )
+                  setValue("resolutionStatus", v as FormValues["resolutionStatus"])
                 }
               >
                 <SelectTrigger>
@@ -324,12 +285,7 @@ export function MaintenanceLogDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {(
-                    [
-                      "resolved",
-                      "partially_resolved",
-                      "unresolved",
-                      "needs_replacement",
-                    ] as const
+                    ["resolved", "partially_resolved", "unresolved", "needs_replacement"] as const
                   ).map((s) => (
                     <SelectItem key={s} value={s}>
                       {t(`resolution.${s}`)}
@@ -346,11 +302,7 @@ export function MaintenanceLogDialog({
               {t("reason")} <span className="text-destructive">*</span>
             </Label>
             <Input {...register("reason")} />
-            {errors.reason && (
-              <p className="text-sm text-destructive">
-                {errors.reason.message}
-              </p>
-            )}
+            {errors.reason && <p className="text-sm text-destructive">{errors.reason.message}</p>}
           </div>
 
           <div className="space-y-1.5">
@@ -366,9 +318,7 @@ export function MaintenanceLogDialog({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  append({ partName: "", qty: 1, unitPrice: 0 })
-                }
+                onClick={() => append({ partName: "", qty: 1, unitPrice: 0 })}
               >
                 <Plus className="mr-1 h-3.5 w-3.5" />
                 {t("addPart")}
@@ -377,10 +327,7 @@ export function MaintenanceLogDialog({
             {fields.map((field, idx) => (
               <div key={field.id} className="flex items-end gap-2">
                 <div className="flex-1 space-y-1">
-                  <Input
-                    placeholder={t("partName")}
-                    {...register(`partsUsed.${idx}.partName`)}
-                  />
+                  <Input placeholder={t("partName")} {...register(`partsUsed.${idx}.partName`)} />
                 </div>
                 <div className="w-20 space-y-1">
                   <Input
@@ -401,12 +348,7 @@ export function MaintenanceLogDialog({
                     })}
                   />
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => remove(idx)}
-                >
+                <Button type="button" variant="ghost" size="icon" onClick={() => remove(idx)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>

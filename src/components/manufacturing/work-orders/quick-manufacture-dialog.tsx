@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useMakeStockEntry } from "@/hooks/use-manufacturing";
+import { fetchLaborTotalsByWorkOrder } from "@/hooks/use-costing";
 import { formatNumber } from "@/lib/formatters";
 import type { WorkOrder } from "@/types/manufacturing";
 
@@ -54,13 +55,13 @@ export function QuickManufactureDialog({
 
   const makeStockEntry = useMakeStockEntry();
 
-  function onSubmit(data: FormValues) {
-    // Proportional labor cost based on manufactured qty vs total WO qty
-    const laborCost = workOrder.custom_total_labor_cost ?? 0;
+  async function onSubmit(data: FormValues) {
+    // Labor totals are aggregated live from Work Order Timesheet rows —
+    // we no longer persist them on the Work Order (see useSaveWorkOrderTabel).
+    const totals = await fetchLaborTotalsByWorkOrder([workOrder.name]);
+    const laborCost = totals.get(workOrder.name)?.cost ?? 0;
     const proportionalLabor =
-      laborCost > 0 && workOrder.qty > 0
-        ? Math.round((laborCost * data.qty) / workOrder.qty)
-        : 0;
+      laborCost > 0 && workOrder.qty > 0 ? Math.round((laborCost * data.qty) / workOrder.qty) : 0;
 
     makeStockEntry.mutate(
       {
@@ -69,7 +70,13 @@ export function QuickManufactureDialog({
         qty: data.qty,
         additionalCosts:
           proportionalLabor > 0
-            ? [{ expense_account: "", description: "Direct Labor from Tabel", amount: proportionalLabor }]
+            ? [
+                {
+                  expense_account: "",
+                  description: "Direct Labor from Tabel",
+                  amount: proportionalLabor,
+                },
+              ]
             : undefined,
       },
       {

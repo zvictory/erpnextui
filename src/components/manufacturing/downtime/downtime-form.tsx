@@ -31,11 +31,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -131,22 +127,18 @@ export function DowntimeForm({ lines, stopCodes }: DowntimeFormProps) {
                         variant="outline"
                         className={cn(
                           "w-full justify-start text-left font-normal",
-                          !field.value && "text-muted-foreground"
+                          !field.value && "text-muted-foreground",
                         )}
                       >
                         <CalendarIcon className="mr-2 size-4" />
-                        {field.value
-                          ? format(parseISO(field.value), "dd MMM yyyy")
-                          : "Pick a date"}
+                        {field.value ? format(parseISO(field.value), "dd MMM yyyy") : "Pick a date"}
                       </Button>
                     </FormControl>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={
-                        field.value ? parseISO(field.value) : undefined
-                      }
+                      selected={field.value ? parseISO(field.value) : undefined}
                       onSelect={(date) => {
                         if (date) {
                           field.onChange(format(date, "yyyy-MM-dd"));
@@ -206,17 +198,13 @@ export function DowntimeForm({ lines, stopCodes }: DowntimeFormProps) {
                         aria-expanded={stopCodeOpen}
                         className={cn(
                           "w-full justify-between font-normal",
-                          !field.value && "text-muted-foreground"
+                          !field.value && "text-muted-foreground",
                         )}
                       >
                         {field.value
                           ? (() => {
-                              const sc = stopCodes.find(
-                                (s) => s.id === field.value
-                              );
-                              return sc
-                                ? `${sc.code} - ${sc.nameUz}`
-                                : "Select stop code";
+                              const sc = stopCodes.find((s) => s.id === field.value);
+                              return sc ? `${sc.code} - ${sc.nameUz}` : "Select stop code";
                             })()
                           : "Select stop code"}
                         <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
@@ -241,18 +229,12 @@ export function DowntimeForm({ lines, stopCodes }: DowntimeFormProps) {
                               <Check
                                 className={cn(
                                   "mr-2 size-4",
-                                  field.value === sc.id
-                                    ? "opacity-100"
-                                    : "opacity-0"
+                                  field.value === sc.id ? "opacity-100" : "opacity-0",
                                 )}
                               />
                               <div className="flex flex-col">
-                                <span className="font-medium font-mono">
-                                  {sc.code}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                  {sc.nameUz}
-                                </span>
+                                <span className="font-medium font-mono">{sc.code}</span>
+                                <span className="text-xs text-muted-foreground">{sc.nameUz}</span>
                               </div>
                               {sc.category && (
                                 <span className="ml-auto text-xs text-muted-foreground">
@@ -321,11 +303,7 @@ export function DowntimeForm({ lines, stopCodes }: DowntimeFormProps) {
             {isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
             Create Event
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.push("/downtime")}
-          >
+          <Button type="button" variant="outline" onClick={() => router.push("/downtime")}>
             Cancel
           </Button>
         </div>

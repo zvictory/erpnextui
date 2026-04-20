@@ -75,7 +75,10 @@ export default function AssetsPage() {
                 return (
                   <TableRow key={asset.id}>
                     <TableCell>
-                      <Link href={`/assets/${asset.id}`} className="font-medium text-primary hover:underline">
+                      <Link
+                        href={`/assets/${asset.id}`}
+                        className="font-medium text-primary hover:underline"
+                      >
                         {asset.assetCode}
                       </Link>
                     </TableCell>
@@ -83,7 +86,9 @@ export default function AssetsPage() {
                     <TableCell>{asset.category ?? "—"}</TableCell>
                     <TableCell>{formatDate(asset.purchaseDate)}</TableCell>
                     <TableCell className="text-right">{formatNumber(dep.bookValue)}</TableCell>
-                    <TableCell className="text-right">{formatNumber(dep.monthlyDepreciation)}</TableCell>
+                    <TableCell className="text-right">
+                      {formatNumber(dep.monthlyDepreciation)}
+                    </TableCell>
                     <TableCell>
                       <AssetStatusBadge status={asset.status} />
                     </TableCell>

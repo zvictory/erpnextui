@@ -4,6 +4,11 @@ export interface SalesOrderItem {
   qty: number;
   rate: number;
   amount: number;
+  picked_qty?: number;
+  item_name?: string;
+  warehouse?: string;
+  uom?: string;
+  name?: string;
   [key: string]: unknown;
 }
 
@@ -22,6 +27,13 @@ export interface SalesOrder {
   per_billed: number;
   per_delivered: number;
   amended_from?: string;
+  workflow_state?: string;
+  set_warehouse?: string;
+  customer_name?: string;
+  currency?: string;
+  pick_notes?: string;
+  packed_by?: string;
+  packed_date?: string;
   [key: string]: unknown;
 }
 
@@ -36,4 +48,6 @@ export interface SalesOrderListItem {
   docstatus: 0 | 1 | 2;
   per_billed: number;
   per_delivered: number;
+  workflow_state?: string;
+  set_warehouse?: string;
 }

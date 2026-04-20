@@ -36,6 +36,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ProductForm } from "./product-form";
+import { formatNumber } from "@/lib/formatters";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -60,9 +61,7 @@ export function ProductsTable({ data }: ProductsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<ProductRow | undefined>(
-    undefined
-  );
+  const [editingProduct, setEditingProduct] = useState<ProductRow | undefined>(undefined);
   const [deleteTarget, setDeleteTarget] = useState<ProductRow | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -71,9 +70,7 @@ export function ProductsTable({ data }: ProductsTableProps) {
     if (!search.trim()) return data;
     const q = search.toLowerCase();
     return data.filter(
-      (row) =>
-        row.code.toLowerCase().includes(q) ||
-        row.name.toLowerCase().includes(q)
+      (row) => row.code.toLowerCase().includes(q) || row.name.toLowerCase().includes(q),
     );
   }, [data, search]);
 
@@ -88,17 +85,13 @@ export function ProductsTable({ data }: ProductsTableProps) {
             variant="ghost"
             size="sm"
             className="-ml-3"
-            onClick={() =>
-              column.toggleSorting(column.getIsSorted() === "asc")
-            }
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Code
             <ArrowUpDown className="ml-1 size-3" />
           </Button>
         ),
-        cell: ({ row }) => (
-          <span className="font-mono font-medium">{row.getValue("code")}</span>
-        ),
+        cell: ({ row }) => <span className="font-mono font-medium">{row.getValue("code")}</span>,
       },
       {
         accessorKey: "name",
@@ -107,18 +100,14 @@ export function ProductsTable({ data }: ProductsTableProps) {
             variant="ghost"
             size="sm"
             className="-ml-3"
-            onClick={() =>
-              column.toggleSorting(column.getIsSorted() === "asc")
-            }
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Name
             <ArrowUpDown className="ml-1 size-3" />
           </Button>
         ),
         cell: ({ row }) => (
-          <span className="max-w-[250px] truncate block">
-            {row.getValue("name")}
-          </span>
+          <span className="max-w-[250px] truncate block">{row.getValue("name")}</span>
         ),
       },
       {
@@ -133,9 +122,7 @@ export function ProductsTable({ data }: ProductsTableProps) {
             variant="ghost"
             size="sm"
             className="-ml-3"
-            onClick={() =>
-              column.toggleSorting(column.getIsSorted() === "asc")
-            }
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Speed (pcs/hr)
             <ArrowUpDown className="ml-1 size-3" />
@@ -143,7 +130,7 @@ export function ProductsTable({ data }: ProductsTableProps) {
         ),
         cell: ({ row }) => (
           <span className="font-mono tabular-nums">
-            {(row.getValue("nominalSpeed") as number).toLocaleString()}
+            {formatNumber(row.getValue("nominalSpeed") as number)}
           </span>
         ),
       },
@@ -191,11 +178,7 @@ export function ProductsTable({ data }: ProductsTableProps) {
                 <Pencil className="size-3" />
                 <span className="sr-only">Edit</span>
               </Button>
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => setDeleteTarget(product)}
-              >
+              <Button variant="ghost" size="icon-xs" onClick={() => setDeleteTarget(product)}>
                 <Trash2 className="size-3 text-destructive" />
                 <span className="sr-only">Delete</span>
               </Button>
@@ -204,7 +187,7 @@ export function ProductsTable({ data }: ProductsTableProps) {
         },
       },
     ],
-    []
+    [],
   );
 
   const table = useReactTable({
@@ -283,17 +266,12 @@ export function ProductsTable({ data }: ProductsTableProps) {
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
-                  const meta = header.column.columnDef.meta as
-                    | { className?: string }
-                    | undefined;
+                  const meta = header.column.columnDef.meta as { className?: string } | undefined;
                   return (
                     <TableHead key={header.id} className={meta?.className}>
                       {header.isPlaceholder
                         ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                        : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   );
                 })}
@@ -305,15 +283,10 @@ export function ProductsTable({ data }: ProductsTableProps) {
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => {
-                    const meta = cell.column.columnDef.meta as
-                      | { className?: string }
-                      | undefined;
+                    const meta = cell.column.columnDef.meta as { className?: string } | undefined;
                     return (
                       <TableCell key={cell.id} className={meta?.className}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     );
                   })}
@@ -352,18 +325,13 @@ export function ProductsTable({ data }: ProductsTableProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete product?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete product{" "}
-              <strong>{deleteTarget?.code}</strong> ({deleteTarget?.name}). This
-              action cannot be undone.
+              This will permanently delete product <strong>{deleteTarget?.code}</strong> (
+              {deleteTarget?.name}). This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isPending}
-            >
+            <AlertDialogAction variant="destructive" onClick={handleDelete} disabled={isPending}>
               {isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>

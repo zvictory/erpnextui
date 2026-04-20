@@ -1,4 +1,5 @@
 import { Plus, Zap, Flame, TrendingUp, Activity, DollarSign } from "lucide-react";
+import { formatNumber } from "@/lib/formatters";
 
 import { getEnergyLogs } from "@/actions/energy";
 import { getSettings } from "@/actions/settings";
@@ -8,10 +9,7 @@ import { EnergyChart } from "@/components/manufacturing/energy/energy-chart";
 import { EnergyForm } from "@/components/manufacturing/energy/energy-form";
 
 export default async function EnergyPage() {
-  const [logsResult, settingsResult] = await Promise.all([
-    getEnergyLogs(),
-    getSettings(),
-  ]);
+  const [logsResult, settingsResult] = await Promise.all([getEnergyLogs(), getSettings()]);
 
   const rawLogs = logsResult.success ? logsResult.data : [];
   const settingsData = settingsResult.success ? settingsResult.data : {};
@@ -48,24 +46,20 @@ export default async function EnergyPage() {
   }));
 
   // Summary metrics
-  const totalElectricity = rawLogs.reduce(
-    (sum, l) => sum + (l.electricityKwh ?? 0),
-    0
-  );
+  const totalElectricity = rawLogs.reduce((sum, l) => sum + (l.electricityKwh ?? 0), 0);
   const totalGas = rawLogs.reduce((sum, l) => sum + (l.gasM3 ?? 0), 0);
 
   const logCount = rawLogs.length;
   const avgDailyElectricity = logCount > 0 ? totalElectricity / logCount : 0;
   const avgDailyGas = logCount > 0 ? totalGas / logCount : 0;
-  const estimatedCost = totalElectricity * 0.12 + totalGas * 0.80; // UZS placeholder
+  const estimatedCost = totalElectricity * 0.12 + totalGas * 0.8; // UZS placeholder
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Energy Tracking</h1>
         <p className="text-muted-foreground">
-          Monitor energy consumption and compare against production-based
-          targets.
+          Monitor energy consumption and compare against production-based targets.
         </p>
       </div>
 
@@ -80,10 +74,12 @@ export default async function EnergyPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {totalElectricity.toLocaleString("en-US", { maximumFractionDigits: 0 })}{" "}
+              {formatNumber(totalElectricity, 0)}{" "}
               <span className="text-sm font-normal text-muted-foreground">kWh</span>
             </div>
-            <p className="text-xs text-muted-foreground">across {logCount} log{logCount !== 1 ? "s" : ""}</p>
+            <p className="text-xs text-muted-foreground">
+              across {logCount} log{logCount !== 1 ? "s" : ""}
+            </p>
           </CardContent>
         </Card>
 
@@ -96,10 +92,12 @@ export default async function EnergyPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {totalGas.toLocaleString("en-US", { maximumFractionDigits: 1 })}{" "}
+              {formatNumber(totalGas, 1)}{" "}
               <span className="text-sm font-normal text-muted-foreground">m³</span>
             </div>
-            <p className="text-xs text-muted-foreground">across {logCount} log{logCount !== 1 ? "s" : ""}</p>
+            <p className="text-xs text-muted-foreground">
+              across {logCount} log{logCount !== 1 ? "s" : ""}
+            </p>
           </CardContent>
         </Card>
 
@@ -112,7 +110,7 @@ export default async function EnergyPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {avgDailyElectricity.toLocaleString("en-US", { maximumFractionDigits: 0 })}{" "}
+              {formatNumber(avgDailyElectricity, 0)}{" "}
               <span className="text-sm font-normal text-muted-foreground">kWh</span>
             </div>
             <p className="text-xs text-muted-foreground">per log entry</p>
@@ -128,7 +126,7 @@ export default async function EnergyPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {avgDailyGas.toLocaleString("en-US", { maximumFractionDigits: 1 })}{" "}
+              {formatNumber(avgDailyGas, 1)}{" "}
               <span className="text-sm font-normal text-muted-foreground">m³</span>
             </div>
             <p className="text-xs text-muted-foreground">per log entry</p>
@@ -144,7 +142,7 @@ export default async function EnergyPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {estimatedCost.toLocaleString("en-US", { maximumFractionDigits: 0 })}{" "}
+              {formatNumber(estimatedCost, 0)}{" "}
               <span className="text-sm font-normal text-muted-foreground">UZS</span>
             </div>
             <p className="text-xs text-muted-foreground">0.12/kWh + 0.80/m³</p>

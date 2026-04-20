@@ -102,11 +102,7 @@ export default function EditPurchaseInvoicePage({ params }: { params: Promise<{ 
               : undefined
           }
           returnLabel={t("createReturn")}
-          onPay={
-            invoice.docstatus === 1 && !invoice.is_return
-              ? () => setPayOpen(true)
-              : undefined
-          }
+          onPay={invoice.docstatus === 1 && !invoice.is_return ? () => setPayOpen(true) : undefined}
         />
         <RelatedDocuments doctype="Purchase Invoice" name={name} />
         {invoice.supplier && (

@@ -14,6 +14,7 @@ import { ArrowUpDown, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { deleteEnergyLog } from "@/actions/energy";
+import { formatNumber } from "@/lib/formatters";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -56,17 +57,13 @@ interface EnergyTableProps {
 // --- Helpers ----------------------------------------------------------------
 
 function varianceClass(variance: number): string {
-  if (variance <= 0)
-    return "text-green-600 dark:text-green-400";
+  if (variance <= 0) return "text-green-600 dark:text-green-400";
   return "text-red-600 dark:text-red-400";
 }
 
 function formatNum(value: number | null, decimals = 1): string {
   if (value === null || value === undefined) return "-";
-  return value.toLocaleString("en-US", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
+  return formatNumber(value, decimals);
 }
 
 // --- Delete Dialog ----------------------------------------------------------
@@ -99,17 +96,12 @@ function DeleteLogDialog({ logId }: { logId: number }) {
         <AlertDialogHeader>
           <AlertDialogTitle>Delete energy log?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. The energy log entry will be
-            permanently removed.
+            This action cannot be undone. The energy log entry will be permanently removed.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={isPending}
-          >
+          <AlertDialogAction variant="destructive" onClick={handleDelete} disabled={isPending}>
             {isPending ? "Deleting..." : "Delete"}
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -292,17 +284,12 @@ export function EnergyTable({ data }: EnergyTableProps) {
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
-                  const meta = header.column.columnDef.meta as
-                    | { className?: string }
-                    | undefined;
+                  const meta = header.column.columnDef.meta as { className?: string } | undefined;
                   return (
                     <TableHead key={header.id} className={meta?.className}>
                       {header.isPlaceholder
                         ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                        : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   );
                 })}
@@ -314,15 +301,10 @@ export function EnergyTable({ data }: EnergyTableProps) {
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => {
-                    const meta = cell.column.columnDef.meta as
-                      | { className?: string }
-                      | undefined;
+                    const meta = cell.column.columnDef.meta as { className?: string } | undefined;
                     return (
                       <TableCell key={cell.id} className={meta?.className}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     );
                   })}

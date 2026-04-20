@@ -1,21 +1,10 @@
 "use client";
 
 import { useCallback } from "react";
-import {
-  SkipBack,
-  Rewind,
-  Play,
-  Pause,
-  FastForward,
-  SkipForward,
-} from "lucide-react";
+import { SkipBack, Rewind, Play, Pause, FastForward, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFactoryTwinStore } from "@/stores/factory-twin-store";
-import {
-  startPlayback,
-  pausePlayback,
-  seekTo,
-} from "@/lib/playback/playback-engine";
+import { startPlayback, pausePlayback, seekTo } from "@/lib/playback/playback-engine";
 
 function formatTime(ms: number): string {
   const d = new Date(ms);
@@ -23,15 +12,8 @@ function formatTime(ms: number): string {
 }
 
 export function TimelineControl() {
-  const {
-    isPlaying,
-    speed,
-    timelineStart,
-    timelineEnd,
-    currentTime,
-    events,
-    setSpeed,
-  } = useFactoryTwinStore();
+  const { isPlaying, speed, timelineStart, timelineEnd, currentTime, events, setSpeed } =
+    useFactoryTwinStore();
 
   const duration = timelineEnd - timelineStart;
   const progress = duration > 0 ? ((currentTime - timelineStart) / duration) * 100 : 0;

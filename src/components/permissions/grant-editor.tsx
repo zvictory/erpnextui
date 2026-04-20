@@ -25,11 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 type GrantKey = string;
 
@@ -246,10 +242,7 @@ export function GrantEditor({ userEmail, onClose }: Props) {
             {/* Section B: Data Operations */}
             <Collapsible>
               <CollapsibleTrigger asChild>
-                <button
-                  type="button"
-                  className="flex w-full items-center gap-2 py-2"
-                >
+                <button type="button" className="flex w-full items-center gap-2 py-2">
                   <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform [[data-state=open]>&]:rotate-180" />
                   <h3 className="text-sm font-semibold uppercase text-muted-foreground">
                     {tPerm("dataOps")}
@@ -257,9 +250,7 @@ export function GrantEditor({ userEmail, onClose }: Props) {
                 </button>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <p className="text-xs text-muted-foreground mb-3">
-                  {tPerm("dataOpsHint")}
-                </p>
+                <p className="text-xs text-muted-foreground mb-3">{tPerm("dataOpsHint")}</p>
                 <div className="space-y-4">
                   {[...nonNavByModule.entries()].map(([module, caps]) => (
                     <section key={module} className="space-y-2">

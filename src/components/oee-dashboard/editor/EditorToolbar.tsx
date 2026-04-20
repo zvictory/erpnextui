@@ -1,6 +1,15 @@
 "use client";
 
-import { MousePointer2, Move, RotateCw, Scaling, GitBranch, Trash2, Undo2, Redo2 } from "lucide-react";
+import {
+  MousePointer2,
+  Move,
+  RotateCw,
+  Scaling,
+  GitBranch,
+  Trash2,
+  Undo2,
+  Redo2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";

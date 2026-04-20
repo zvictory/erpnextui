@@ -5,11 +5,17 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useMyPermissions } from "@/hooks/use-my-permissions";
 import type { PermissionAction } from "@/lib/permissions";
+import type { CapabilityId } from "@/lib/permissions/capabilities";
+
+type ScopeDim = "line" | "warehouse" | "company";
 
 interface PermissionGuardProps {
-  doctype: string;
+  doctype?: string;
   action?: PermissionAction;
+  capability?: CapabilityId;
+  scopeDim?: ScopeDim;
   fallback?: ReactNode;
   children: ReactNode;
 }
@@ -25,20 +31,36 @@ const defaultFallback = (
 export function PermissionGuard({
   doctype,
   action = "read",
+  capability,
+  scopeDim,
   fallback = defaultFallback,
   children,
 }: PermissionGuardProps) {
   const router = useRouter();
-  const { isLoading, permissions } = usePermissions();
-  const perms = permissions(doctype);
-  const allowed = perms[action];
+  const { isLoading: doctypeLoading, permissions } = usePermissions();
+  const { data: myPerms, isLoading: grantsLoading } = useMyPermissions();
+
+  const doctypeAllowed = doctype ? permissions(doctype)[action] : true;
+
+  const capabilityAllowed = (() => {
+    if (!capability) return true;
+    if (myPerms.isSuperuser) return true;
+    if (!myPerms.capabilities.has(capability)) return false;
+    if (!scopeDim) return true;
+    const scope = myPerms.allowedScopes[scopeDim];
+    return !!scope && scope.size > 0;
+  })();
+
+  const allowed = doctypeAllowed && capabilityAllowed;
+  const isLoading = (doctype && doctypeLoading) || (capability && grantsLoading);
 
   useEffect(() => {
     if (!isLoading && !allowed) {
-      toast.error(`You don't have access to ${doctype}`);
+      const target = capability ?? doctype ?? "this page";
+      toast.error(`You don't have access to ${target}`);
       router.replace("/dashboard");
     }
-  }, [isLoading, allowed, doctype, router]);
+  }, [isLoading, allowed, doctype, capability, router]);
 
   if (isLoading) return <>{fallback}</>;
   if (!allowed) return null;

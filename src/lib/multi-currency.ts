@@ -177,7 +177,11 @@ export async function enrichJEAccounts(
         }
       }
 
-      return { ...row, account_currency: currency, ...(rate !== undefined ? { exchange_rate: rate } : {}) };
+      return {
+        ...row,
+        account_currency: currency,
+        ...(rate !== undefined ? { exchange_rate: rate } : {}),
+      };
     }),
   );
 

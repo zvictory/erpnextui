@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { temporal } from "zundo";
-import type { Equipment, PipeConfig, ParameterConfig } from "@/types/factory-twin";
+import type { Equipment, PipeConfig } from "@/types/factory-twin";
 import type { EditorTool, PipeDrawingState, ProductionLineConfig } from "@/types/editor";
 import { FACTORY_LAYOUT, PIPE_NETWORK } from "@/config/factory-layout";
 
@@ -71,7 +71,15 @@ interface EditorState {
 
 function generateId(type: string, existing: Equipment[]): string {
   const prefix =
-    type === "tank" ? "T" : type === "line" ? "L" : type === "warehouse" ? "WH" : type === "pump" ? "P" : "EQ";
+    type === "tank"
+      ? "T"
+      : type === "line"
+        ? "L"
+        : type === "warehouse"
+          ? "WH"
+          : type === "pump"
+            ? "P"
+            : "EQ";
   const nums = existing
     .filter((e) => e.id.startsWith(prefix + "-"))
     .map((e) => parseInt(e.id.split("-")[1], 10))
@@ -149,10 +157,17 @@ export const useEditorStore = create<EditorState>()(
         const eq = s.equipment.find((e) => e.id === id);
         if (!eq) return;
         const newId = generateId(eq.type, s.equipment);
-        const offset: [number, number, number] = [eq.position[0] + 2, eq.position[1], eq.position[2] + 2];
+        const offset: [number, number, number] = [
+          eq.position[0] + 2,
+          eq.position[1],
+          eq.position[2] + 2,
+        ];
         const pos = s.snapToGrid ? snapPosition(offset, s.gridSize) : offset;
         set({
-          equipment: [...s.equipment, { ...eq, id: newId, label: `${eq.label} (copy)`, position: pos }],
+          equipment: [
+            ...s.equipment,
+            { ...eq, id: newId, label: `${eq.label} (copy)`, position: pos },
+          ],
           selectedIds: [newId],
           isDirty: true,
         });
@@ -183,8 +198,7 @@ export const useEditorStore = create<EditorState>()(
       // Pipes
       pipeDrawing: { active: false, fromId: null, waypoints: [] },
 
-      startPipeDrawing: (fromId) =>
-        set({ pipeDrawing: { active: true, fromId, waypoints: [] } }),
+      startPipeDrawing: (fromId) => set({ pipeDrawing: { active: true, fromId, waypoints: [] } }),
 
       addPipeWaypoint: (point) => {
         const s = get();
@@ -211,9 +225,10 @@ export const useEditorStore = create<EditorState>()(
               id: pipeId,
               from: s.pipeDrawing.fromId,
               to: toId,
-              waypoints: s.pipeDrawing.waypoints.length > 0
-                ? s.pipeDrawing.waypoints
-                : computeDefaultWaypoints(s.pipeDrawing.fromId, toId, s.equipment),
+              waypoints:
+                s.pipeDrawing.waypoints.length > 0
+                  ? s.pipeDrawing.waypoints
+                  : computeDefaultWaypoints(s.pipeDrawing.fromId, toId, s.equipment),
             },
           ],
           pipeDrawing: { active: false, fromId: null, waypoints: [] },
@@ -221,8 +236,7 @@ export const useEditorStore = create<EditorState>()(
         });
       },
 
-      cancelPipeDrawing: () =>
-        set({ pipeDrawing: { active: false, fromId: null, waypoints: [] } }),
+      cancelPipeDrawing: () => set({ pipeDrawing: { active: false, fromId: null, waypoints: [] } }),
 
       deletePipe: (id) =>
         set((s) => ({

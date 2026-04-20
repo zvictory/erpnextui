@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useReducer, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,26 +14,63 @@ export function PlatformSettingsForm() {
   const updateMutation = useUpdateSettings();
   const passwordMutation = useChangeAdminPassword();
 
-  const [appName, setAppName] = useState("");
-  const [cacheTtl, setCacheTtl] = useState("");
+  type SettingsState = {
+    appName: string;
+    cacheTtl: string;
+    provisioningApiUrl: string;
+    provisioningApiKey: string;
+    provisioningApiSecret: string;
+  };
+  type SettingsAction =
+    | { type: "POPULATE"; settings: NonNullable<typeof data>["settings"] }
+    | { type: "SET"; field: keyof SettingsState; value: string };
 
-  // Provisioning settings
-  const [provisioningApiUrl, setProvisioningApiUrl] = useState("");
-  const [provisioningApiKey, setProvisioningApiKey] = useState("");
-  const [provisioningApiSecret, setProvisioningApiSecret] = useState("");
+  const [settings, dispatchSettings] = useReducer(
+    (state: SettingsState, action: SettingsAction): SettingsState => {
+      switch (action.type) {
+        case "POPULATE":
+          return {
+            appName: action.settings.appName,
+            cacheTtl: String(action.settings.tenantCacheTtlMs / 1000),
+            provisioningApiUrl: action.settings.provisioningApiUrl ?? "",
+            provisioningApiKey: action.settings.provisioningApiKey ?? "",
+            provisioningApiSecret: action.settings.provisioningApiSecret ?? "",
+          };
+        case "SET":
+          return { ...state, [action.field]: action.value };
+        default:
+          return state;
+      }
+    },
+    {
+      appName: "",
+      cacheTtl: "",
+      provisioningApiUrl: "",
+      provisioningApiKey: "",
+      provisioningApiSecret: "",
+    },
+  );
+
+  const { appName, cacheTtl, provisioningApiUrl, provisioningApiKey, provisioningApiSecret } =
+    settings;
+  const setAppName = (v: string) => dispatchSettings({ type: "SET", field: "appName", value: v });
+  const setCacheTtl = (v: string) => dispatchSettings({ type: "SET", field: "cacheTtl", value: v });
+  const setProvisioningApiUrl = (v: string) =>
+    dispatchSettings({ type: "SET", field: "provisioningApiUrl", value: v });
+  const setProvisioningApiKey = (v: string) =>
+    dispatchSettings({ type: "SET", field: "provisioningApiKey", value: v });
+  const setProvisioningApiSecret = (v: string) =>
+    dispatchSettings({ type: "SET", field: "provisioningApiSecret", value: v });
 
   // Password form
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  // Populate settings form when data loads (single dispatch — no cascading renders)
   useEffect(() => {
     if (data?.settings) {
-      setAppName(data.settings.appName);
-      setCacheTtl(String(data.settings.tenantCacheTtlMs / 1000));
-      setProvisioningApiUrl(data.settings.provisioningApiUrl ?? "");
-      setProvisioningApiKey(data.settings.provisioningApiKey ?? "");
-      setProvisioningApiSecret(data.settings.provisioningApiSecret ?? "");
+      dispatchSettings({ type: "POPULATE", settings: data.settings });
     }
   }, [data]);
 

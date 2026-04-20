@@ -8,8 +8,10 @@ import { FrappeAPIError } from "@/lib/frappe-types";
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60_000,
+      staleTime: 30_000,
       retry: 1,
+      refetchOnMount: true,
+      refetchOnWindowFocus: true,
     },
     mutations: {
       onError: (error) => {

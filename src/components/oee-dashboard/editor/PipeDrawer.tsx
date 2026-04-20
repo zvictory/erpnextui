@@ -7,10 +7,16 @@ import { useEditorStore } from "@/stores/editor-store";
 
 /** Invisible floor plane for raycasting click positions during pipe drawing. */
 export function PipeDrawer() {
-  const { pipeDrawing, addPipeWaypoint, finishPipeDrawing, cancelPipeDrawing, equipment, activeTool } =
-    useEditorStore();
+  const {
+    pipeDrawing,
+    addPipeWaypoint,
+    finishPipeDrawing,
+    cancelPipeDrawing: _cancelPipeDrawing,
+    equipment,
+    activeTool,
+  } = useEditorStore();
   const planeRef = useRef<THREE.Mesh>(null);
-  const { raycaster, pointer, camera } = useThree();
+  const { raycaster: _raycaster, pointer: _pointer, camera: _camera } = useThree();
 
   // Preview line showing current pipe path
   const previewPoints = useMemo(() => {
@@ -39,11 +45,7 @@ export function PipeDrawer() {
     }
 
     // Add waypoint at floor intersection
-    addPipeWaypoint([
-      Math.round(e.point.x * 2) / 2,
-      0.5,
-      Math.round(e.point.z * 2) / 2,
-    ]);
+    addPipeWaypoint([Math.round(e.point.x * 2) / 2, 0.5, Math.round(e.point.z * 2) / 2]);
   };
 
   return (

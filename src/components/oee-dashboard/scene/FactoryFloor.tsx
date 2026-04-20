@@ -6,11 +6,7 @@ export function FactoryFloor() {
   return (
     <>
       {/* Ground plane */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, -0.01, 0]}
-        receiveShadow
-      >
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
         <planeGeometry args={[40, 30]} />
         <meshStandardMaterial color="#e8e8e8" />
       </mesh>

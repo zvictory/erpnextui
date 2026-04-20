@@ -82,11 +82,7 @@ export function LineForm({ open, onOpenChange, initialData }: LineFormProps) {
         : await createLine(submitData);
 
       if (result.success) {
-        toast.success(
-          isEditing
-            ? "Line updated successfully."
-            : "Line created successfully."
-        );
+        toast.success(isEditing ? "Line updated successfully." : "Line created successfully.");
         onOpenChange(false);
         router.refresh();
       } else {
@@ -99,9 +95,7 @@ export function LineForm({ open, onOpenChange, initialData }: LineFormProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? "Edit Line" : "Add Line"}
-          </DialogTitle>
+          <DialogTitle>{isEditing ? "Edit Line" : "Add Line"}</DialogTitle>
           <DialogDescription>
             {isEditing
               ? "Update the production line details below."
@@ -134,10 +128,7 @@ export function LineForm({ open, onOpenChange, initialData }: LineFormProps) {
                 <FormItem>
                   <FormLabel>Description (optional)</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="e.g. Main chocolate production line"
-                      {...field}
-                    />
+                    <Input placeholder="e.g. Main chocolate production line" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

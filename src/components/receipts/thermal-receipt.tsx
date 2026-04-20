@@ -95,10 +95,23 @@ export function ThermalReceipt({
 
       {/* Invoice info */}
       <div className="space-y-0.5">
-        <div>{t("invoice")}: {invoice.name}</div>
-        <div>{t("date")}: {formatDate(invoice.posting_date)}</div>
-        {settings.showDueDate && invoice.due_date && <div>{t("due")}: {formatDate(invoice.due_date)}</div>}
-        {settings.showCustomerName && <div>{t("customer")}: {(invoice as Record<string, unknown>).customer_name as string || invoice.customer}</div>}
+        <div>
+          {t("invoice")}: {invoice.name}
+        </div>
+        <div>
+          {t("date")}: {formatDate(invoice.posting_date)}
+        </div>
+        {settings.showDueDate && invoice.due_date && (
+          <div>
+            {t("due")}: {formatDate(invoice.due_date)}
+          </div>
+        )}
+        {settings.showCustomerName && (
+          <div>
+            {t("customer")}:{" "}
+            {((invoice as Record<string, unknown>).customer_name as string) || invoice.customer}
+          </div>
+        )}
       </div>
 
       <Separator />
@@ -125,8 +138,17 @@ export function ThermalReceipt({
               </div>
               {hasDiscPct && (
                 <div className="flex justify-between gap-2 text-[0.85em] opacity-50">
-                  <span>{t("discount")} -{item.discount_percentage}%</span>
-                  <span>-{fmt(item.qty * item.rate * (item.discount_percentage! / 100), currencySymbol, symbolOnRight)}</span>
+                  <span>
+                    {t("discount")} -{item.discount_percentage}%
+                  </span>
+                  <span>
+                    -
+                    {fmt(
+                      item.qty * item.rate * (item.discount_percentage! / 100),
+                      currencySymbol,
+                      symbolOnRight,
+                    )}
+                  </span>
                 </div>
               )}
               {hasDiscAmt && (
@@ -191,9 +213,7 @@ export function ThermalReceipt({
 
       {/* Footer — use translated default when empty */}
       <Separator />
-      <div className="text-center whitespace-pre-line">
-        {settings.footerText || t("thankYou")}
-      </div>
+      <div className="text-center whitespace-pre-line">{settings.footerText || t("thankYou")}</div>
     </div>
   );
 }

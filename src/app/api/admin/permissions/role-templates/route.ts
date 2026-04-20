@@ -27,10 +27,7 @@ export async function GET() {
 
   const tenant = gate.ctx.tenant;
 
-  const templates = await db
-    .select()
-    .from(roleTemplates)
-    .where(eq(roleTemplates.tenant, tenant));
+  const templates = await db.select().from(roleTemplates).where(eq(roleTemplates.tenant, tenant));
 
   if (templates.length === 0) {
     return NextResponse.json({ templates: [] });

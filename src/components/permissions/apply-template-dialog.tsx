@@ -196,9 +196,7 @@ export function ApplyTemplateDialog({ open, onClose }: Props) {
                     key={tpl.id}
                     type="button"
                     className={`w-full rounded border px-3 py-2 text-left text-sm hover:bg-accent ${
-                      selectedTemplate?.id === tpl.id
-                        ? "border-primary bg-accent"
-                        : "border-border"
+                      selectedTemplate?.id === tpl.id ? "border-primary bg-accent" : "border-border"
                     }`}
                     onClick={() => handleSelectTemplate(tpl)}
                   >

@@ -31,7 +31,10 @@ export async function getAssets(search?: string) {
   } catch (error) {
     const perm = toActionError(error);
     if (perm) return perm;
-    return { success: false as const, error: error instanceof Error ? error.message : "Failed to fetch assets" };
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Failed to fetch assets",
+    };
   }
 }
 
@@ -55,7 +58,10 @@ export async function getAsset(id: number) {
   } catch (error) {
     const perm = toActionError(error);
     if (perm) return perm;
-    return { success: false as const, error: error instanceof Error ? error.message : "Failed to fetch asset" };
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Failed to fetch asset",
+    };
   }
 }
 
@@ -77,9 +83,7 @@ export async function createAsset(data: AssetFormValues) {
       .limit(1)
       .get();
 
-    const nextNum = lastAsset
-      ? parseInt(lastAsset.assetCode.replace("AST-", ""), 10) + 1
-      : 1;
+    const nextNum = lastAsset ? parseInt(lastAsset.assetCode.replace("AST-", ""), 10) + 1 : 1;
     const assetCode = `AST-${String(nextNum).padStart(3, "0")}`;
 
     const result = db
@@ -115,7 +119,10 @@ export async function createAsset(data: AssetFormValues) {
   } catch (error) {
     const perm = toActionError(error);
     if (perm) return perm;
-    return { success: false as const, error: error instanceof Error ? error.message : "Failed to create asset" };
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Failed to create asset",
+    };
   }
 }
 
@@ -146,7 +153,9 @@ export async function updateAsset(id: number, data: Partial<AssetFormValues>) {
         ...(data.technicalSpecs !== undefined && { technicalSpecs: data.technicalSpecs ?? null }),
         ...(data.usefulLifeYears !== undefined && { usefulLifeYears: data.usefulLifeYears }),
         ...(data.salvageValue !== undefined && { salvageValue: data.salvageValue ?? 0 }),
-        ...(data.depreciationMethod !== undefined && { depreciationMethod: data.depreciationMethod }),
+        ...(data.depreciationMethod !== undefined && {
+          depreciationMethod: data.depreciationMethod,
+        }),
         ...(data.warrantyUntil !== undefined && { warrantyUntil: data.warrantyUntil ?? null }),
         ...(data.status !== undefined && { status: data.status }),
         ...(data.notes !== undefined && { notes: data.notes ?? null }),
@@ -164,7 +173,10 @@ export async function updateAsset(id: number, data: Partial<AssetFormValues>) {
   } catch (error) {
     const perm = toActionError(error);
     if (perm) return perm;
-    return { success: false as const, error: error instanceof Error ? error.message : "Failed to update asset" };
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Failed to update asset",
+    };
   }
 }
 
@@ -186,6 +198,9 @@ export async function deleteAsset(id: number) {
   } catch (error) {
     const perm = toActionError(error);
     if (perm) return perm;
-    return { success: false as const, error: error instanceof Error ? error.message : "Failed to delete asset" };
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Failed to delete asset",
+    };
   }
 }

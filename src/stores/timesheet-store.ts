@@ -73,8 +73,7 @@ export const useTimesheetStore = create<TimesheetState>((set, get) => ({
       entries: s.entries.filter((_, idx) => idx !== i),
     })),
 
-  setDateForAll: (date) =>
-    set((s) => ({ entries: s.entries.map((e) => ({ ...e, date })) })),
+  setDateForAll: (date) => set((s) => ({ entries: s.entries.map((e) => ({ ...e, date })) })),
 
   getTotals: () => {
     const entries = get().entries;

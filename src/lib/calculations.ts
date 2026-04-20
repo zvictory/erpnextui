@@ -27,12 +27,10 @@ export interface RunMetrics {
 }
 
 export function calculateRunMetrics(run: RunMetricsInput): RunMetrics {
-  const netWorkHours =
-    run.nominalSpeed > 0 ? run.actualOutput / run.nominalSpeed : 0;
+  const netWorkHours = run.nominalSpeed > 0 ? run.actualOutput / run.nominalSpeed : 0;
   const plannedWorkHours = run.totalHours - run.plannedStopHours;
   const unplannedStopHours = Math.max(0, plannedWorkHours - netWorkHours);
-  const productivity =
-    plannedWorkHours > 0 ? netWorkHours / plannedWorkHours : 0;
+  const productivity = plannedWorkHours > 0 ? netWorkHours / plannedWorkHours : 0;
   const efficiency = run.totalHours > 0 ? netWorkHours / run.totalHours : 0;
 
   return {

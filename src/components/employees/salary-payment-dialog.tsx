@@ -93,12 +93,7 @@ export function SalaryPaymentDialog({
   const { data: payableCurrency = "", isLoading: payableCurrencyLoading } =
     useAccountCurrency(salaryPayableAccount);
 
-  const {
-    register,
-    reset,
-    setValue,
-    watch,
-  } = useForm<SalaryPaymentFormValues>({
+  const { register, reset, setValue, watch } = useForm<SalaryPaymentFormValues>({
     defaultValues: {
       posting_date: format(new Date(), "yyyy-MM-dd"),
       amount: defaultAmount,
@@ -134,11 +129,13 @@ export function SalaryPaymentDialog({
   const bankCurrency = selectedAccount?.account_currency ?? "";
   const isInsufficientBalance = !!bankAccount && amount > 0 && amount > bankBalance;
 
-  const isMultiCurrency = bankCurrency !== "" && payableCurrency !== "" && bankCurrency !== payableCurrency;
+  const isMultiCurrency =
+    bankCurrency !== "" && payableCurrency !== "" && bankCurrency !== payableCurrency;
 
   // Display pair: always anchor to company currency for readable rates
   const [baseCurrency, quoteCurrency] = useMemo(
-    () => (isMultiCurrency ? getDisplayPair(payableCurrency, bankCurrency, companyCurrency) : ["", ""]),
+    () =>
+      isMultiCurrency ? getDisplayPair(payableCurrency, bankCurrency, companyCurrency) : ["", ""],
     [isMultiCurrency, payableCurrency, bankCurrency, companyCurrency],
   );
   const payableIsBase = baseCurrency === payableCurrency;

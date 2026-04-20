@@ -91,9 +91,7 @@ export function LoginForm() {
     return (
       <div>
         <h2 className="text-2xl font-bold tracking-tight">{t("signIn.selectCompany")}</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {t("signIn.multipleCompanies")}
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">{t("signIn.multipleCompanies")}</p>
 
         <div className="mt-6 flex flex-col gap-2">
           {matchedTenants.map((tenant) => (

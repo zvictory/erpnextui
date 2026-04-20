@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCompanyStore } from "@/stores/company-store";
 import { useCurrencyMap } from "@/hooks/use-accounts";
 import { formatCurrency } from "@/lib/utils";
+import { formatNumber } from "@/lib/formatters";
 import type { KpiData } from "@/types/dashboard";
 
 interface KpiCardsProps {
@@ -75,7 +76,7 @@ export function KpiCards({ data, isLoading }: KpiCardsProps) {
                 )}
                 <span>
                   {isPositive ? "+" : ""}
-                  {trend.toFixed(1)}% {t("vsLastPeriod")}
+                  {formatNumber(trend, 1)}% {t("vsLastPeriod")}
                 </span>
               </div>
             </CardContent>

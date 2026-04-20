@@ -32,6 +32,8 @@ const TYPE_BADGES: Record<string, "default" | "secondary" | "outline"> = {
   "Material Receipt": "default",
   "Material Issue": "secondary",
   "Material Transfer": "outline",
+  Manufacture: "default",
+  "Material Transfer for Manufacture": "outline",
 };
 
 export default function StockEntriesPage() {
@@ -84,6 +86,24 @@ export default function StockEntriesPage() {
       render: (row) => formatDate(row.posting_date),
     },
     {
+      key: "from_warehouse",
+      header: t("fromWarehouse"),
+      render: (row) => (
+        <span className="text-xs text-muted-foreground truncate max-w-[120px] block">
+          {row.from_warehouse?.replace(/ - A$/, "") || "—"}
+        </span>
+      ),
+    },
+    {
+      key: "to_warehouse",
+      header: t("toWarehouse"),
+      render: (row) => (
+        <span className="text-xs text-muted-foreground truncate max-w-[120px] block">
+          {row.to_warehouse?.replace(/ - A$/, "") || "—"}
+        </span>
+      ),
+    },
+    {
       key: "total_amount",
       header: t("totalAmount"),
       className: "text-right",
@@ -92,7 +112,7 @@ export default function StockEntriesPage() {
     },
     {
       key: "status",
-      header: tc("voucherType"),
+      header: tc("status"),
       render: (row) => <DocstatusBadge docstatus={row.docstatus} />,
     },
     {
@@ -189,6 +209,7 @@ export default function StockEntriesPage() {
         onNextPage={listState.nextPage}
         onPrevPage={listState.prevPage}
         toolbar={toolbar}
+        onRowClick={(row) => router.push(`/stock-entries/${encodeURIComponent(row.name)}`)}
       />
 
       <ConfirmDialog

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -66,7 +66,7 @@ const DOCTYPE_CONFIGS: Omit<DoctypeConfig, "label">[] = [
     href: (n) => `/purchase-invoices/${encodeURIComponent(n)}`,
     icon: FileInput,
   },
-  { doctype: "Payment Entry", field: "party_name", href: (n) => `/payments`, icon: CreditCard },
+  { doctype: "Payment Entry", field: "party_name", href: (_n) => `/payments`, icon: CreditCard },
   {
     doctype: "Sales Order",
     field: "customer",
@@ -97,9 +97,38 @@ interface SearchResult {
 
 export function GlobalSearch() {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  type SearchState = { query: string; results: SearchResult[]; isSearching: boolean };
+  type SearchAction =
+    | { type: "SET_QUERY"; query: string }
+    | { type: "SET_SEARCHING"; isSearching: boolean }
+    | { type: "SET_RESULTS"; results: SearchResult[] }
+    | { type: "RESET" }
+    | { type: "CLEAR_QUERY" };
+
+  const [searchState, dispatchSearch] = useReducer(
+    (state: SearchState, action: SearchAction): SearchState => {
+      switch (action.type) {
+        case "SET_QUERY":
+          return { ...state, query: action.query };
+        case "SET_SEARCHING":
+          return { ...state, isSearching: action.isSearching };
+        case "SET_RESULTS":
+          return { ...state, results: action.results, isSearching: false };
+        case "RESET":
+          return { query: "", results: [], isSearching: false };
+        case "CLEAR_QUERY":
+          return { ...state, query: "", results: [], isSearching: false };
+        default:
+          return state;
+      }
+    },
+    { query: "", results: [], isSearching: false },
+  );
+
+  const { query, results, isSearching } = searchState;
+  const setQuery = (v: string) => dispatchSearch({ type: "SET_QUERY", query: v });
+  const setResults = (v: SearchResult[]) => dispatchSearch({ type: "SET_RESULTS", results: v });
+  const setIsSearching = (v: boolean) => dispatchSearch({ type: "SET_SEARCHING", isSearching: v });
   const router = useRouter();
   const t = useTranslations("common");
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -173,27 +202,24 @@ export function GlobalSearch() {
     }
   }, []);
 
-  // Debounced search
+  // Debounced search (single dispatch per branch — no cascading renders)
   useEffect(() => {
     clearTimeout(timerRef.current);
     if (!query.trim()) {
-      setResults([]);
-      setIsSearching(false);
+      dispatchSearch({ type: "CLEAR_QUERY" });
       return;
     }
-    setIsSearching(true);
+    dispatchSearch({ type: "SET_SEARCHING", isSearching: true });
     timerRef.current = setTimeout(() => {
       search(query);
     }, 300);
     return () => clearTimeout(timerRef.current);
   }, [query, search]);
 
-  // Reset on close
+  // Reset on close (single dispatch)
   useEffect(() => {
     if (!open) {
-      setQuery("");
-      setResults([]);
-      setIsSearching(false);
+      dispatchSearch({ type: "RESET" });
     }
   }, [open]);
 

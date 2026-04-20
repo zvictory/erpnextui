@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { createProductionRun, updateProductionRun } from "@/actions/production";
 import { calculateRunMetrics } from "@/lib/calculations";
 import { cn } from "@/lib/utils";
+import { formatNumber } from "@/lib/formatters";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -33,11 +34,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -87,8 +84,13 @@ const formSchema = z.object({
   shift: z.string().optional(),
   lineId: z.number({ error: "Production line is required" }).int().positive(),
   productId: z.number({ error: "Product is required" }).int().positive(),
-  actualOutput: z.number({ error: "Actual output is required" }).int().positive({ error: "Must be greater than 0" }),
-  totalHours: z.number({ error: "Total hours is required" }).positive({ error: "Must be greater than 0" }),
+  actualOutput: z
+    .number({ error: "Actual output is required" })
+    .int()
+    .positive({ error: "Must be greater than 0" }),
+  totalHours: z
+    .number({ error: "Total hours is required" })
+    .positive({ error: "Must be greater than 0" }),
   plannedStopHours: z.number().min(0),
 });
 
@@ -100,11 +102,7 @@ const NO_SHIFT = "__none__";
 
 // --- Component --------------------------------------------------------------
 
-export function ProductionForm({
-  products,
-  lines,
-  initialData,
-}: ProductionFormProps) {
+export function ProductionForm({ products, lines, initialData }: ProductionFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [productOpen, setProductOpen] = useState(false);
@@ -157,7 +155,7 @@ export function ProductionForm({
         toast.success(
           isEditing
             ? "Production run updated successfully."
-            : "Production run created successfully."
+            : "Production run created successfully.",
         );
         router.push("/production");
       } else {
@@ -184,13 +182,11 @@ export function ProductionForm({
                         variant="outline"
                         className={cn(
                           "w-full justify-start text-left font-normal",
-                          !field.value && "text-muted-foreground"
+                          !field.value && "text-muted-foreground",
                         )}
                       >
                         <CalendarIcon className="mr-2 size-4" />
-                        {field.value
-                          ? format(parseISO(field.value), "dd MMM yyyy")
-                          : "Pick a date"}
+                        {field.value ? format(parseISO(field.value), "dd MMM yyyy") : "Pick a date"}
                       </Button>
                     </FormControl>
                   </PopoverTrigger>
@@ -221,9 +217,7 @@ export function ProductionForm({
                 <FormLabel>Shift (optional)</FormLabel>
                 <Select
                   value={field.value ?? NO_SHIFT}
-                  onValueChange={(val) =>
-                    field.onChange(val === NO_SHIFT ? undefined : val)
-                  }
+                  onValueChange={(val) => field.onChange(val === NO_SHIFT ? undefined : val)}
                 >
                   <FormControl>
                     <SelectTrigger className="w-full">
@@ -287,14 +281,12 @@ export function ProductionForm({
                         aria-expanded={productOpen}
                         className={cn(
                           "w-full justify-between font-normal",
-                          !field.value && "text-muted-foreground"
+                          !field.value && "text-muted-foreground",
                         )}
                       >
                         {field.value
                           ? (() => {
-                              const product = products.find(
-                                (p) => p.id === field.value
-                              );
+                              const product = products.find((p) => p.id === field.value);
                               return product
                                 ? `${product.code} - ${product.name}`
                                 : "Select product";
@@ -322,21 +314,17 @@ export function ProductionForm({
                               <Check
                                 className={cn(
                                   "mr-2 size-4",
-                                  field.value === product.id
-                                    ? "opacity-100"
-                                    : "opacity-0"
+                                  field.value === product.id ? "opacity-100" : "opacity-0",
                                 )}
                               />
                               <div className="flex flex-col">
-                                <span className="font-medium">
-                                  {product.code}
-                                </span>
+                                <span className="font-medium">{product.code}</span>
                                 <span className="text-xs text-muted-foreground">
                                   {product.name}
                                 </span>
                               </div>
                               <span className="ml-auto text-xs text-muted-foreground">
-                                {product.nominalSpeed.toLocaleString()}/hr
+                                {formatNumber(product.nominalSpeed)}/hr
                               </span>
                             </CommandItem>
                           ))}
@@ -439,34 +427,27 @@ export function ProductionForm({
                 <div>
                   <span className="text-muted-foreground">Nominal Speed</span>
                   <p className="font-medium">
-                    {selectedProduct.nominalSpeed.toLocaleString()}{" "}
-                    {selectedProduct.unit ?? "pcs"}/hr
+                    {formatNumber(selectedProduct.nominalSpeed)} {selectedProduct.unit ?? "pcs"}/hr
                   </p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Unit</span>
-                  <p className="font-medium">
-                    {selectedProduct.unit ?? "pcs"}
-                  </p>
+                  <p className="font-medium">{selectedProduct.unit ?? "pcs"}</p>
                 </div>
                 {watchedTotalHours ? (
                   <div>
-                    <span className="text-muted-foreground">
-                      Planned Output
-                    </span>
+                    <span className="text-muted-foreground">Planned Output</span>
                     <p className="font-medium">
-                      {(
+                      {formatNumber(
                         selectedProduct.nominalSpeed *
-                        (watchedTotalHours - (watchedPlannedStopHours ?? 0))
-                      ).toLocaleString()}
+                          (watchedTotalHours - (watchedPlannedStopHours ?? 0)),
+                      )}
                     </p>
                   </div>
                 ) : null}
                 {previewMetrics ? (
                   <div>
-                    <span className="text-muted-foreground">
-                      Productivity
-                    </span>
+                    <span className="text-muted-foreground">Productivity</span>
                     <p
                       className={cn(
                         "font-medium",
@@ -474,10 +455,10 @@ export function ProductionForm({
                           ? "text-green-600"
                           : previewMetrics.productivity >= 0.8
                             ? "text-yellow-600"
-                            : "text-red-600"
+                            : "text-red-600",
                       )}
                     >
-                      {(previewMetrics.productivity * 100).toFixed(1)}%
+                      {formatNumber(previewMetrics.productivity * 100, 1)}%
                     </p>
                   </div>
                 ) : null}
@@ -492,11 +473,7 @@ export function ProductionForm({
             {isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
             {isEditing ? "Update Run" : "Create Run"}
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.push("/production")}
-          >
+          <Button type="button" variant="outline" onClick={() => router.push("/production")}>
             Cancel
           </Button>
         </div>

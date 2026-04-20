@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { format, startOfWeek, startOfMonth, endOfMonth, endOfWeek } from "date-fns";
-import { Download, Users, Clock, Coins } from "lucide-react";
+import { Download, Users, Clock, Coins, Pencil } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -17,12 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   useLaborReport,
   type LaborReportEmployeeRow,
@@ -31,6 +26,8 @@ import {
   type LaborReportEntry,
 } from "@/hooks/use-labor-report";
 import { useCompanyStore } from "@/stores/company-store";
+import { useWorkOrder } from "@/hooks/use-manufacturing";
+import { WoTabelDialog } from "@/components/manufacturing/work-orders/wo-tabel-dialog";
 import { formatCurrency, formatNumber, formatDate } from "@/lib/formatters";
 import { exportToExcel } from "@/lib/utils/export-excel";
 import type { CostingPeriod } from "@/types/costing";
@@ -61,15 +58,22 @@ function getPeriod(label: PeriodLabel): CostingPeriod {
   }
 }
 
+// Labor costs are always displayed in UZS (UI-only formatting — the
+// underlying amounts are already in сўм).
+const LABOR_CURRENCY_SYMBOL = "сўм";
+const LABOR_CURRENCY_ON_RIGHT = true;
+
 export default function LaborReportPage() {
   const t = useTranslations("laborReport");
-  const { company, currencySymbol, symbolOnRight } = useCompanyStore();
+  const { company } = useCompanyStore();
   const [periodLabel, setPeriodLabel] = useState<PeriodLabel>("month");
   const period = useMemo(() => getPeriod(periodLabel), [periodLabel]);
   const { data, isLoading } = useLaborReport(period, company);
   const [drilldownEmployee, setDrilldownEmployee] = useState<LaborReportEmployeeRow | null>(null);
+  const [editWoName, setEditWoName] = useState<string | null>(null);
+  const { data: editWorkOrder } = useWorkOrder(editWoName ?? "");
 
-  const fmt = (n: number) => formatCurrency(n, currencySymbol, symbolOnRight);
+  const fmt = (n: number) => formatCurrency(n, LABOR_CURRENCY_SYMBOL, LABOR_CURRENCY_ON_RIGHT);
 
   const kpi = data?.kpi ?? { totalHours: 0, totalCost: 0, activeWorkers: 0 };
   const byEmployee = data?.byEmployee ?? [];
@@ -221,10 +225,7 @@ export default function LaborReportPage() {
       </Tabs>
 
       {/* Drill-down drawer */}
-      <Sheet
-        open={!!drilldownEmployee}
-        onOpenChange={(o) => !o && setDrilldownEmployee(null)}
-      >
+      <Sheet open={!!drilldownEmployee} onOpenChange={(o) => !o && setDrilldownEmployee(null)}>
         <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle>
@@ -238,10 +239,21 @@ export default function LaborReportPage() {
               entries={entriesByEmployee[drilldownEmployee.employee] ?? []}
               fmt={fmt}
               t={t}
+              onEditEntry={(entry) => setEditWoName(entry.workOrder)}
             />
           )}
         </SheetContent>
       </Sheet>
+
+      {editWorkOrder && (
+        <WoTabelDialog
+          open={!!editWoName}
+          onOpenChange={(o) => {
+            if (!o) setEditWoName(null);
+          }}
+          workOrder={editWorkOrder}
+        />
+      )}
     </div>
   );
 }
@@ -461,10 +473,12 @@ function EmployeeEntries({
   entries,
   fmt,
   t,
+  onEditEntry,
 }: {
   entries: LaborReportEntry[];
   fmt: (n: number) => string;
   t: TranslatorFn;
+  onEditEntry: (entry: LaborReportEntry) => void;
 }) {
   if (entries.length === 0) {
     return <p className="mt-4 text-sm text-muted-foreground">{t("noData")}</p>;
@@ -489,16 +503,34 @@ function EmployeeEntries({
             <TableHead>{t("product")}</TableHead>
             <TableHead className="text-right">{t("hours")}</TableHead>
             <TableHead className="text-right">{t("laborCost")}</TableHead>
+            <TableHead className="w-[40px]" />
           </TableRow>
         </TableHeader>
         <TableBody>
           {entries.map((e) => (
-            <TableRow key={e.name}>
+            <TableRow
+              key={e.name}
+              className="cursor-pointer hover:bg-muted/50"
+              onClick={() => onEditEntry(e)}
+            >
               <TableCell className="text-xs">{formatDate(e.date)}</TableCell>
               <TableCell className="font-mono text-xs">{e.workOrder}</TableCell>
               <TableCell className="text-xs">{e.productName}</TableCell>
               <TableCell className="text-right tabular-nums">{e.hours.toFixed(1)}</TableCell>
               <TableCell className="text-right tabular-nums">{fmt(e.cost)}</TableCell>
+              <TableCell>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    onEditEntry(e);
+                  }}
+                >
+                  <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                </Button>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

@@ -132,7 +132,11 @@ export default function NewSalesInvoicePage() {
           posting_date: today,
           due_date: today,
           company,
-          items: [],
+          items: [
+            { doctype: "Sales Invoice Item", item_code: "", qty: 1, rate: 0, amount: 0 },
+            { doctype: "Sales Invoice Item", item_code: "", qty: 1, rate: 0, amount: 0 },
+            { doctype: "Sales Invoice Item", item_code: "", qty: 1, rate: 0, amount: 0 },
+          ],
           total: 0,
           grand_total: 0,
           status: "Draft",

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { readConfig, writeConfig, encryptPassword } from "@/lib/config-store";
+import {
+  readConfig,
+  writeConfig,
+  encryptPassword,
+  findTenantByReferralCode,
+} from "@/lib/config-store";
 import { registrationSchema } from "@/lib/schemas/admin-schemas";
 import { checkRegistrationRateLimit, recordRegistration } from "@/lib/registration-rate-limit";
 
@@ -33,7 +38,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { companyName, email, password, phone, country, currency } = result.data;
+  const { companyName, email, password, phone, country, currency, plan, referralCode } =
+    result.data;
   const normalizedEmail = email.toLowerCase().trim();
 
   const config = readConfig();
@@ -50,6 +56,16 @@ export async function POST(req: NextRequest) {
   // We can't check email in tenants directly since tenants don't store emails,
   // but we check active registrations above which link to tenants
 
+  // Validate referral code if provided
+  let validatedReferralCode: string | undefined;
+  if (referralCode?.trim()) {
+    const referrer = findTenantByReferralCode(referralCode.trim());
+    if (!referrer) {
+      return NextResponse.json({ error: "Неверный реферальный код" }, { status: 400 });
+    }
+    validatedReferralCode = referrer.referralCode;
+  }
+
   const now = new Date().toISOString();
   const registration = {
     id: crypto.randomUUID(),
@@ -59,6 +75,8 @@ export async function POST(req: NextRequest) {
     phone,
     country,
     currency,
+    plan,
+    referralCode: validatedReferralCode,
     status: "pending" as const,
     createdAt: now,
     updatedAt: now,

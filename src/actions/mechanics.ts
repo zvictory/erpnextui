@@ -27,7 +27,10 @@ export async function getMechanics() {
   } catch (error) {
     const perm = toActionError(error);
     if (perm) return perm;
-    return { success: false as const, error: error instanceof Error ? error.message : "Failed to fetch mechanics" };
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Failed to fetch mechanics",
+    };
   }
 }
 
@@ -49,7 +52,10 @@ export async function getMechanic(id: number) {
   } catch (error) {
     const perm = toActionError(error);
     if (perm) return perm;
-    return { success: false as const, error: error instanceof Error ? error.message : "Failed to fetch mechanic" };
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Failed to fetch mechanic",
+    };
   }
 }
 
@@ -81,7 +87,10 @@ export async function createMechanic(data: MechanicFormValues) {
   } catch (error) {
     const perm = toActionError(error);
     if (perm) return perm;
-    return { success: false as const, error: error instanceof Error ? error.message : "Failed to create mechanic" };
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Failed to create mechanic",
+    };
   }
 }
 
@@ -115,7 +124,10 @@ export async function updateMechanic(id: number, data: Partial<MechanicFormValue
   } catch (error) {
     const perm = toActionError(error);
     if (perm) return perm;
-    return { success: false as const, error: error instanceof Error ? error.message : "Failed to update mechanic" };
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Failed to update mechanic",
+    };
   }
 }
 
@@ -137,6 +149,9 @@ export async function deactivateMechanic(id: number) {
   } catch (error) {
     const perm = toActionError(error);
     if (perm) return perm;
-    return { success: false as const, error: error instanceof Error ? error.message : "Failed to deactivate mechanic" };
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Failed to deactivate mechanic",
+    };
   }
 }

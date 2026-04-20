@@ -182,7 +182,9 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
     isExchange && parsedAmount > 0 && parsedRate > 0
       ? String(
           roundTo2(
-            fromCurrency === companyCurrency ? parsedAmount / parsedRate : parsedAmount * parsedRate,
+            fromCurrency === companyCurrency
+              ? parsedAmount / parsedRate
+              : parsedAmount * parsedRate,
           ),
         )
       : "";

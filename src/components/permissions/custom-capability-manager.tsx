@@ -96,7 +96,8 @@ export function CustomCapabilityManager() {
         id: editTarget.id,
         module: editModule.trim(),
         labelKey: editLabelKey.trim(),
-        scopeDim: editScopeDim === "none" ? null : (editScopeDim as "line" | "warehouse" | "company"),
+        scopeDim:
+          editScopeDim === "none" ? null : (editScopeDim as "line" | "warehouse" | "company"),
       });
       toast.success(t("capEdited"));
       setEditTarget(null);
@@ -158,11 +159,7 @@ export function CustomCapabilityManager() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openEdit(cap)}
-                      >
+                      <Button size="sm" variant="outline" onClick={() => openEdit(cap)}>
                         {t("capEdit")}
                       </Button>
                       <Button

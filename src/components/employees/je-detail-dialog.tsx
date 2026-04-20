@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useReducer } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -58,30 +58,73 @@ export function JEDetailDialog({ open, onOpenChange, jeName }: JEDetailDialogPro
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   // Edit mode state
-  const [editing, setEditing] = useState(false);
-  const [editDate, setEditDate] = useState("");
-  const [editRemark, setEditRemark] = useState("");
-  const [editAccounts, setEditAccounts] = useState<JournalEntryAccount[]>([]);
+  type EditState = {
+    editing: boolean;
+    editDate: string;
+    editRemark: string;
+    editAccounts: JournalEntryAccount[];
+  };
+  type EditAction =
+    | { type: "INIT_EDIT"; je: NonNullable<typeof je> }
+    | { type: "ENTER_EDIT_MODE" }
+    | { type: "EXIT_EDIT_MODE" }
+    | { type: "SET_DATE"; value: string }
+    | { type: "SET_REMARK"; value: string }
+    | {
+        type: "UPDATE_ACCOUNT";
+        index: number;
+        field: "debit_in_account_currency" | "credit_in_account_currency";
+        value: number;
+      };
 
+  const [editState, dispatchEdit] = useReducer(
+    (state: EditState, action: EditAction): EditState => {
+      switch (action.type) {
+        case "INIT_EDIT":
+          return {
+            ...state,
+            editing: true,
+            editDate: action.je.posting_date,
+            editRemark: action.je.user_remark ?? "",
+            editAccounts: action.je.accounts.map((a) => ({ ...a })),
+          };
+        case "ENTER_EDIT_MODE":
+          return { ...state, editing: true };
+        case "EXIT_EDIT_MODE":
+          return { ...state, editing: false };
+        case "SET_DATE":
+          return { ...state, editDate: action.value };
+        case "SET_REMARK":
+          return { ...state, editRemark: action.value };
+        case "UPDATE_ACCOUNT":
+          return {
+            ...state,
+            editAccounts: state.editAccounts.map((acc, i) =>
+              i === action.index ? { ...acc, [action.field]: action.value } : acc,
+            ),
+          };
+        default:
+          return state;
+      }
+    },
+    { editing: false, editDate: "", editRemark: "", editAccounts: [] },
+  );
+
+  const { editing, editDate, editRemark, editAccounts } = editState;
+  const setEditing = (v: boolean) =>
+    dispatchEdit(v ? { type: "ENTER_EDIT_MODE" } : { type: "EXIT_EDIT_MODE" });
+  const setEditDate = (v: string) => dispatchEdit({ type: "SET_DATE", value: v });
+  const setEditRemark = (v: string) => dispatchEdit({ type: "SET_REMARK", value: v });
   const isDraft = je?.docstatus === 0;
   const isSubmitted = je?.docstatus === 1;
   const isCancelled = je?.docstatus === 2;
 
-  // Initialize edit state when JE loads or edit mode activates
+  // Initialize edit state when JE loads or auto-enter edit mode for drafts (single dispatch)
   useEffect(() => {
-    if (je && editing) {
-      setEditDate(je.posting_date);
-      setEditRemark(je.user_remark ?? "");
-      setEditAccounts(je.accounts.map((a) => ({ ...a })));
+    if (je && (editing || isDraft) && open) {
+      dispatchEdit({ type: "INIT_EDIT", je });
     }
-  }, [je, editing]);
-
-  // Auto-enter edit mode for drafts
-  useEffect(() => {
-    if (je && isDraft && open) {
-      setEditing(true);
-    }
-  }, [je, isDraft, open]);
+  }, [je, isDraft, open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const resetState = () => {
     setConfirmingCancel(false);
@@ -215,9 +258,7 @@ export function JEDetailDialog({ open, onOpenChange, jeName }: JEDetailDialogPro
     field: "debit_in_account_currency" | "credit_in_account_currency",
     value: number,
   ) => {
-    setEditAccounts((prev) =>
-      prev.map((acc, i) => (i === index ? { ...acc, [field]: value } : acc)),
-    );
+    dispatchEdit({ type: "UPDATE_ACCOUNT", index, field, value });
   };
 
   const isPending =

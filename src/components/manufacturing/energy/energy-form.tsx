@@ -23,22 +23,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 // --- Form schema ------------------------------------------------------------
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
-  electricityKwh: z
-    .number({ error: "Electricity kWh is required" })
-    .min(0, "Must be 0 or greater"),
-  gasM3: z
-    .number({ error: "Gas m³ is required" })
-    .min(0, "Must be 0 or greater"),
+  electricityKwh: z.number({ error: "Electricity kWh is required" }).min(0, "Must be 0 or greater"),
+  gasM3: z.number({ error: "Gas m³ is required" }).min(0, "Must be 0 or greater"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -102,22 +94,18 @@ export function EnergyForm({ onSuccess }: EnergyFormProps) {
                         variant="outline"
                         className={cn(
                           "w-full justify-start text-left font-normal",
-                          !field.value && "text-muted-foreground"
+                          !field.value && "text-muted-foreground",
                         )}
                       >
                         <CalendarIcon className="mr-2 size-4" />
-                        {field.value
-                          ? format(parseISO(field.value), "dd MMM yyyy")
-                          : "Pick a date"}
+                        {field.value ? format(parseISO(field.value), "dd MMM yyyy") : "Pick a date"}
                       </Button>
                     </FormControl>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={
-                        field.value ? parseISO(field.value) : undefined
-                      }
+                      selected={field.value ? parseISO(field.value) : undefined}
                       onSelect={(date) => {
                         if (date) {
                           field.onChange(format(date, "yyyy-MM-dd"));

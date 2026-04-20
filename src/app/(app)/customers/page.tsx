@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -14,7 +14,6 @@ import { useListState } from "@/hooks/use-list-state";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useCompanyStore } from "@/stores/company-store";
 import type { CustomerWithBalance } from "@/types/customer";
-import type { CurrencyBalance } from "@/types/party-report";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(
@@ -43,22 +42,9 @@ export default function CustomersPage() {
 
   const { balanceMap, isLoading: balancesLoading } = useReceivableBalances(company);
 
-  // Corrected balances from ledger PE fixes — overrides sidebar GL-based balances
-  const [correctedBalances, setCorrectedBalances] = useState<Map<string, CurrencyBalance[]>>(
-    new Map(),
-  );
-
   const customersWithBalance = useMemo<CustomerWithBalance[]>(
     () =>
       customers.map((c) => {
-        const corrected = correctedBalances.get(c.name);
-        if (corrected) {
-          return {
-            ...c,
-            outstanding_balance: corrected.reduce((s, b) => s + b.amount, 0),
-            currency_balances: corrected,
-          };
-        }
         const pb = balanceMap.get(c.name);
         return {
           ...c,
@@ -66,7 +52,7 @@ export default function CustomersPage() {
           currency_balances: pb?.balances ?? [],
         };
       }),
-    [customers, balanceMap, correctedBalances],
+    [customers, balanceMap],
   );
 
   const { canCreate } = usePermissions();
@@ -83,18 +69,6 @@ export default function CustomersPage() {
   // Derive effective selection — auto-pick first item if nothing is selected yet
   const effectiveSelectedParty =
     selectedParty ?? (customersWithBalance.length > 0 ? customersWithBalance[0] : null);
-
-  const handleBalanceUpdate = useCallback(
-    (balances: CurrencyBalance[]) => {
-      if (!effectiveSelectedParty) return;
-      setCorrectedBalances((prev) => {
-        const next = new Map(prev);
-        next.set(effectiveSelectedParty.name, balances);
-        return next;
-      });
-    },
-    [effectiveSelectedParty],
-  );
 
   const handleSelect = (party: CustomerWithBalance) => {
     setSelectedParty(party);
@@ -176,7 +150,6 @@ export default function CustomersPage() {
               className="w-full"
               onEdit={handleEdit}
               onDelete={handleDelete}
-              onBalanceUpdate={handleBalanceUpdate}
             />
           ) : (
             <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">

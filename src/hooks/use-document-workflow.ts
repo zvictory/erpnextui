@@ -95,13 +95,10 @@ export function useApplyWorkflow(invalidateKeys?: string[][]) {
       docname: string;
       action: string;
     }) => {
-      return frappe.call<Record<string, unknown>>(
-        "frappe.model.workflow.apply_workflow",
-        {
-          doc: JSON.stringify({ doctype, name: docname }),
-          action,
-        },
-      );
+      return frappe.call<Record<string, unknown>>("frappe.model.workflow.apply_workflow", {
+        doc: JSON.stringify({ doctype, name: docname }),
+        action,
+      });
     },
     onSuccess: () => {
       // Always invalidate workflow transitions

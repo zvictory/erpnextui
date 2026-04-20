@@ -188,7 +188,10 @@ export async function completePreventiveTask(id: number) {
 
     revalidatePath("/maintenance/schedule");
 
-    return { success: true as const, data: { lastPerformed: todayStr, nextDue: format(nextDue, "yyyy-MM-dd") } };
+    return {
+      success: true as const,
+      data: { lastPerformed: todayStr, nextDue: format(nextDue, "yyyy-MM-dd") },
+    };
   } catch (error) {
     const perm = toActionError(error);
     if (perm) return perm;

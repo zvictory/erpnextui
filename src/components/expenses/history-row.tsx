@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { Send, Pencil, Trash2, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn, formatCurrency } from "@/lib/utils";
-import { formatDate } from "@/lib/formatters";
-import { useAuthStore } from "@/stores/auth-store";
+import { formatDate, formatNumber } from "@/lib/formatters";
+import { useJournalEntry } from "@/hooks/use-journal-entries";
 import type { JournalEntryListItem } from "@/types/journal-entry";
 
 interface HistoryRowProps {
@@ -44,13 +46,21 @@ export function HistoryRow({
   onDelete,
   disabled,
 }: HistoryRowProps) {
-  const siteUrl = useAuthStore((s) => s.siteUrl);
   const status = STATUS_CONFIG[entry.docstatus];
+  const [expanded, setExpanded] = useState(false);
+  const { data: jeDoc, isLoading: jeLoading } = useJournalEntry(expanded ? entry.name : "");
 
   return (
     <div
+      onClick={() => {
+        if (onEdit) {
+          onEdit(entry.name);
+        } else {
+          setExpanded(!expanded);
+        }
+      }}
       className={cn(
-        "group relative rounded-lg border-l-2 bg-card px-3 py-2.5 transition-colors hover:bg-muted/40 cursor-default",
+        "group relative rounded-lg border-l-2 bg-card px-3 py-2.5 transition-colors hover:bg-muted/40 cursor-pointer",
         entry.docstatus === 0 && "border-l-amber-400",
         entry.docstatus === 1 && "border-l-blue-500",
         entry.docstatus === 2 && "border-l-muted-foreground/30",
@@ -68,9 +78,7 @@ export function HistoryRow({
         <span className="shrink-0">{formatDate(entry.posting_date)}</span>
         <span className="opacity-40 shrink-0">·</span>
         <a
-          href={`${siteUrl}/app/journal-entry/${entry.name}`}
-          target="_blank"
-          rel="noopener noreferrer"
+          href={`/ledger/${encodeURIComponent(entry.name)}`}
           className="min-w-0 truncate text-primary/70 hover:text-primary hover:underline underline-offset-2"
           onClick={(e) => e.stopPropagation()}
         >
@@ -87,6 +95,41 @@ export function HistoryRow({
       {/* Row 3: Remark (if any) */}
       {entry.user_remark && (
         <p className="mt-0.5 text-[11px] text-muted-foreground/70 truncate">{entry.user_remark}</p>
+      )}
+
+      {/* Expanded account details */}
+      {expanded && (
+        <div className="mt-2 space-y-1 border-t pt-2" onClick={(e) => e.stopPropagation()}>
+          {jeLoading ? (
+            <div className="space-y-1">
+              <Skeleton className="h-3.5 w-full" />
+              <Skeleton className="h-3.5 w-3/4" />
+            </div>
+          ) : jeDoc?.accounts?.length ? (
+            jeDoc.accounts.map((acc, i) => (
+              <div key={i} className="flex items-center justify-between text-[11px]">
+                <span className="text-muted-foreground truncate mr-2">
+                  {(acc as unknown as Record<string, string>).account_name ||
+                    (acc.account ?? "").replace(/ - [A-Z]$/, "")}
+                </span>
+                <span className="tabular-nums shrink-0">
+                  {(acc.debit_in_account_currency ?? 0) > 0 && (
+                    <span className="text-red-600">
+                      {formatNumber(acc.debit_in_account_currency ?? 0)} Dr
+                    </span>
+                  )}
+                  {(acc.credit_in_account_currency ?? 0) > 0 && (
+                    <span className="text-green-600">
+                      {formatNumber(acc.credit_in_account_currency ?? 0)} Cr
+                    </span>
+                  )}
+                </span>
+              </div>
+            ))
+          ) : (
+            <p className="text-[11px] text-muted-foreground">No accounts</p>
+          )}
+        </div>
       )}
 
       {/* Actions — revealed on hover, keyboard accessible */}

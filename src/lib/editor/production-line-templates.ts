@@ -4,7 +4,8 @@ export const LINE_TEMPLATES: ProductionLineTemplate[] = [
   {
     id: "classic_cup",
     name: "Klassik muzqaymoq (stakan)",
-    description: "Sut → Smes → Pasterizatsiya → Yetilish → Muzlatish → To'ldirish → Qotirish → Qadoqlash",
+    description:
+      "Sut → Smes → Pasterizatsiya → Yetilish → Muzlatish → To'ldirish → Qotirish → Qadoqlash",
     stages: [
       { subtype: "raw_warehouse", label: "Xom ashyo" },
       { subtype: "reception_tank", label: "Sut qabuli" },

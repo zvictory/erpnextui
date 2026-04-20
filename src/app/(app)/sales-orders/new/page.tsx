@@ -65,7 +65,11 @@ export default function NewSalesOrderPage() {
           transaction_date: new Date().toISOString().slice(0, 10),
           delivery_date: new Date().toISOString().slice(0, 10),
           company,
-          items: [],
+          items: [
+            { doctype: "Sales Order Item", item_code: "", qty: 1, rate: 0, amount: 0 },
+            { doctype: "Sales Order Item", item_code: "", qty: 1, rate: 0, amount: 0 },
+            { doctype: "Sales Order Item", item_code: "", qty: 1, rate: 0, amount: 0 },
+          ],
           total: 0,
           grand_total: 0,
           status: "Draft",

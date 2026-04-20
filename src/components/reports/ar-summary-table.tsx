@@ -42,14 +42,19 @@ interface ARSummaryTableProps {
 export function ARSummaryTable({ rows }: ARSummaryTableProps) {
   const t = useTranslations("ar");
   const { data: currencyMap } = useCurrencyMap();
-  const [sorting, setSorting] = useState<SortingState>([
-    { id: "total_outstanding", desc: true },
-  ]);
+  const [sorting, setSorting] = useState<SortingState>([{ id: "total_outstanding", desc: true }]);
 
   const footerTotals = useMemo(() => {
     const totals = new Map<
       string,
-      { current: number; "1-30": number; "31-60": number; "61-90": number; "90+": number; total: number }
+      {
+        current: number;
+        "1-30": number;
+        "31-60": number;
+        "61-90": number;
+        "90+": number;
+        total: number;
+      }
     >();
     for (const row of rows) {
       const currency = row.currency ?? "—";
@@ -99,9 +104,7 @@ export function ARSummaryTable({ rows }: ARSummaryTableProps) {
       ...BUCKET_KEYS.map(
         (bucket): ColumnDef<AgingRow, unknown> => ({
           accessorKey: bucket,
-          header: () => (
-            <span className="block text-right">{t(BUCKET_LABEL_KEYS[bucket])}</span>
-          ),
+          header: () => <span className="block text-right">{t(BUCKET_LABEL_KEYS[bucket])}</span>,
           cell: ({ row }) => {
             const val = row.original[bucket] as number;
             return (

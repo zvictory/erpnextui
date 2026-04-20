@@ -4,14 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import { format } from "date-fns";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import {
-  RefreshCw,
-  Download,
-  CalendarIcon,
-  Search,
-  Users,
-  ArrowUpDown,
-} from "lucide-react";
+import { RefreshCw, Download, CalendarIcon, Search, Users, ArrowUpDown } from "lucide-react";
 import {
   type ColumnDef,
   type SortingState,
@@ -61,9 +54,7 @@ export default function CustomerBalanceSummaryPage() {
   const [asOfDate, setAsOfDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [currency, setCurrency] = useState("");
   const [search, setSearch] = useState("");
-  const [sorting, setSorting] = useState<SortingState>([
-    { id: "total_outstanding", desc: true },
-  ]);
+  const [sorting, setSorting] = useState<SortingState>([{ id: "total_outstanding", desc: true }]);
 
   const { data, isLoading, isRefetching, refetch } = useAgingReport(
     company,
@@ -90,9 +81,7 @@ export default function CustomerBalanceSummaryPage() {
     if (search) {
       const q = search.toLowerCase();
       rows = rows.filter(
-        (r) =>
-          r.party_name.toLowerCase().includes(q) ||
-          r.party.toLowerCase().includes(q),
+        (r) => r.party_name.toLowerCase().includes(q) || r.party.toLowerCase().includes(q),
       );
     }
     return rows;
@@ -123,9 +112,7 @@ export default function CustomerBalanceSummaryPage() {
         id: "index",
         header: "#",
         cell: ({ row }) => (
-          <span className="text-muted-foreground tabular-nums">
-            {row.index + 1}
-          </span>
+          <span className="text-muted-foreground tabular-nums">{row.index + 1}</span>
         ),
         size: 50,
         enableSorting: false,
@@ -144,10 +131,7 @@ export default function CustomerBalanceSummaryPage() {
           </Button>
         ),
         cell: ({ row }) => (
-          <Link
-            href={`/customers`}
-            className="font-medium hover:underline"
-          >
+          <Link href={`/customers`} className="font-medium hover:underline">
             {row.original.party_name}
           </Link>
         ),
@@ -156,9 +140,7 @@ export default function CustomerBalanceSummaryPage() {
         accessorKey: "currency",
         header: t("currency"),
         cell: ({ row }) => (
-          <span className="text-muted-foreground text-xs">
-            {row.original.currency}
-          </span>
+          <span className="text-muted-foreground text-xs">{row.original.currency}</span>
         ),
         size: 80,
       },
@@ -253,9 +235,7 @@ export default function CustomerBalanceSummaryPage() {
             onClick={() => refetch()}
             disabled={isRefetching}
           >
-            <RefreshCw
-              className={`size-4 ${isRefetching ? "animate-spin" : ""}`}
-            />
+            <RefreshCw className={`size-4 ${isRefetching ? "animate-spin" : ""}`} />
           </Button>
         </div>
       </div>
@@ -325,30 +305,24 @@ export default function CustomerBalanceSummaryPage() {
         </div>
       ) : currencyBreakdown.size > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from(currencyBreakdown.entries()).map(
-            ([cur, { total, count }]) => {
-              const info = currencyMap?.get(cur);
-              return (
-                <Card key={cur}>
-                  <CardContent className="pt-4 pb-4">
-                    <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-                      {cur} {t("totalOutstanding")}
-                    </p>
-                    <p className="mt-1 text-2xl font-bold tabular-nums">
-                      {formatCurrency(
-                        total,
-                        info?.symbol ?? cur,
-                        info?.onRight,
-                      )}
-                    </p>
-                    <p className="text-muted-foreground mt-1 text-xs">
-                      {t("customersCount", { count })}
-                    </p>
-                  </CardContent>
-                </Card>
-              );
-            },
-          )}
+          {Array.from(currencyBreakdown.entries()).map(([cur, { total, count }]) => {
+            const info = currencyMap?.get(cur);
+            return (
+              <Card key={cur}>
+                <CardContent className="pt-4 pb-4">
+                  <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                    {cur} {t("totalOutstanding")}
+                  </p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums">
+                    {formatCurrency(total, info?.symbol ?? cur, info?.onRight)}
+                  </p>
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    {t("customersCount", { count })}
+                  </p>
+                </CardContent>
+              </Card>
+            );
+          })}
           <Card>
             <CardContent className="flex items-center gap-3 pt-4 pb-4">
               <div className="bg-muted flex size-10 items-center justify-center rounded-full">
@@ -374,17 +348,12 @@ export default function CustomerBalanceSummaryPage() {
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
-                  const meta = header.column.columnDef.meta as
-                    | { className?: string }
-                    | undefined;
+                  const meta = header.column.columnDef.meta as { className?: string } | undefined;
                   return (
                     <TableHead key={header.id} className={meta?.className}>
                       {header.isPlaceholder
                         ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
+                        : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   );
                 })}
@@ -407,15 +376,10 @@ export default function CustomerBalanceSummaryPage() {
                 {table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id}>
                     {row.getVisibleCells().map((cell) => {
-                      const meta = cell.column.columnDef.meta as
-                        | { className?: string }
-                        | undefined;
+                      const meta = cell.column.columnDef.meta as { className?: string } | undefined;
                       return (
                         <TableCell key={cell.id} className={meta?.className}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </TableCell>
                       );
                     })}
@@ -423,27 +387,21 @@ export default function CustomerBalanceSummaryPage() {
                 ))}
 
                 {/* Footer totals per currency */}
-                {Array.from(currencyBreakdown.entries()).map(
-                  ([cur, { total }]) => {
-                    const info = currencyMap?.get(cur);
-                    return (
-                      <TableRow key={`total-${cur}`} className="font-semibold">
-                        <TableCell />
-                        <TableCell>
-                          {t("total")} ({cur})
-                        </TableCell>
-                        <TableCell />
-                        <TableCell className="text-right tabular-nums">
-                          {formatCurrency(
-                            total,
-                            info?.symbol ?? cur,
-                            info?.onRight,
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  },
-                )}
+                {Array.from(currencyBreakdown.entries()).map(([cur, { total }]) => {
+                  const info = currencyMap?.get(cur);
+                  return (
+                    <TableRow key={`total-${cur}`} className="font-semibold">
+                      <TableCell />
+                      <TableCell>
+                        {t("total")} ({cur})
+                      </TableCell>
+                      <TableCell />
+                      <TableCell className="text-right tabular-nums">
+                        {formatCurrency(total, info?.symbol ?? cur, info?.onRight)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </>
             ) : (
               <TableRow>

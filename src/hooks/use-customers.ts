@@ -11,8 +11,19 @@ export function useCustomerList(page: number, search: string, sort: string) {
     queryKey: queryKeys.customers.list(page, search, sort),
     queryFn: () =>
       frappe.getList<CustomerListItem>("Customer", {
-        filters: search ? [["customer_name", "like", `%${search}%`]] : [],
-        fields: ["name", "customer_name", "customer_type", "customer_group", "territory", "default_currency"],
+        filters: [
+          ["disabled", "=", 0],
+          ...(search ? [["customer_name", "like", `%${search}%`]] : []),
+        ],
+        fields: [
+          "name",
+          "customer_name",
+          "customer_type",
+          "customer_group",
+          "territory",
+          "default_currency",
+          "disabled",
+        ],
         orderBy: sort || "customer_name asc",
         limitPageLength: PAGE_SIZE,
         limitStart: (page - 1) * PAGE_SIZE,
@@ -24,7 +35,10 @@ export function useCustomerCount(search: string) {
   return useQuery({
     queryKey: queryKeys.customers.count(search),
     queryFn: () =>
-      frappe.getCount("Customer", search ? [["customer_name", "like", `%${search}%`]] : []),
+      frappe.getCount("Customer", [
+        ["disabled", "=", 0],
+        ...(search ? [["customer_name", "like", `%${search}%`]] : []),
+      ]),
   });
 }
 

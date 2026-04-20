@@ -91,7 +91,15 @@ export default function ProductsPage() {
     setIsExporting(true);
     try {
       const allItems = await frappe.getList<ItemListItem>("Item", {
-        fields: ["name", "item_code", "item_name", "item_group", "standard_rate", "has_serial_no", "disabled"],
+        fields: [
+          "name",
+          "item_code",
+          "item_name",
+          "item_group",
+          "standard_rate",
+          "has_serial_no",
+          "disabled",
+        ],
         orderBy: listState.sort || "item_code asc",
         limitPageLength: 0,
       });
@@ -104,12 +112,7 @@ export default function ProductsPage() {
       for (const b of bins) {
         allStock.set(b.item_code, (allStock.get(b.item_code) ?? 0) + b.actual_qty);
       }
-      exportToExcel(
-        buildExportRows(allItems, allStock),
-        exportColumns,
-        "Products-All",
-        "Products",
-      );
+      exportToExcel(buildExportRows(allItems, allStock), exportColumns, "Products-All", "Products");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Export failed");
     } finally {

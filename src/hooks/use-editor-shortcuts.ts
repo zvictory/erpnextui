@@ -1,10 +1,6 @@
 import { useEffect } from "react";
 import { useEditorStore } from "@/stores/editor-store";
-import {
-  serializeLayout,
-  saveToLocalStorage,
-  downloadJson,
-} from "@/lib/editor/layout-serializer";
+import { serializeLayout, saveToLocalStorage } from "@/lib/editor/layout-serializer";
 import { toast } from "sonner";
 
 export function useEditorShortcuts() {
@@ -20,13 +16,22 @@ export function useEditorShortcuts() {
 
       switch (e.key.toLowerCase()) {
         case "v":
-          if (!ctrl) { store.setTool("select"); e.preventDefault(); }
+          if (!ctrl) {
+            store.setTool("select");
+            e.preventDefault();
+          }
           break;
         case "g":
-          if (!ctrl) { store.setTool("move"); e.preventDefault(); }
+          if (!ctrl) {
+            store.setTool("move");
+            e.preventDefault();
+          }
           break;
         case "r":
-          if (!ctrl) { store.setTool("rotate"); e.preventDefault(); }
+          if (!ctrl) {
+            store.setTool("rotate");
+            e.preventDefault();
+          }
           break;
         case "s":
           if (ctrl) {
@@ -41,7 +46,10 @@ export function useEditorShortcuts() {
           }
           break;
         case "p":
-          if (!ctrl) { store.setTool("pipe"); e.preventDefault(); }
+          if (!ctrl) {
+            store.setTool("pipe");
+            e.preventDefault();
+          }
           break;
         case "delete":
         case "backspace":
@@ -92,7 +100,10 @@ export function useEditorShortcuts() {
           }
           break;
         case "c":
-          if (ctrl) { store.copySelected(); e.preventDefault(); }
+          if (ctrl) {
+            store.copySelected();
+            e.preventDefault();
+          }
           break;
         case "x":
           if (ctrl) {

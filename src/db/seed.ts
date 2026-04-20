@@ -1,6 +1,5 @@
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { eq } from "drizzle-orm";
 import * as schema from "./schema";
 import path from "path";
 import fs from "fs";
@@ -247,9 +246,7 @@ async function seed() {
       continue;
     }
     if (!productId) {
-      console.warn(
-        `  WARNING: Product not found: "${run.product_code}" — skipping run.`
-      );
+      console.warn(`  WARNING: Product not found: "${run.product_code}" — skipping run.`);
       skippedRuns++;
       continue;
     }

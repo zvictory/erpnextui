@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { DocstatusBadge } from "@/components/shared/docstatus-badge";
-import { useAuthStore } from "@/stores/auth-store";
 import { formatDate, formatCurrency } from "@/lib/formatters";
 import {
   useCancelSalaryAccrual,
@@ -40,7 +39,6 @@ export function SalaryAccrualHistory({
 }: SalaryAccrualHistoryProps) {
   const t = useTranslations("employees");
   const tCommon = useTranslations("common");
-  const siteUrl = useAuthStore((s) => s.siteUrl);
 
   const cancelMutation = useCancelSalaryAccrual();
   const deleteMutation = useDeleteSalaryAccrual();
@@ -160,9 +158,7 @@ export function SalaryAccrualHistory({
               <span className="shrink-0">{formatDate(je.posting_date)}</span>
               <span className="opacity-40 shrink-0">·</span>
               <a
-                href={`${siteUrl}/app/journal-entry/${je.name}`}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={`/ledger/${encodeURIComponent(je.name)}`}
                 className="min-w-0 truncate text-primary/70 hover:text-primary hover:underline underline-offset-2"
                 onClick={(e) => e.stopPropagation()}
               >

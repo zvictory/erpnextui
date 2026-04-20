@@ -2,10 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useForm, FormProvider, Controller } from "react-hook-form";
+import { useForm, useWatch, FormProvider, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { RotateCcw } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/shared/date-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -20,6 +19,9 @@ import {
 } from "@/lib/schemas/purchase-invoice-schema";
 import type { PurchaseInvoice } from "@/types/purchase-invoice";
 import type { TaxRow } from "@/types/tax";
+import { useCompanyStore } from "@/stores/company-store";
+import { useCurrencyMap } from "@/hooks/use-accounts";
+import { useSupplier } from "@/hooks/use-suppliers";
 
 function getToday(): string {
   const d = new Date();
@@ -62,6 +64,11 @@ export function PurchaseInvoiceForm({
   const t = useTranslations("invoices");
   const docstatus = defaultValues?.docstatus ?? 0;
   const isReadOnly = docstatus > 0;
+
+  const { currencySymbol: companyCurrencySymbol, symbolOnRight: companySymbolOnRight } =
+    useCompanyStore();
+  const { data: currencyMap } = useCurrencyMap();
+
   const [taxTemplate, setTaxTemplate] = useState(
     ((defaultValues as unknown as Record<string, unknown>)?.taxes_and_charges as string) ?? "",
   );
@@ -91,7 +98,6 @@ export function PurchaseInvoiceForm({
   });
 
   const {
-    register,
     handleSubmit,
     setValue,
     watch,
@@ -99,7 +105,20 @@ export function PurchaseInvoiceForm({
   } = form;
 
   const postingDate = watch("posting_date");
-  const items = watch("items");
+  const watchedSupplier = watch("supplier");
+  // useWatch triggers re-render on deep field changes (unlike watch)
+  const items = useWatch({ control: form.control, name: "items" });
+
+  // Resolve currency from supplier or invoice
+  const { data: supplierDoc } = useSupplier(watchedSupplier);
+  const effectiveCurrency =
+    docstatus > 0
+      ? defaultValues?.currency || supplierDoc?.default_currency
+      : supplierDoc?.default_currency || defaultValues?.currency;
+  const currInfo =
+    typeof effectiveCurrency === "string" ? currencyMap?.get(effectiveCurrency) : undefined;
+  const currencySymbol = currInfo?.symbol ?? companyCurrencySymbol;
+  const symbolOnRight = currInfo?.onRight ?? companySymbolOnRight;
 
   const subtotal = useMemo(() => {
     return items.reduce((sum, item) => sum + (item.amount || 0), 0);
@@ -147,6 +166,8 @@ export function PurchaseInvoiceForm({
               value={watch("supplier")}
               onChange={(v) => setValue("supplier", v, { shouldValidate: true })}
               disabled={isReadOnly}
+              descriptionField="supplier_name"
+              displayValue={supplierDoc?.supplier_name}
             />
             {errors.supplier && (
               <p className="text-sm text-destructive">{errors.supplier.message}</p>
@@ -177,7 +198,12 @@ export function PurchaseInvoiceForm({
 
         <Separator />
 
-        <InvoiceItemsEditor disabled={isReadOnly} allowServiceLines />
+        <InvoiceItemsEditor
+          disabled={isReadOnly}
+          allowServiceLines
+          currencySymbol={currencySymbol}
+          symbolOnRight={symbolOnRight}
+        />
 
         {errors.items && (
           <p className="text-sm text-destructive">

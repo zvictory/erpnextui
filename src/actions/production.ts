@@ -41,13 +41,10 @@ export async function getProductionRuns(filters?: ProductionRunFilters) {
 
     // Enforce line-scope filter unless user has wildcard or is superuser.
     const allowedLines = ctx.allowedScopes.line;
-    const hasWildcardLine =
-      ctx.isSuperuser || !allowedLines || allowedLines.has(SCOPE_WILDCARD);
+    const hasWildcardLine = ctx.isSuperuser || !allowedLines || allowedLines.has(SCOPE_WILDCARD);
 
     if (!hasWildcardLine) {
-      const allowedLineIds = [...allowedLines]
-        .map(Number)
-        .filter((n) => !Number.isNaN(n));
+      const allowedLineIds = [...allowedLines].map(Number).filter((n) => !Number.isNaN(n));
       if (allowedLineIds.length === 0) {
         return { success: true as const, data: [] };
       }
@@ -140,8 +137,7 @@ export async function getProductionRun(id: number) {
 
     // Verify the row's lineId is in the caller's allowed scope.
     const allowedLines = ctx.allowedScopes.line;
-    const hasWildcardLine =
-      ctx.isSuperuser || !allowedLines || allowedLines.has(SCOPE_WILDCARD);
+    const hasWildcardLine = ctx.isSuperuser || !allowedLines || allowedLines.has(SCOPE_WILDCARD);
     if (!hasWildcardLine && !allowedLines.has(String(row.lineId))) {
       return { success: false as const, error: "Production run not found" };
     }

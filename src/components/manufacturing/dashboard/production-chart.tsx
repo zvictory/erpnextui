@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  BarChart,
-  Bar,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-} from "recharts";
+import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -15,6 +8,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { formatNumber } from "@/lib/formatters";
 
 const BAR_COLORS = [
   "#10b981", // emerald
@@ -91,7 +85,7 @@ export function ProductionChart({ data }: ProductionChartProps) {
               type="number"
               tickLine={false}
               axisLine={false}
-              tickFormatter={(value: number) => value.toLocaleString()}
+              tickFormatter={(value: number) => formatNumber(value)}
             />
             <YAxis
               type="category"
@@ -105,17 +99,10 @@ export function ProductionChart({ data }: ProductionChartProps) {
             />
             <ChartTooltip
               content={
-                <ChartTooltipContent
-                  formatter={(value) =>
-                    `${Number(value).toLocaleString()} pcs`
-                  }
-                />
+                <ChartTooltipContent formatter={(value) => `${formatNumber(Number(value))} pcs`} />
               }
             />
-            <Bar
-              dataKey="totalOutput"
-              radius={[0, 4, 4, 0]}
-            >
+            <Bar dataKey="totalOutput" radius={[0, 4, 4, 0]}>
               {chartData.map((_, i) => (
                 <Cell key={i} fill={`url(#barGrad${i})`} />
               ))}

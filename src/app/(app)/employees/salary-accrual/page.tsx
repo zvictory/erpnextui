@@ -62,7 +62,6 @@ export default function SalaryAccrualPage() {
   const companyDefaultCurrency = companyDoc?.default_currency ?? companyCurrency;
   const companyInfo = currencyMap?.get(companyDefaultCurrency);
   const companySymbol = companyInfo?.symbol ?? companyDefaultCurrency;
-  const companySymbolOnRight = companyInfo?.onRight ?? false;
 
   const cs = useUISettingsStore((s) => s.getCompanySettings(company));
   const updateSetting = useUISettingsStore((s) => s.updateCompanySetting);
@@ -89,7 +88,8 @@ export default function SalaryAccrualPage() {
   }, [defaultExpenseAccount, overriddenEmployees]);
 
   // Use defaultExpenseAccount for currency detection (or first non-empty)
-  const expenseAccountForCurrency = defaultExpenseAccount || [...expenseAccounts.values()].find(Boolean) || "";
+  const expenseAccountForCurrency =
+    defaultExpenseAccount || [...expenseAccounts.values()].find(Boolean) || "";
   const { data: expenseAccountDoc } = useAccountDetail(expenseAccountForCurrency);
   const { data: payableAccountDoc } = useAccountDetail(salaryPayableAccount);
 
@@ -192,7 +192,7 @@ export default function SalaryAccrualPage() {
       setExpenseAccounts(newExpAccts);
       setOverriddenEmployees(new Set());
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employees, month]);
 
   // Client-side filtered employees

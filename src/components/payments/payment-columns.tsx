@@ -85,10 +85,15 @@ export function getPaymentColumns(
       className: "text-right",
       sortKey: "paid_amount",
       render: (row) => {
-        const currency = row.payment_type === "Receive"
-          ? row.paid_to_account_currency
-          : row.paid_from_account_currency;
-        return formatInvoiceCurrency(row.paid_amount ?? 0, currency ?? "", currencyMap?.get(currency ?? ""));
+        const currency =
+          row.payment_type === "Receive"
+            ? row.paid_to_account_currency
+            : row.paid_from_account_currency;
+        return formatInvoiceCurrency(
+          row.paid_amount ?? 0,
+          currency ?? "",
+          currencyMap?.get(currency ?? ""),
+        );
       },
     },
     {

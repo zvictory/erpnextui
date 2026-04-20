@@ -113,10 +113,8 @@ export function useCreateAndSubmitJournalEntry() {
         ...(chequeDate ? { cheque_date: chequeDate } : {}),
       });
 
-      const fullDoc = await frappe.getDoc<JournalEntry>("Journal Entry", created.name);
-
       try {
-        await frappe.submit<JournalEntry>(fullDoc as unknown as Record<string, unknown>);
+        await frappe.submitWithRetry<JournalEntry>("Journal Entry", created.name);
         return { name: created.name, submitted: true };
       } catch (submitError) {
         const message = submitError instanceof Error ? submitError.message : "Submit failed";
@@ -316,7 +314,8 @@ export function useUpdateDraftAndSubmit() {
 
       const compCurrency =
         callerCurrency ??
-        (await frappe.getDoc<{ default_currency: string }>("Company", doc.company)).default_currency;
+        (await frappe.getDoc<{ default_currency: string }>("Company", doc.company))
+          .default_currency;
       const { accounts: enrichedAccounts, isMultiCurrency: detected } = await enrichJEAccounts(
         accounts,
         compCurrency,
@@ -338,10 +337,8 @@ export function useUpdateDraftAndSubmit() {
 
       await frappe.save<JournalEntry>(modifiedDoc);
 
-      const updatedDoc = await frappe.getDoc<JournalEntry>("Journal Entry", name);
-
       try {
-        await frappe.submit<JournalEntry>(updatedDoc as unknown as Record<string, unknown>);
+        await frappe.submitWithRetry<JournalEntry>("Journal Entry", name);
         return { name, submitted: true };
       } catch (submitError) {
         const message = submitError instanceof Error ? submitError.message : "Submit failed";
@@ -373,12 +370,20 @@ export function useSaveDraftJournalEntry() {
   const qc = useQueryClient();
 
   return useMutation<JournalEntry, Error, SaveDraftParams>({
-    mutationFn: async ({ name, postingDate, userRemark, accounts, multiCurrency, companyCurrency: callerCurrency }) => {
+    mutationFn: async ({
+      name,
+      postingDate,
+      userRemark,
+      accounts,
+      multiCurrency,
+      companyCurrency: callerCurrency,
+    }) => {
       const doc = await frappe.getDoc<JournalEntry>("Journal Entry", name);
 
       const compCurrency =
         callerCurrency ??
-        (await frappe.getDoc<{ default_currency: string }>("Company", doc.company)).default_currency;
+        (await frappe.getDoc<{ default_currency: string }>("Company", doc.company))
+          .default_currency;
       const { accounts: enrichedAccounts, isMultiCurrency: detected } = await enrichJEAccounts(
         accounts,
         compCurrency,
@@ -418,8 +423,7 @@ export function useSubmitJournalEntry() {
 
   return useMutation<JournalEntry, Error, SubmitParams>({
     mutationFn: async ({ name }) => {
-      const fullDoc = await frappe.getDoc<JournalEntry>("Journal Entry", name);
-      return frappe.submit<JournalEntry>(fullDoc as unknown as Record<string, unknown>);
+      return frappe.submitWithRetry<JournalEntry>("Journal Entry", name);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["journalEntries"] });
@@ -527,9 +531,8 @@ export function useCreateIceCreamSale() {
         })),
       });
 
-      // Step 2: Fetch full doc (ERPNext adds server-side fields) then submit
-      const fullSI = await frappe.getDoc<SalesInvoice>("Sales Invoice", si.name);
-      await frappe.submit(fullSI as unknown as Record<string, unknown>);
+      // Step 2: Submit Sales Invoice with retry
+      await frappe.submitWithRetry<SalesInvoice>("Sales Invoice", si.name);
 
       const total = p.items.reduce((s, i) => s + i.amount, 0);
 
@@ -572,9 +575,8 @@ export function useCreateIceCreamSale() {
         accounts: jeAccounts,
       });
 
-      // Step 4: Fetch full JE doc then submit
-      const fullJE = await frappe.getDoc<JournalEntry>("Journal Entry", je.name);
-      await frappe.submit(fullJE as unknown as Record<string, unknown>);
+      // Step 4: Submit JE with retry
+      await frappe.submitWithRetry<JournalEntry>("Journal Entry", je.name);
 
       return { siName: si.name, jeName: je.name };
     },

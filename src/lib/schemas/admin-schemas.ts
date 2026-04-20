@@ -68,6 +68,8 @@ export const registrationSchema = z
     phone: z.string().min(5, "Номер телефона обязателен"),
     country: z.string().min(1, "Страна обязательна"),
     currency: z.string().min(1, "Валюта обязательна"),
+    plan: z.enum(["starter", "pro", "enterprise"]).optional(),
+    referralCode: z.string().max(20).optional(),
   })
   .check((ctx) => {
     if (ctx.value.password !== ctx.value.confirmPassword) {

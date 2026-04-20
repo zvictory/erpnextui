@@ -3,14 +3,15 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Plus, LayoutGrid, Table2 } from "lucide-react";
+import { Plus, LayoutGrid, Table2, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/shared/data-table";
 import { KanbanBoard } from "@/components/manufacturing/work-orders/kanban-board";
 import { getWorkOrderColumns } from "@/components/manufacturing/work-orders/work-order-columns";
 import { WoTabelDialog } from "@/components/manufacturing/work-orders/wo-tabel-dialog";
 import { useWorkOrderList, useWorkOrderCount, useWorkOrder } from "@/hooks/use-manufacturing";
-import { useWoTabelSummaries } from "@/hooks/use-costing";
+import { useWoTabelSummaries, useBackfillLaborAccruals } from "@/hooks/use-costing";
 import { useListState } from "@/hooks/use-list-state";
 import { useCompanyStore } from "@/stores/company-store";
 import { useManufacturingStore } from "@/stores/manufacturing-store";
@@ -33,12 +34,27 @@ export default function WorkOrdersPage() {
   );
   const { data: totalCount = 0 } = useWorkOrderCount(company, listState.debouncedSearch);
 
-  // Collect WO names that have labor hours for bulk tabel summary fetch
-  const woNamesWithLabor = useMemo(
-    () => workOrders.filter((wo) => (wo.custom_labor_hours ?? 0) > 0).map((wo) => wo.name),
-    [workOrders],
-  );
-  const { data: tabelSummaries } = useWoTabelSummaries(woNamesWithLabor);
+  // Fetch tabel summaries for all visible WOs — labor totals are computed
+  // client-side from Work Order Timesheet rows (no cached field on WO).
+  const visibleWoNames = useMemo(() => workOrders.map((wo) => wo.name), [workOrders]);
+  const { data: tabelSummaries } = useWoTabelSummaries(visibleWoNames);
+
+  const backfillAccruals = useBackfillLaborAccruals();
+
+  function handleSyncAccruals() {
+    backfillAccruals.mutate(company, {
+      onSuccess: ({ accruals, accrualErrors, scanned }) => {
+        const posted = accruals.filter((a) => a.jeName).length;
+        if (accrualErrors.length > 0) {
+          const first = accrualErrors[0];
+          toast.warning(`Synced ${posted}/${scanned} — ${first.message}`);
+        } else {
+          toast.success(`Synced ${posted} labor accruals across ${scanned} dates`);
+        }
+      },
+      onError: (err) => toast.error(err.message),
+    });
+  }
 
   const columns = getWorkOrderColumns(
     t,
@@ -71,6 +87,17 @@ export default function WorkOrdersPage() {
           <LayoutGrid className="h-4 w-4" />
         </Button>
       </div>
+
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleSyncAccruals}
+        disabled={backfillAccruals.isPending}
+        title="Re-post labor accrual JEs for all existing tabel entries"
+      >
+        <RefreshCw className={`mr-1 h-4 w-4 ${backfillAccruals.isPending ? "animate-spin" : ""}`} />
+        Sync accruals
+      </Button>
 
       <Button onClick={() => router.push("/manufacturing/work-orders/new")}>
         <Plus className="mr-1 h-4 w-4" />

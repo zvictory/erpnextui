@@ -52,10 +52,7 @@ export async function getLowStockParts() {
 
     // Filter in JS because SQLite doesn't support column-to-column comparison well with Drizzle
     const lowStock = rows.filter(
-      (p) =>
-        p.currentStock !== null &&
-        p.minStock !== null &&
-        p.currentStock < p.minStock,
+      (p) => p.currentStock !== null && p.minStock !== null && p.currentStock < p.minStock,
     );
 
     return { success: true as const, data: lowStock };

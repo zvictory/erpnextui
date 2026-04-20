@@ -38,23 +38,17 @@ export default function MaintenanceDashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              {t("monthRepairs")}
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">{t("monthRepairs")}</CardTitle>
             <Wrench className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {kpis?.monthRepairCount ?? 0}
-            </div>
+            <div className="text-2xl font-bold">{kpis?.monthRepairCount ?? 0}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              {t("monthDowntime")}
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">{t("monthDowntime")}</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -66,23 +60,17 @@ export default function MaintenanceDashboardPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              {t("monthCost")}
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">{t("monthCost")}</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {formatNumber(kpis?.monthRepairCost ?? 0)}
-            </div>
+            <div className="text-2xl font-bold">{formatNumber(kpis?.monthRepairCost ?? 0)}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              {t("overdueTasks")}
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">{t("overdueTasks")}</CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -94,9 +82,7 @@ export default function MaintenanceDashboardPage() {
       {/* Overdue preventive tasks */}
       {overdueCount > 0 && (
         <div className="space-y-2">
-          <h2 className="text-lg font-semibold text-destructive">
-            {t("overdueSchedule")}
-          </h2>
+          <h2 className="text-lg font-semibold text-destructive">{t("overdueSchedule")}</h2>
           <PreventiveScheduleList />
         </div>
       )}

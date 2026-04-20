@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { requireAdminSession } from "@/lib/admin-auth-check";
-import { readConfig, writeConfig, decryptPassword, type TenantConfig } from "@/lib/config-store";
+import {
+  readConfig,
+  writeConfig,
+  decryptPassword,
+  generateReferralCode,
+  type TenantConfig,
+  type BillingInfo,
+} from "@/lib/config-store";
 import { registrationActionSchema } from "@/lib/schemas/admin-schemas";
+import { getModulesForPlan, createTrialEndsAt } from "@/lib/billing/plans";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -149,12 +157,26 @@ function provisionInBackground(params: ProvisionParams) {
       };
 
       const now = new Date().toISOString();
+
+      // Look up registration to get the selected plan
+      const regForPlan = readConfig().registrations.find((r) => r.id === id);
+      const plan = regForPlan?.plan ?? "starter";
+      const billing: BillingInfo = {
+        plan,
+        status: "trial",
+        trialEndsAt: createTrialEndsAt(),
+      };
+
+      const tenantId = provisionData.site_name || crypto.randomUUID();
       const tenant: TenantConfig = {
-        id: provisionData.site_name || crypto.randomUUID(),
+        id: tenantId,
         name: companyName,
         url: provisionData.site_url,
         apiKey: provisionData.api_key,
         enabled: true,
+        enabledModuleGroups: getModulesForPlan(plan),
+        billing,
+        referralCode: generateReferralCode(tenantId),
         createdAt: now,
         updatedAt: now,
       };

@@ -11,11 +11,7 @@ interface EquipmentModelProps {
   onClick?: (id: string) => void;
 }
 
-export function EquipmentModel({
-  equipment,
-  selected,
-  onClick,
-}: EquipmentModelProps) {
+export function EquipmentModel({ equipment, selected, onClick }: EquipmentModelProps) {
   const [hovered, setHovered] = useState(false);
   const meshRef = useRef<THREE.Mesh>(null);
   const baseColor = equipment.color || "#888888";
@@ -23,13 +19,7 @@ export function EquipmentModel({
   return (
     <group
       position={equipment.position}
-      rotation={
-        equipment.rotation.map((r) => (r * Math.PI) / 180) as [
-          number,
-          number,
-          number,
-        ]
-      }
+      rotation={equipment.rotation.map((r) => (r * Math.PI) / 180) as [number, number, number]}
       scale={equipment.scale}
     >
       {/* Equipment geometry based on type */}
@@ -58,23 +48,13 @@ export function EquipmentModel({
           </mesh>
           {/* Tank top dome */}
           <mesh position={[0, 3.1, 0]} castShadow>
-            <sphereGeometry
-              args={[1.2, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2]}
-            />
-            <meshStandardMaterial
-              color={baseColor}
-              metalness={0.6}
-              roughness={0.3}
-            />
+            <sphereGeometry args={[1.2, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
+            <meshStandardMaterial color={baseColor} metalness={0.6} roughness={0.3} />
           </mesh>
           {/* Tank base ring */}
           <mesh position={[0, 0.05, 0]}>
             <cylinderGeometry args={[1.4, 1.4, 0.1, 32]} />
-            <meshStandardMaterial
-              color="#666666"
-              metalness={0.8}
-              roughness={0.2}
-            />
+            <meshStandardMaterial color="#666666" metalness={0.8} roughness={0.2} />
           </mesh>
         </group>
       )}
@@ -104,11 +84,7 @@ export function EquipmentModel({
           {/* Pump motor */}
           <mesh position={[0, 1, 0]} castShadow>
             <cylinderGeometry args={[0.3, 0.3, 0.6, 16]} />
-            <meshStandardMaterial
-              color="#555555"
-              metalness={0.8}
-              roughness={0.2}
-            />
+            <meshStandardMaterial color="#555555" metalness={0.8} roughness={0.2} />
           </mesh>
         </group>
       )}
@@ -210,11 +186,7 @@ export function EquipmentModel({
       <Html
         position={[
           0,
-          equipment.type === "tank"
-            ? 4.2
-            : equipment.type === "warehouse"
-              ? 4
-              : 1.8,
+          equipment.type === "tank" ? 4.2 : equipment.type === "warehouse" ? 4 : 1.8,
           0,
         ]}
         center
@@ -223,23 +195,18 @@ export function EquipmentModel({
       >
         <div
           style={{
-            background:
-              selected ? "rgba(0,0,0,0.85)" : "rgba(0,0,0,0.7)",
+            background: selected ? "rgba(0,0,0,0.85)" : "rgba(0,0,0,0.7)",
             color: "white",
             padding: "3px 8px",
             borderRadius: "4px",
             fontSize: "11px",
             fontFamily: "monospace",
             whiteSpace: "nowrap",
-            border: selected
-              ? "1px solid #4a9eff"
-              : "1px solid transparent",
+            border: selected ? "1px solid #4a9eff" : "1px solid transparent",
           }}
         >
           <div style={{ fontWeight: "bold" }}>{equipment.id}</div>
-          <div style={{ opacity: 0.8, fontSize: "10px" }}>
-            {equipment.label}
-          </div>
+          <div style={{ opacity: 0.8, fontSize: "10px" }}>{equipment.label}</div>
         </div>
       </Html>
     </group>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { PIPE_NETWORK, FACTORY_LAYOUT } from "@/config/factory-layout";
@@ -29,9 +29,7 @@ export function ProductFlowParticles({ activeFlows }: FlowParticlesProps) {
     const c = activePipes.map((pipe) => {
       const fromPos = getEquipmentPos(pipe.from);
       const toPos = getEquipmentPos(pipe.to);
-      const points = [fromPos, ...pipe.waypoints, toPos].map(
-        (p) => new THREE.Vector3(...p),
-      );
+      const points = [fromPos, ...pipe.waypoints, toPos].map((p) => new THREE.Vector3(...p));
       return new THREE.CatmullRomCurve3(points, false, "catmullrom", 0.5);
     });
     return { curves: c, totalParticles: c.length * PARTICLES_PER_PIPE };
@@ -39,13 +37,15 @@ export function ProductFlowParticles({ activeFlows }: FlowParticlesProps) {
 
   // Track progress for each particle
   const progressRef = useRef<Float32Array>(new Float32Array(0));
-  if (progressRef.current.length !== totalParticles) {
-    const arr = new Float32Array(totalParticles);
-    for (let i = 0; i < totalParticles; i++) {
-      arr[i] = (i % PARTICLES_PER_PIPE) / PARTICLES_PER_PIPE;
+  useEffect(() => {
+    if (progressRef.current.length !== totalParticles) {
+      const arr = new Float32Array(totalParticles);
+      for (let i = 0; i < totalParticles; i++) {
+        arr[i] = (i % PARTICLES_PER_PIPE) / PARTICLES_PER_PIPE;
+      }
+      progressRef.current = arr;
     }
-    progressRef.current = arr;
-  }
+  }, [totalParticles]);
 
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
@@ -77,7 +77,11 @@ export function ProductFlowParticles({ activeFlows }: FlowParticlesProps) {
   if (totalParticles === 0) return null;
 
   return (
-    <instancedMesh ref={meshRef} args={[undefined, undefined, totalParticles]} frustumCulled={false}>
+    <instancedMesh
+      ref={meshRef}
+      args={[undefined, undefined, totalParticles]}
+      frustumCulled={false}
+    >
       <sphereGeometry args={[PARTICLE_RADIUS, 8, 6]} />
       <meshStandardMaterial
         color="#4ade80"

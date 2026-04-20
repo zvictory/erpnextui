@@ -12,6 +12,8 @@ import { Separator } from "@/components/ui/separator";
 import { LinkField } from "@/components/shared/link-field";
 import { InvoiceItemsEditor } from "@/components/shared/invoice-items-editor";
 import { DocstatusBadge } from "@/components/shared/docstatus-badge";
+import { useCompanyStore } from "@/stores/company-store";
+import { useUISettingsStore } from "@/stores/ui-settings-store";
 import { quotationSchema, type QuotationFormValues } from "@/lib/schemas/quotation-schema";
 import type { Quotation } from "@/types/quotation";
 
@@ -48,6 +50,10 @@ export function QuotationForm({
   isCancellingDoc = false,
 }: QuotationFormProps) {
   const t = useTranslations("quotations");
+  const company = useCompanyStore((s) => s.company);
+  const sellingWarehouse = useUISettingsStore(
+    (s) => s.getCompanySettings(company).sellingWarehouse,
+  );
   const docstatus = defaultValues?.docstatus ?? 0;
   const isReadOnly = docstatus > 0;
 
@@ -163,7 +169,7 @@ export function QuotationForm({
 
         <Separator />
 
-        <InvoiceItemsEditor disabled={isReadOnly} />
+        <InvoiceItemsEditor disabled={isReadOnly} sellingWarehouse={sellingWarehouse} />
 
         {errors.items && (
           <p className="text-sm text-destructive">

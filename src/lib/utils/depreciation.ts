@@ -65,7 +65,11 @@ export function calculateDepreciation(asset: Asset, asOfDate?: Date): Depreciati
     }
   } else {
     // Straight-line (default)
-    monthlyDep = monthlyDepreciationStraightLine(asset.purchaseCost, salvage, asset.usefulLifeYears);
+    monthlyDep = monthlyDepreciationStraightLine(
+      asset.purchaseCost,
+      salvage,
+      asset.usefulLifeYears,
+    );
     accumulatedDepreciation = monthlyDep * effectiveMonths;
   }
 

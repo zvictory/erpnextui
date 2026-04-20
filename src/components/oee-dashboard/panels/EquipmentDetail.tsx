@@ -1,6 +1,6 @@
 "use client";
 
-import { X, ExternalLink } from "lucide-react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -17,9 +17,8 @@ interface EquipmentDetailProps {
 
 export function EquipmentDetail({ equipment, workOrder, onClose }: EquipmentDetailProps) {
   const isActive = workOrder?.status === "In Process";
-  const progress = workOrder && workOrder.qty > 0
-    ? (workOrder.produced_qty / workOrder.qty) * 100
-    : 0;
+  const progress =
+    workOrder && workOrder.qty > 0 ? (workOrder.produced_qty / workOrder.qty) * 100 : 0;
 
   return (
     <div className="w-72 bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg overflow-hidden">
@@ -42,7 +41,9 @@ export function EquipmentDetail({ equipment, workOrder, onClose }: EquipmentDeta
           <div>
             <p className="text-sm font-medium">{equipment.label}</p>
             <div className="flex items-center gap-2 mt-0.5">
-              <div className={`w-2 h-2 rounded-full ${isActive ? "bg-green-500 animate-pulse" : "bg-gray-400"}`} />
+              <div
+                className={`w-2 h-2 rounded-full ${isActive ? "bg-green-500 animate-pulse" : "bg-gray-400"}`}
+              />
               <span className="text-xs text-muted-foreground">
                 {isActive ? "Ishlayapti" : workOrder ? "Kutmoqda" : "Bo'sh"}
               </span>
@@ -56,12 +57,15 @@ export function EquipmentDetail({ equipment, workOrder, onClose }: EquipmentDeta
                 <span className="text-xs text-muted-foreground">Work Order</span>
                 <span className="font-mono text-xs">{workOrder.name}</span>
               </div>
-              <p className="text-sm font-medium">{workOrder.item_name || workOrder.production_item}</p>
+              <p className="text-sm font-medium">
+                {workOrder.item_name || workOrder.production_item}
+              </p>
               <div className="space-y-1">
                 <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground">Progress</span>
                   <span className="font-mono tabular-nums">
-                    {formatNumber(workOrder.produced_qty)}/{formatNumber(workOrder.qty)} ({Math.round(progress)}%)
+                    {formatNumber(workOrder.produced_qty)}/{formatNumber(workOrder.qty)} (
+                    {Math.round(progress)}%)
                   </span>
                 </div>
                 <Progress value={progress} className="h-1.5" />
@@ -82,11 +86,16 @@ export function EquipmentDetail({ equipment, workOrder, onClose }: EquipmentDeta
                     </span>
                   </div>
                   <div className="h-1 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-muted-foreground/20 rounded-full" style={{ width: "0%" }} />
+                    <div
+                      className="h-full bg-muted-foreground/20 rounded-full"
+                      style={{ width: "0%" }}
+                    />
                   </div>
                   <div className="flex justify-between text-[10px] text-muted-foreground">
                     <span>{param.min}</span>
-                    <span>{param.max} {param.unit}</span>
+                    <span>
+                      {param.max} {param.unit}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -96,12 +105,16 @@ export function EquipmentDetail({ equipment, workOrder, onClose }: EquipmentDeta
           {/* Links */}
           {equipment.linkedWorkstation && (
             <div className="pt-1 border-t">
-              <span className="text-[10px] text-muted-foreground">Workstation: {equipment.linkedWorkstation}</span>
+              <span className="text-[10px] text-muted-foreground">
+                Workstation: {equipment.linkedWorkstation}
+              </span>
             </div>
           )}
           {equipment.linkedWarehouse && (
             <div className="pt-1 border-t">
-              <span className="text-[10px] text-muted-foreground">Warehouse: {equipment.linkedWarehouse}</span>
+              <span className="text-[10px] text-muted-foreground">
+                Warehouse: {equipment.linkedWarehouse}
+              </span>
             </div>
           )}
         </div>

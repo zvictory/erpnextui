@@ -70,10 +70,7 @@ function buildAccounts(data: WriteCheckFormData): JournalEntryAccount[] {
   return accounts;
 }
 
-function buildRemark(
-  payee: string,
-  lines: { memo: string }[],
-): string {
+function buildRemark(payee: string, lines: { memo: string }[]): string {
   const memos = lines.map((l) => l.memo).join("; ");
   if (payee) return `Paid to ${payee} | ${memos}`;
   return memos;

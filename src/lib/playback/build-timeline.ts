@@ -43,7 +43,12 @@ export function buildTimeline(
         type: "wo_start",
         equipmentId: eqId,
         label: `${wo.item_name || wo.production_item} — ${wo.produced_qty}/${wo.qty}`,
-        data: { workOrder: wo.name, item: wo.production_item, qty: wo.qty, produced: wo.produced_qty },
+        data: {
+          workOrder: wo.name,
+          item: wo.production_item,
+          qty: wo.qty,
+          produced: wo.produced_qty,
+        },
       });
     }
   }

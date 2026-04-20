@@ -157,7 +157,11 @@ export function ProductSerialNumbersTable({ itemCode }: ProductSerialNumbersTabl
                             <span
                               className="cursor-pointer font-mono text-xs hover:underline"
                               onClick={() =>
-                                startEditing(row.name, row.custom_imei_1 || "", row.custom_imei_2 || "")
+                                startEditing(
+                                  row.name,
+                                  row.custom_imei_1 || "",
+                                  row.custom_imei_2 || "",
+                                )
                               }
                             >
                               {row.custom_imei_1 || "—"}
@@ -176,7 +180,11 @@ export function ProductSerialNumbersTable({ itemCode }: ProductSerialNumbersTabl
                             <span
                               className="cursor-pointer font-mono text-xs hover:underline"
                               onClick={() =>
-                                startEditing(row.name, row.custom_imei_1 || "", row.custom_imei_2 || "")
+                                startEditing(
+                                  row.name,
+                                  row.custom_imei_1 || "",
+                                  row.custom_imei_2 || "",
+                                )
                               }
                             >
                               {row.custom_imei_2 || "—"}
@@ -200,11 +208,7 @@ export function ProductSerialNumbersTable({ itemCode }: ProductSerialNumbersTabl
                               >
                                 {t("saveImei")}
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => setEditing(null)}
-                              >
+                              <Button size="sm" variant="ghost" onClick={() => setEditing(null)}>
                                 ✕
                               </Button>
                             </div>
@@ -220,7 +224,8 @@ export function ProductSerialNumbersTable({ itemCode }: ProductSerialNumbersTabl
             {totalPages > 1 && (
               <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
                 <span>
-                  {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, totalCount)} / {totalCount}
+                  {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, totalCount)} /{" "}
+                  {totalCount}
                 </span>
                 <div className="flex gap-2">
                   <Button

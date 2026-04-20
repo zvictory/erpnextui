@@ -43,7 +43,10 @@ import { validateLayout } from "@/lib/editor/layout-validator";
 import { cn } from "@/lib/utils";
 
 const EditorCanvas = dynamic(
-  () => import("@/components/oee-dashboard/editor/EditorCanvas").then((m) => ({ default: m.EditorCanvas })),
+  () =>
+    import("@/components/oee-dashboard/editor/EditorCanvas").then((m) => ({
+      default: m.EditorCanvas,
+    })),
   {
     ssr: false,
     loading: () => (
@@ -187,10 +190,7 @@ export default function FactoryEditorPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={cn(
-                    "h-8 text-xs",
-                    !validation.valid && "text-destructive",
-                  )}
+                  className={cn("h-8 text-xs", !validation.valid && "text-destructive")}
                 >
                   {validation.valid ? (
                     <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-green-600" />
@@ -228,7 +228,13 @@ export default function FactoryEditorPage() {
 
             <Separator orientation="vertical" className="h-5 mx-1" />
 
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleReset} title="Reset">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={handleReset}
+              title="Reset"
+            >
               <RotateCcw className="h-4 w-4" />
             </Button>
 
@@ -248,7 +254,13 @@ export default function FactoryEditorPage() {
             >
               <Upload className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleExport} title="Export">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={handleExport}
+              title="Export"
+            >
               <Download className="h-4 w-4" />
             </Button>
             <Button size="sm" className="h-8 text-xs" onClick={handleSave}>

@@ -418,10 +418,7 @@ export default function AccountLedgerPage() {
                 </TableRow>
               ) : (
                 enrichedEntries.map((entry, _idx) => (
-                  <TableRow
-                    key={entry.name}
-                    className="transition-colors"
-                  >
+                  <TableRow key={entry.name} className="transition-colors">
                     {/* Date + Time */}
                     <TableCell className="whitespace-nowrap">
                       <span className="text-sm">{formatDate(entry.posting_date)}</span>

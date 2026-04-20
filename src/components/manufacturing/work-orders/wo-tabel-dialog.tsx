@@ -14,11 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Command,
   CommandEmpty,
@@ -237,11 +233,7 @@ export function WoTabelDialog({ open, onOpenChange, workOrder }: WoTabelDialogPr
               </TableHeader>
               <TableBody>
                 {store.entries.map((entry, i) => (
-                  <HoursRow
-                    key={entry.name ?? `new-${i}`}
-                    index={i}
-                    operations={operations}
-                  />
+                  <HoursRow key={entry.name ?? `new-${i}`} index={i} operations={operations} />
                 ))}
                 <GhostRow
                   onPick={handleAddRow}
@@ -274,10 +266,7 @@ export function WoTabelDialog({ open, onOpenChange, workOrder }: WoTabelDialogPr
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {tCommon("cancel")}
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={saveTabel.isPending || store.entries.length === 0}
-          >
+          <Button onClick={handleSave} disabled={saveTabel.isPending || store.entries.length === 0}>
             {saveTabel.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
             {t("save_and_attach")}
           </Button>

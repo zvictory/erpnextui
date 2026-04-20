@@ -39,10 +39,7 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
     })
     .from(userCapabilities)
     .where(
-      and(
-        eq(userCapabilities.tenant, gate.ctx.tenant),
-        eq(userCapabilities.userEmail, userEmail),
-      ),
+      and(eq(userCapabilities.tenant, gate.ctx.tenant), eq(userCapabilities.userEmail, userEmail)),
     );
 
   return NextResponse.json({ userEmail, grants: rows });

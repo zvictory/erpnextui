@@ -57,11 +57,11 @@ export interface RecentStockEntry {
 }
 
 export function useRecentStockEntries(company: string, hours = 4) {
-  const since = new Date(Date.now() - hours * 3600_000).toISOString().split("T")[0];
   return useQuery({
     queryKey: ["factory", "recentStockEntries", company, hours],
-    queryFn: () =>
-      frappe.getList<RecentStockEntry>("Stock Entry", {
+    queryFn: () => {
+      const since = new Date(Date.now() - hours * 3600_000).toISOString().split("T")[0];
+      return frappe.getList<RecentStockEntry>("Stock Entry", {
         filters: [
           ["company", "=", company],
           ["posting_date", ">=", since],
@@ -81,7 +81,8 @@ export function useRecentStockEntries(company: string, hours = 4) {
         ],
         orderBy: "posting_date desc, posting_time desc",
         limitPageLength: 100,
-      }),
+      });
+    },
     enabled: !!company,
     refetchInterval: 15_000, // every 15 seconds
   });

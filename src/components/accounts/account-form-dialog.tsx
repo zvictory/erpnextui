@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useReducer } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
@@ -67,46 +67,110 @@ export function AccountFormDialog({
   const updateAccount = useUpdateAccount();
   const createOBJE = useCreateOpeningBalanceJE();
 
-  const [accountName, setAccountName] = useState("");
-  const [parentAccount, setParentAccount] = useState("");
-  const [currency, setCurrency] = useState("");
-  const [accountType, setAccountType] = useState("Expense Account");
-  const [isGroup, setIsGroup] = useState(false);
-  const [bankAccountNo, setBankAccountNo] = useState("");
-  const [openingAmount, setOpeningAmount] = useState("");
-  const [equityAccount, setEquityAccount] = useState("");
-  const [error, setError] = useState("");
+  type FieldState = {
+    accountName: string;
+    parentAccount: string;
+    currency: string;
+    accountType: string;
+    isGroup: boolean;
+    bankAccountNo: string;
+    openingAmount: string;
+    equityAccount: string;
+    error: string;
+  };
+  type FieldAction =
+    | { type: "POPULATE"; account: NonNullable<typeof account> }
+    | { type: "RESET"; defaultParent?: string }
+    | { type: "SET"; field: keyof FieldState; value: string | boolean };
+
+  const [fields, dispatchFields] = useReducer(
+    (state: FieldState, action: FieldAction): FieldState => {
+      switch (action.type) {
+        case "POPULATE":
+          return {
+            ...state,
+            accountName: action.account.account_name,
+            parentAccount: action.account.parent_account ?? "",
+            currency: action.account.account_currency,
+            accountType: action.account.account_type,
+            isGroup: action.account.is_group === 1,
+            bankAccountNo: action.account.bank_account_no ?? "",
+          };
+        case "RESET":
+          return {
+            accountName: "",
+            parentAccount: action.defaultParent ?? "",
+            currency: "",
+            accountType: "Expense Account",
+            isGroup: false,
+            bankAccountNo: "",
+            openingAmount: "",
+            equityAccount: "",
+            error: "",
+          };
+        case "SET":
+          return { ...state, [action.field]: action.value };
+        default:
+          return state;
+      }
+    },
+    {
+      accountName: "",
+      parentAccount: defaultParent ?? "",
+      currency: "",
+      accountType: "Expense Account",
+      isGroup: false,
+      bankAccountNo: "",
+      openingAmount: "",
+      equityAccount: "",
+      error: "",
+    },
+  );
+
+  const {
+    accountName,
+    parentAccount,
+    currency,
+    accountType,
+    isGroup,
+    bankAccountNo,
+    openingAmount,
+    equityAccount,
+    error,
+  } = fields;
+  const setAccountName = (v: string) =>
+    dispatchFields({ type: "SET", field: "accountName", value: v });
+  const setParentAccount = (v: string) =>
+    dispatchFields({ type: "SET", field: "parentAccount", value: v });
+  const setCurrency = (v: string) => dispatchFields({ type: "SET", field: "currency", value: v });
+  const setAccountType = (v: string) =>
+    dispatchFields({ type: "SET", field: "accountType", value: v });
+  const setIsGroup = (v: boolean) => dispatchFields({ type: "SET", field: "isGroup", value: v });
+  const setBankAccountNo = (v: string) =>
+    dispatchFields({ type: "SET", field: "bankAccountNo", value: v });
+  const setOpeningAmount = (v: string) =>
+    dispatchFields({ type: "SET", field: "openingAmount", value: v });
+  const setEquityAccount = (v: string) =>
+    dispatchFields({ type: "SET", field: "equityAccount", value: v });
+  const setError = (v: string) => dispatchFields({ type: "SET", field: "error", value: v });
 
   const isEdit = !!editName;
   const showOpeningBalance = !isEdit && !isGroup;
   const isPending = createAccount.isPending || updateAccount.isPending || createOBJE.isPending;
 
-  // Populate form when fetched account data arrives
+  // Populate form when fetched account data arrives (single dispatch — no cascading renders)
   useEffect(() => {
     if (account) {
-      setAccountName(account.account_name);
-      setParentAccount(account.parent_account ?? "");
-      setCurrency(account.account_currency);
-      setAccountType(account.account_type);
-      setIsGroup(account.is_group === 1);
-      setBankAccountNo(account.bank_account_no ?? "");
+      dispatchFields({ type: "POPULATE", account });
     }
   }, [account]);
 
-  // Reset form when dialog closes, or pre-fill parent when opening
+  // Reset form when dialog closes, or pre-fill parent when opening (single dispatch)
   useEffect(() => {
     if (!open) {
-      setAccountName("");
-      setParentAccount("");
-      setCurrency("");
-      setAccountType("Expense Account");
-      setIsGroup(false);
-      setBankAccountNo("");
-      setOpeningAmount("");
-      setEquityAccount("");
-      setError("");
+      dispatchFields({ type: "RESET" });
     } else if (defaultParent && !editName) {
-      setParentAccount(defaultParent);
+      dispatchFields({ type: "RESET", defaultParent });
     }
   }, [open, defaultParent, editName]);
 

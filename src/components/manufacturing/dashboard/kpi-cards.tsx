@@ -1,5 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Minus, Gauge, Target, Package, AlertTriangle, type LucideIcon } from "lucide-react";
+import {
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Gauge,
+  Target,
+  Package,
+  AlertTriangle,
+  type LucideIcon,
+} from "lucide-react";
+import { formatNumber } from "@/lib/formatters";
 
 interface KPIData {
   productivity: number;
@@ -33,8 +43,7 @@ function TrendIndicator({
   }
 
   const diff = current - previous;
-  const pctChange =
-    previous > 0 ? ((diff / previous) * 100).toFixed(1) : diff > 0 ? "+" : "0";
+  const pctChange = previous > 0 ? formatNumber((diff / previous) * 100, 1) : diff > 0 ? "+" : "0";
 
   if (Math.abs(diff) < 0.001) {
     return (
@@ -55,11 +64,7 @@ function TrendIndicator({
         isGood ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
       }`}
     >
-      {isPositive ? (
-        <TrendingUp className="size-3" />
-      ) : (
-        <TrendingDown className="size-3" />
-      )}
+      {isPositive ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
       {isPositive ? "+" : ""}
       {typeof pctChange === "string" ? pctChange : pctChange}% vs prior period
     </span>
@@ -81,7 +86,7 @@ export function KPICards({ kpis }: { kpis: KPIData }) {
   }> = [
     {
       title: "Overall Productivity",
-      value: `${(kpis.productivity * 100).toFixed(1)}%`,
+      value: `${formatNumber(kpis.productivity * 100, 1)}%`,
       current: kpis.productivity,
       previous: kpis.previous?.productivity,
       invertColor: false,
@@ -92,7 +97,7 @@ export function KPICards({ kpis }: { kpis: KPIData }) {
     },
     {
       title: "Overall Efficiency (OEE)",
-      value: `${(kpis.efficiency * 100).toFixed(1)}%`,
+      value: `${formatNumber(kpis.efficiency * 100, 1)}%`,
       current: kpis.efficiency,
       previous: kpis.previous?.efficiency,
       invertColor: false,
@@ -103,7 +108,7 @@ export function KPICards({ kpis }: { kpis: KPIData }) {
     },
     {
       title: "Total Output",
-      value: kpis.totalOutput.toLocaleString("en-US"),
+      value: formatNumber(kpis.totalOutput),
       subtitle: "pieces",
       current: kpis.totalOutput,
       previous: kpis.previous?.totalOutput,
@@ -115,7 +120,7 @@ export function KPICards({ kpis }: { kpis: KPIData }) {
     },
     {
       title: "Unplanned Downtime",
-      value: `${kpis.totalUnplannedDowntimeHours.toFixed(1)} hrs`,
+      value: `${formatNumber(kpis.totalUnplannedDowntimeHours, 1)} hrs`,
       current: kpis.totalUnplannedDowntimeHours,
       previous: kpis.previous?.totalUnplannedDowntimeHours,
       invertColor: true,

@@ -111,9 +111,7 @@ function UsersTab() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return mergedUsers;
-    return mergedUsers.filter(
-      (u) => u.email.includes(q) || u.fullName.toLowerCase().includes(q),
-    );
+    return mergedUsers.filter((u) => u.email.includes(q) || u.fullName.toLowerCase().includes(q));
   }, [mergedUsers, search]);
 
   if (grantsLoading || frappeLoading) {

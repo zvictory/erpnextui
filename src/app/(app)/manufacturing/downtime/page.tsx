@@ -4,6 +4,7 @@ import { startOfMonth, format } from "date-fns";
 
 import { getDowntimeEvents, getDowntimeParetoData } from "@/actions/downtime";
 import { getLines } from "@/actions/lines";
+import { formatNumber } from "@/lib/formatters";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DowntimeTable } from "@/components/manufacturing/downtime/downtime-table";
@@ -27,13 +28,8 @@ export default async function DowntimePage() {
     : [];
 
   // Summary: this month's unplanned hours and event count
-  const thisMonthEvents = events.filter(
-    (e) => e.date >= monthStart && e.date <= todayStr
-  );
-  const totalUnplannedMinutes = thisMonthEvents.reduce(
-    (sum, e) => sum + e.durationMinutes,
-    0
-  );
+  const thisMonthEvents = events.filter((e) => e.date >= monthStart && e.date <= todayStr);
+  const totalUnplannedMinutes = thisMonthEvents.reduce((sum, e) => sum + e.durationMinutes, 0);
   const totalUnplannedHours = totalUnplannedMinutes / 60;
   const eventCount = thisMonthEvents.length;
 
@@ -41,12 +37,8 @@ export default async function DowntimePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Downtime Tracking
-          </h1>
-          <p className="text-muted-foreground">
-            Monitor and analyze equipment downtime events.
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight">Downtime Tracking</h1>
+          <p className="text-muted-foreground">Monitor and analyze equipment downtime events.</p>
         </div>
         <Button asChild>
           <Link href="/manufacturing/downtime/new">
@@ -60,32 +52,24 @@ export default async function DowntimePage() {
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Unplanned Downtime (This Month)
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Unplanned Downtime (This Month)</CardTitle>
             <Clock className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {totalUnplannedHours.toFixed(1)}h
-            </div>
+            <div className="text-2xl font-bold">{formatNumber(totalUnplannedHours, 1)}h</div>
             <p className="text-xs text-muted-foreground">
-              {totalUnplannedMinutes.toLocaleString()} total minutes
+              {formatNumber(totalUnplannedMinutes)} total minutes
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Events This Month
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Events This Month</CardTitle>
             <AlertTriangle className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{eventCount}</div>
-            <p className="text-xs text-muted-foreground">
-              downtime events recorded
-            </p>
+            <p className="text-xs text-muted-foreground">downtime events recorded</p>
           </CardContent>
         </Card>
       </div>

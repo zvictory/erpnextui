@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  ComposedChart,
-  Bar,
-  Cell,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-} from "recharts";
+import { ComposedChart, Bar, Cell, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -119,14 +111,8 @@ export function ParetoChart({ data }: ParetoChartProps) {
               tickFormatter={(value: number) => `${value}%`}
               width={45}
             />
-            <ChartTooltip
-              content={<ChartTooltipContent />}
-            />
-            <Bar
-              yAxisId="left"
-              dataKey="totalMinutes"
-              radius={[4, 4, 0, 0]}
-            >
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <Bar yAxisId="left" dataKey="totalMinutes" radius={[4, 4, 0, 0]}>
               {chartData.map((_, i) => (
                 <Cell key={i} fill={`url(#paretoGrad${i})`} />
               ))}

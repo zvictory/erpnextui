@@ -14,10 +14,10 @@ interface FactoryTwinState {
   // Playback
   mode: "live" | "playback";
   isPlaying: boolean;
-  speed: number;              // 1, 2, 5, 10
-  timelineStart: number;      // unix ms
-  timelineEnd: number;        // unix ms
-  currentTime: number;        // unix ms — playback cursor
+  speed: number; // 1, 2, 5, 10
+  timelineStart: number; // unix ms
+  timelineEnd: number; // unix ms
+  currentTime: number; // unix ms — playback cursor
   events: ProductionEvent[];
   snapshot: FactorySnapshot | null;
 

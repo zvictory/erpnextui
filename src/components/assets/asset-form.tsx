@@ -46,7 +46,17 @@ interface AssetFormProps {
   isSubmitting: boolean;
 }
 
-const CATEGORIES = ["Mixer", "Freezer", "Pump", "Packing", "Pasteurizer", "Tunnel", "Conveyor", "Tank", "Other"];
+const CATEGORIES = [
+  "Mixer",
+  "Freezer",
+  "Pump",
+  "Packing",
+  "Pasteurizer",
+  "Tunnel",
+  "Conveyor",
+  "Tank",
+  "Other",
+];
 
 function getToday(): string {
   const d = new Date();
@@ -79,9 +89,13 @@ export function AssetForm({ defaultValues, onSubmit, isSubmitting }: AssetFormPr
           capacity: defaultValues.capacity ?? "",
           usefulLifeYears: defaultValues.usefulLifeYears,
           salvageValue: defaultValues.salvageValue ?? 0,
-          depreciationMethod: (defaultValues.depreciationMethod as "straight_line" | "declining_balance") ?? "straight_line",
+          depreciationMethod:
+            (defaultValues.depreciationMethod as "straight_line" | "declining_balance") ??
+            "straight_line",
           warrantyUntil: defaultValues.warrantyUntil ?? "",
-          status: (defaultValues.status as "operational" | "maintenance" | "broken" | "retired") ?? "operational",
+          status:
+            (defaultValues.status as "operational" | "maintenance" | "broken" | "retired") ??
+            "operational",
           notes: defaultValues.notes ?? "",
         }
       : {
@@ -108,7 +122,9 @@ export function AssetForm({ defaultValues, onSubmit, isSubmitting }: AssetFormPr
       {/* Basic info */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label>{t("assetName")} <span className="text-destructive">*</span></Label>
+          <Label>
+            {t("assetName")} <span className="text-destructive">*</span>
+          </Label>
           <Input {...register("name")} />
           {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
         </div>
@@ -120,7 +136,9 @@ export function AssetForm({ defaultValues, onSubmit, isSubmitting }: AssetFormPr
             </SelectTrigger>
             <SelectContent>
               {CATEGORIES.map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -138,7 +156,12 @@ export function AssetForm({ defaultValues, onSubmit, isSubmitting }: AssetFormPr
         </div>
         <div className="space-y-1.5">
           <Label>{t("assetStatus")}</Label>
-          <Select value={watch("status")} onValueChange={(v) => setValue("status", v as "operational" | "maintenance" | "broken" | "retired")}>
+          <Select
+            value={watch("status")}
+            onValueChange={(v) =>
+              setValue("status", v as "operational" | "maintenance" | "broken" | "retired")
+            }
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -155,17 +178,25 @@ export function AssetForm({ defaultValues, onSubmit, isSubmitting }: AssetFormPr
       {/* Purchase info */}
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-1.5">
-          <Label>{t("purchaseDate")} <span className="text-destructive">*</span></Label>
+          <Label>
+            {t("purchaseDate")} <span className="text-destructive">*</span>
+          </Label>
           <DateInput
             value={watch("purchaseDate")}
             onChange={(e) => setValue("purchaseDate", e.target.value)}
           />
-          {errors.purchaseDate && <p className="text-sm text-destructive">{errors.purchaseDate.message}</p>}
+          {errors.purchaseDate && (
+            <p className="text-sm text-destructive">{errors.purchaseDate.message}</p>
+          )}
         </div>
         <div className="space-y-1.5">
-          <Label>{t("purchaseCost")} <span className="text-destructive">*</span></Label>
+          <Label>
+            {t("purchaseCost")} <span className="text-destructive">*</span>
+          </Label>
           <Input type="number" step="0.01" {...register("purchaseCost", { valueAsNumber: true })} />
-          {errors.purchaseCost && <p className="text-sm text-destructive">{errors.purchaseCost.message}</p>}
+          {errors.purchaseCost && (
+            <p className="text-sm text-destructive">{errors.purchaseCost.message}</p>
+          )}
         </div>
         <div className="space-y-1.5">
           <Label>{t("supplier")}</Label>
@@ -200,9 +231,13 @@ export function AssetForm({ defaultValues, onSubmit, isSubmitting }: AssetFormPr
       {/* Depreciation */}
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-1.5">
-          <Label>{t("usefulLifeYears")} <span className="text-destructive">*</span></Label>
+          <Label>
+            {t("usefulLifeYears")} <span className="text-destructive">*</span>
+          </Label>
           <Input type="number" {...register("usefulLifeYears", { valueAsNumber: true })} />
-          {errors.usefulLifeYears && <p className="text-sm text-destructive">{errors.usefulLifeYears.message}</p>}
+          {errors.usefulLifeYears && (
+            <p className="text-sm text-destructive">{errors.usefulLifeYears.message}</p>
+          )}
         </div>
         <div className="space-y-1.5">
           <Label>{t("salvageValue")}</Label>
@@ -210,7 +245,12 @@ export function AssetForm({ defaultValues, onSubmit, isSubmitting }: AssetFormPr
         </div>
         <div className="space-y-1.5">
           <Label>{t("depreciationMethod")}</Label>
-          <Select value={watch("depreciationMethod")} onValueChange={(v) => setValue("depreciationMethod", v as "straight_line" | "declining_balance")}>
+          <Select
+            value={watch("depreciationMethod")}
+            onValueChange={(v) =>
+              setValue("depreciationMethod", v as "straight_line" | "declining_balance")
+            }
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>

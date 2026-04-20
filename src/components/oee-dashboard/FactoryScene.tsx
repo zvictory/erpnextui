@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Html } from "@react-three/drei";
 import { FACTORY_LAYOUT, PIPE_NETWORK } from "@/config/factory-layout";
@@ -11,17 +11,38 @@ import type { ActiveWorkOrder } from "@/hooks/use-factory-twin";
 
 /* ── Simple equipment geometry per type ──────────────────────── */
 
-function Tank({ eq, selected, onClick }: { eq: Equipment; selected: boolean; onClick: (id: string) => void }) {
+function Tank({
+  eq,
+  selected,
+  onClick,
+}: {
+  eq: Equipment;
+  selected: boolean;
+  onClick: (id: string) => void;
+}) {
   const [hovered, setHovered] = useState(false);
   const c = eq.color || "#4a9eff";
   return (
     <group position={eq.position} scale={eq.scale}>
       {/* body */}
-      <mesh position={[0, 1.5, 0]} castShadow
-        onPointerOver={() => setHovered(true)} onPointerOut={() => setHovered(false)}
-        onClick={(e) => { e.stopPropagation(); onClick(eq.id); }}>
+      <mesh
+        position={[0, 1.5, 0]}
+        castShadow
+        onPointerOver={() => setHovered(true)}
+        onPointerOut={() => setHovered(false)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick(eq.id);
+        }}
+      >
         <cylinderGeometry args={[1.2, 1.2, 3, 32]} />
-        <meshStandardMaterial color={c} emissive={hovered || selected ? c : "#000"} emissiveIntensity={hovered ? 0.4 : selected ? 0.6 : 0} metalness={0.6} roughness={0.3} />
+        <meshStandardMaterial
+          color={c}
+          emissive={hovered || selected ? c : "#000"}
+          emissiveIntensity={hovered ? 0.4 : selected ? 0.6 : 0}
+          metalness={0.6}
+          roughness={0.3}
+        />
       </mesh>
       {/* dome */}
       <mesh position={[0, 3.1, 0]} castShadow>
@@ -37,16 +58,37 @@ function Tank({ eq, selected, onClick }: { eq: Equipment; selected: boolean; onC
   );
 }
 
-function Pump({ eq, selected, onClick }: { eq: Equipment; selected: boolean; onClick: (id: string) => void }) {
+function Pump({
+  eq,
+  selected,
+  onClick,
+}: {
+  eq: Equipment;
+  selected: boolean;
+  onClick: (id: string) => void;
+}) {
   const [hovered, setHovered] = useState(false);
   const c = eq.color || "#ff9f43";
   return (
     <group position={eq.position} scale={eq.scale}>
-      <mesh position={[0, 0.4, 0]} castShadow
-        onPointerOver={() => setHovered(true)} onPointerOut={() => setHovered(false)}
-        onClick={(e) => { e.stopPropagation(); onClick(eq.id); }}>
+      <mesh
+        position={[0, 0.4, 0]}
+        castShadow
+        onPointerOver={() => setHovered(true)}
+        onPointerOut={() => setHovered(false)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick(eq.id);
+        }}
+      >
         <boxGeometry args={[1.2, 0.8, 0.8]} />
-        <meshStandardMaterial color={c} emissive={hovered || selected ? c : "#000"} emissiveIntensity={hovered ? 0.4 : selected ? 0.6 : 0} metalness={0.7} roughness={0.2} />
+        <meshStandardMaterial
+          color={c}
+          emissive={hovered || selected ? c : "#000"}
+          emissiveIntensity={hovered ? 0.4 : selected ? 0.6 : 0}
+          metalness={0.7}
+          roughness={0.2}
+        />
       </mesh>
       <mesh position={[0, 1, 0]} castShadow>
         <cylinderGeometry args={[0.3, 0.3, 0.6, 16]} />
@@ -56,16 +98,37 @@ function Pump({ eq, selected, onClick }: { eq: Equipment; selected: boolean; onC
   );
 }
 
-function Line({ eq, selected, onClick }: { eq: Equipment; selected: boolean; onClick: (id: string) => void }) {
+function Line({
+  eq,
+  selected,
+  onClick,
+}: {
+  eq: Equipment;
+  selected: boolean;
+  onClick: (id: string) => void;
+}) {
   const [hovered, setHovered] = useState(false);
   const c = eq.color || "#2ed573";
   return (
     <group position={eq.position} scale={eq.scale}>
-      <mesh position={[0, 0.3, 0]} castShadow
-        onPointerOver={() => setHovered(true)} onPointerOut={() => setHovered(false)}
-        onClick={(e) => { e.stopPropagation(); onClick(eq.id); }}>
+      <mesh
+        position={[0, 0.3, 0]}
+        castShadow
+        onPointerOver={() => setHovered(true)}
+        onPointerOut={() => setHovered(false)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick(eq.id);
+        }}
+      >
         <boxGeometry args={[8, 0.4, 1.5]} />
-        <meshStandardMaterial color={c} emissive={hovered || selected ? c : "#000"} emissiveIntensity={hovered ? 0.4 : selected ? 0.6 : 0} metalness={0.4} roughness={0.5} />
+        <meshStandardMaterial
+          color={c}
+          emissive={hovered || selected ? c : "#000"}
+          emissiveIntensity={hovered ? 0.4 : selected ? 0.6 : 0}
+          metalness={0.4}
+          roughness={0.5}
+        />
       </mesh>
       {/* belt */}
       <mesh position={[0, 0.52, 0]}>
@@ -83,15 +146,35 @@ function Line({ eq, selected, onClick }: { eq: Equipment; selected: boolean; onC
   );
 }
 
-function Warehouse({ eq, selected, onClick }: { eq: Equipment; selected: boolean; onClick: (id: string) => void }) {
+function Warehouse({
+  eq,
+  selected,
+  onClick,
+}: {
+  eq: Equipment;
+  selected: boolean;
+  onClick: (id: string) => void;
+}) {
   const [hovered, setHovered] = useState(false);
   return (
     <group position={eq.position} scale={eq.scale}>
-      <mesh position={[0, 1.5, 0]} castShadow
-        onPointerOver={() => setHovered(true)} onPointerOut={() => setHovered(false)}
-        onClick={(e) => { e.stopPropagation(); onClick(eq.id); }}>
+      <mesh
+        position={[0, 1.5, 0]}
+        castShadow
+        onPointerOver={() => setHovered(true)}
+        onPointerOut={() => setHovered(false)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick(eq.id);
+        }}
+      >
         <boxGeometry args={[6, 3, 4]} />
-        <meshStandardMaterial color="#a4b0be" emissive={hovered || selected ? "#fff" : "#000"} emissiveIntensity={hovered ? 0.15 : selected ? 0.25 : 0} roughness={0.8} />
+        <meshStandardMaterial
+          color="#a4b0be"
+          emissive={hovered || selected ? "#fff" : "#000"}
+          emissiveIntensity={hovered ? 0.15 : selected ? 0.25 : 0}
+          roughness={0.8}
+        />
       </mesh>
       {/* roof */}
       <mesh position={[0, 3.2, 0]} castShadow>
@@ -102,19 +185,40 @@ function Warehouse({ eq, selected, onClick }: { eq: Equipment; selected: boolean
   );
 }
 
-function EquipmentRenderer({ eq, selected, onClick }: { eq: Equipment; selected: boolean; onClick: (id: string) => void }) {
+function EquipmentRenderer({
+  eq,
+  selected,
+  onClick,
+}: {
+  eq: Equipment;
+  selected: boolean;
+  onClick: (id: string) => void;
+}) {
   switch (eq.type) {
-    case "tank": return <Tank eq={eq} selected={selected} onClick={onClick} />;
-    case "pump": return <Pump eq={eq} selected={selected} onClick={onClick} />;
-    case "line": return <Line eq={eq} selected={selected} onClick={onClick} />;
-    case "warehouse": return <Warehouse eq={eq} selected={selected} onClick={onClick} />;
-    default: return null;
+    case "tank":
+      return <Tank eq={eq} selected={selected} onClick={onClick} />;
+    case "pump":
+      return <Pump eq={eq} selected={selected} onClick={onClick} />;
+    case "line":
+      return <Line eq={eq} selected={selected} onClick={onClick} />;
+    case "warehouse":
+      return <Warehouse eq={eq} selected={selected} onClick={onClick} />;
+    default:
+      return null;
   }
 }
 
 /* ── SCADA overlay card ─────────────────────────────────────── */
 
-function ScadaCard({ eq, workOrder, selected }: { eq: Equipment; workOrder?: ActiveWorkOrder; selected: boolean }) {
+function ScadaCard({
+  eq,
+  workOrder,
+  selected,
+}: {
+  eq: Equipment;
+  workOrder?: ActiveWorkOrder;
+  selected: boolean;
+}) {
   const y = eq.type === "tank" ? 4.2 : eq.type === "warehouse" ? 4 : eq.type === "line" ? 1.2 : 1.6;
   const isActive = workOrder?.status === "In Process";
 
@@ -125,46 +229,83 @@ function ScadaCard({ eq, workOrder, selected }: { eq: Equipment; workOrder?: Act
       distanceFactor={20}
       style={{ pointerEvents: "none", userSelect: "none" }}
     >
-      <div style={{
-        background: selected ? "rgba(0,0,0,0.9)" : "rgba(0,0,0,0.75)",
-        color: "white",
-        padding: "6px 10px",
-        borderRadius: "6px",
-        fontSize: "11px",
-        fontFamily: "'SF Mono', 'Courier New', monospace",
-        whiteSpace: "nowrap",
-        minWidth: 100,
-        border: selected ? "1.5px solid #60a5fa" : isActive ? "1px solid #22c55e" : "1px solid rgba(255,255,255,0.15)",
-        boxShadow: isActive ? "0 0 8px rgba(34,197,94,0.4)" : "0 2px 8px rgba(0,0,0,0.3)",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 2 }}>
+      <div
+        style={{
+          background: selected ? "rgba(0,0,0,0.9)" : "rgba(0,0,0,0.75)",
+          color: "white",
+          padding: "6px 10px",
+          borderRadius: "6px",
+          fontSize: "11px",
+          fontFamily: "'SF Mono', 'Courier New', monospace",
+          whiteSpace: "nowrap",
+          minWidth: 100,
+          border: selected
+            ? "1.5px solid #60a5fa"
+            : isActive
+              ? "1px solid #22c55e"
+              : "1px solid rgba(255,255,255,0.15)",
+          boxShadow: isActive ? "0 0 8px rgba(34,197,94,0.4)" : "0 2px 8px rgba(0,0,0,0.3)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 8,
+            marginBottom: 2,
+          }}
+        >
           <span style={{ fontWeight: 700, fontSize: 12 }}>{eq.id}</span>
-          <span style={{
-            width: 8, height: 8, borderRadius: "50%",
-            background: isActive ? "#22c55e" : workOrder ? "#eab308" : "#6b7280",
-            boxShadow: isActive ? "0 0 6px #22c55e" : "none",
-          }} />
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: isActive ? "#22c55e" : workOrder ? "#eab308" : "#6b7280",
+              boxShadow: isActive ? "0 0 6px #22c55e" : "none",
+            }}
+          />
         </div>
-        <div style={{ opacity: 0.7, fontSize: 10, marginBottom: workOrder ? 4 : 0 }}>{eq.label}</div>
+        <div style={{ opacity: 0.7, fontSize: 10, marginBottom: workOrder ? 4 : 0 }}>
+          {eq.label}
+        </div>
         {workOrder && (
           <>
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 3, marginTop: 2 }}>
-              <div style={{ fontSize: 10, color: "#93c5fd" }}>{workOrder.item_name || workOrder.production_item}</div>
+            <div
+              style={{ borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 3, marginTop: 2 }}
+            >
+              <div style={{ fontSize: 10, color: "#93c5fd" }}>
+                {workOrder.item_name || workOrder.production_item}
+              </div>
               <div style={{ display: "flex", gap: 8, fontSize: 10, marginTop: 2 }}>
                 <span style={{ color: "#86efac" }}>
                   {workOrder.produced_qty}/{workOrder.qty}
                 </span>
                 <span style={{ opacity: 0.5 }}>
-                  {workOrder.qty > 0 ? Math.round((workOrder.produced_qty / workOrder.qty) * 100) : 0}%
+                  {workOrder.qty > 0
+                    ? Math.round((workOrder.produced_qty / workOrder.qty) * 100)
+                    : 0}
+                  %
                 </span>
               </div>
             </div>
           </>
         )}
         {!workOrder && eq.parameters.length > 0 && (
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 3, marginTop: 2 }}>
+          <div
+            style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 3, marginTop: 2 }}
+          >
             {eq.parameters.slice(0, 2).map((p) => (
-              <div key={p.key} style={{ display: "flex", justifyContent: "space-between", fontSize: 10, opacity: 0.5 }}>
+              <div
+                key={p.key}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: 10,
+                  opacity: 0.5,
+                }}
+              >
                 <span>{p.label}</span>
                 <span>— {p.unit}</span>
               </div>
@@ -188,12 +329,23 @@ interface FactorySceneProps {
   viewMode?: "3d" | "2d";
 }
 
-export function FactoryScene({ onSelectEquipment, selectedEquipment, workOrders = [], showPipes = true, showFlow = true, playbackSnapshot, viewMode = "3d" }: FactorySceneProps) {
+export function FactoryScene({
+  onSelectEquipment,
+  selectedEquipment,
+  workOrders = [],
+  showPipes = true,
+  showFlow = true,
+  playbackSnapshot,
+  viewMode = "3d",
+}: FactorySceneProps) {
   // Build a map: linkedWorkstation → work order (live mode)
-  const woByWorkstation = new Map<string, ActiveWorkOrder>();
-  for (const wo of workOrders) {
-    if (wo.workstation) woByWorkstation.set(wo.workstation, wo);
-  }
+  const woByWorkstation = useMemo(() => {
+    const map = new Map<string, ActiveWorkOrder>();
+    for (const wo of workOrders) {
+      if (wo.workstation) map.set(wo.workstation, wo);
+    }
+    return map;
+  }, [workOrders]);
 
   // Compute active pipe flows
   // In playback mode: use snapshot. In live mode: derive from work orders.
@@ -209,8 +361,12 @@ export function FactoryScene({ onSelectEquipment, selectedEquipment, workOrders 
     }
     return set;
   }, [woByWorkstation, playbackSnapshot]);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  // useSyncExternalStore gives false on server (SSR), true on client — no effect needed
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   if (!mounted) return <div style={{ width: "100%", height: "100%", background: "#e5e7eb" }} />;
 
@@ -228,17 +384,25 @@ export function FactoryScene({ onSelectEquipment, selectedEquipment, workOrders 
     >
       {/* Lights */}
       <ambientLight intensity={0.6} />
-      <directionalLight position={[15, 20, 10]} intensity={1.5} castShadow
-        shadow-mapSize-width={2048} shadow-mapSize-height={2048}
-        shadow-camera-far={60} shadow-camera-left={-25} shadow-camera-right={25}
-        shadow-camera-top={25} shadow-camera-bottom={-25}
+      <directionalLight
+        position={[15, 20, 10]}
+        intensity={1.5}
+        castShadow
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-camera-far={60}
+        shadow-camera-left={-25}
+        shadow-camera-right={25}
+        shadow-camera-top={25}
+        shadow-camera-bottom={-25}
       />
       <directionalLight position={[-10, 10, -5]} intensity={0.4} />
       <color attach="background" args={["#e5e7eb"]} />
 
       {/* Controls */}
       <OrbitControls
-        enableDamping dampingFactor={0.1}
+        enableDamping
+        dampingFactor={0.1}
         target={[0, 0, 1]}
         minDistance={viewMode === "2d" ? 20 : 8}
         maxDistance={viewMode === "2d" ? 80 : 60}
@@ -273,11 +437,7 @@ export function FactoryScene({ onSelectEquipment, selectedEquipment, workOrders 
               selected={selectedEquipment === eq.id}
               onClick={(id) => onSelectEquipment?.(id)}
             />
-            <ScadaCard
-              eq={eq}
-              workOrder={wo}
-              selected={selectedEquipment === eq.id}
-            />
+            <ScadaCard eq={eq} workOrder={wo} selected={selectedEquipment === eq.id} />
           </group>
         );
       })}

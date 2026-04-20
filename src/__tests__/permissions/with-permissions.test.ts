@@ -7,10 +7,9 @@ vi.mock("@/lib/permissions/resolve-context", () => ({
 }));
 
 vi.mock("@/lib/permissions/check-grant", async () => {
-  const actual =
-    await vi.importActual<typeof import("@/lib/permissions/check-grant")>(
-      "@/lib/permissions/check-grant",
-    );
+  const actual = await vi.importActual<typeof import("@/lib/permissions/check-grant")>(
+    "@/lib/permissions/check-grant",
+  );
   return {
     ...actual,
     logDenial: vi.fn().mockResolvedValue(undefined),
@@ -52,7 +51,9 @@ describe("withPermissions — enforce mode", () => {
   });
 
   it("runs the handler when an unscoped capability is granted", async () => {
-    mockedResolve.mockResolvedValue(ctx({ grantedCapabilities: new Set(["sales_invoice.create"]) }));
+    mockedResolve.mockResolvedValue(
+      ctx({ grantedCapabilities: new Set(["sales_invoice.create"]) }),
+    );
 
     const handler = vi.fn().mockResolvedValue("ok");
     const guarded = withPermissions<{ foo: string }, string>({
@@ -98,7 +99,10 @@ describe("withPermissions — enforce mode", () => {
     })(handler);
 
     await expect(guarded({ lineId: "A" })).resolves.toEqual({ id: 1 });
-    expect(handler).toHaveBeenCalledWith({ lineId: "A" }, expect.objectContaining({ tenant: "anjan" }));
+    expect(handler).toHaveBeenCalledWith(
+      { lineId: "A" },
+      expect.objectContaining({ tenant: "anjan" }),
+    );
   });
 
   it("rejects require-mode when scope value is outside the allowed set", async () => {
@@ -145,9 +149,7 @@ describe("withPermissions — enforce mode", () => {
   });
 
   it("rejects filter-mode when user has zero scope values", async () => {
-    mockedResolve.mockResolvedValue(
-      ctx({ grantedCapabilities: new Set(["production.read"]) }),
-    );
+    mockedResolve.mockResolvedValue(ctx({ grantedCapabilities: new Set(["production.read"]) }));
 
     const handler = vi.fn();
     const guarded = withPermissions<void, unknown>({

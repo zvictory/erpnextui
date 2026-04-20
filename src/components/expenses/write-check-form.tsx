@@ -296,10 +296,7 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
             setRateInput(String(R));
 
             // Expense amounts are stored in payee currency — no reverse-conversion needed
-            const total = debitAccounts.reduce(
-              (s, a) => s + (a.debit_in_account_currency || 0),
-              0,
-            );
+            const total = debitAccounts.reduce((s, a) => s + (a.debit_in_account_currency || 0), 0);
             setConvertedTotal(String(roundTo2(total * R)));
           }
         } else {
@@ -506,8 +503,7 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>{t("totalAmount")}</span>
                 <span className="font-mono font-medium text-foreground">
-                  {formatNumber(expenseTotal, 2)}{" "}
-                  {paymentCurrency}
+                  {formatNumber(expenseTotal, 2)} {paymentCurrency}
                 </span>
               </div>
 

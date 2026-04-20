@@ -97,16 +97,12 @@ describe("resolveAuthContext — grant loading", () => {
 
   it("returns cached context on second call without hitting the DB again", async () => {
     setSession("anjan", "cache@example.com");
-    stubbedRows = [
-      { capabilityId: "production.read", scopeDim: "line", scopeValue: "A" },
-    ];
+    stubbedRows = [{ capabilityId: "production.read", scopeDim: "line", scopeValue: "A" }];
 
     const first = await resolveAuthContext();
 
     // Swap rows — a cache hit should ignore this and return the first snapshot.
-    stubbedRows = [
-      { capabilityId: "production.read", scopeDim: "line", scopeValue: "B" },
-    ];
+    stubbedRows = [{ capabilityId: "production.read", scopeDim: "line", scopeValue: "B" }];
     const second = await resolveAuthContext();
 
     expect(second).toBe(first);
@@ -115,14 +111,10 @@ describe("resolveAuthContext — grant loading", () => {
 
   it("invalidateAuthContext forces a fresh DB read for the next call", async () => {
     setSession("anjan", "invalid@example.com");
-    stubbedRows = [
-      { capabilityId: "production.read", scopeDim: "line", scopeValue: "A" },
-    ];
+    stubbedRows = [{ capabilityId: "production.read", scopeDim: "line", scopeValue: "A" }];
     await resolveAuthContext();
 
-    stubbedRows = [
-      { capabilityId: "production.read", scopeDim: "line", scopeValue: "Z" },
-    ];
+    stubbedRows = [{ capabilityId: "production.read", scopeDim: "line", scopeValue: "Z" }];
     invalidateAuthContext("anjan", "invalid@example.com");
 
     const refreshed = await resolveAuthContext();
@@ -140,9 +132,7 @@ describe("resolveAuthContext — grant loading", () => {
 
   it("lowercases email in cookie and in the cache key", async () => {
     setSession("anjan", "Mixed@Example.com");
-    stubbedRows = [
-      { capabilityId: "dashboard.read", scopeDim: "*", scopeValue: "*" },
-    ];
+    stubbedRows = [{ capabilityId: "dashboard.read", scopeDim: "*", scopeValue: "*" }];
 
     const ctx = await resolveAuthContext();
     expect(ctx.user).toBe("mixed@example.com");

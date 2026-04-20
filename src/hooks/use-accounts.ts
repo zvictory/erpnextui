@@ -755,7 +755,7 @@ export function useCreateOpeningBalanceJE() {
         },
       ];
 
-      const je = await frappe.createDoc("Journal Entry", {
+      const je = await frappe.createDoc<{ name: string }>("Journal Entry", {
         doctype: "Journal Entry",
         company,
         posting_date: date,
@@ -764,7 +764,7 @@ export function useCreateOpeningBalanceJE() {
         user_remark: memo || "Opening Balance",
         accounts,
       });
-      await frappe.submit(je as Record<string, unknown>);
+      await frappe.submitWithRetry("Journal Entry", je.name);
       return je as { name: string };
     },
     onSuccess: () => {

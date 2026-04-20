@@ -617,9 +617,7 @@ export default function ReceivePaymentPage() {
                           {formatNumber(inv.grand_total)}
                         </TableCell>
                         <TableCell className="text-right tabular-nums text-sm">
-                          {formatNumber(
-                            docOutstandingMap.get(inv.name) ?? inv.outstanding_amount,
-                          )}
+                          {formatNumber(docOutstandingMap.get(inv.name) ?? inv.outstanding_amount)}
                         </TableCell>
                         <TableCell className="text-right">
                           <Input

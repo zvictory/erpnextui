@@ -13,7 +13,11 @@ export function validateLayout(
   const ids = new Set<string>();
   for (const eq of equipment) {
     if (ids.has(eq.id)) {
-      errors.push({ level: "error", message: `Duplicate equipment ID: ${eq.id}`, equipmentId: eq.id });
+      errors.push({
+        level: "error",
+        message: `Duplicate equipment ID: ${eq.id}`,
+        equipmentId: eq.id,
+      });
     }
     ids.add(eq.id);
   }
@@ -39,10 +43,18 @@ export function validateLayout(
   // 3. Orphan pipes — endpoint references missing equipment
   for (const pipe of pipes) {
     if (!equipment.find((e) => e.id === pipe.from)) {
-      errors.push({ level: "error", message: `Pipe ${pipe.id}: source "${pipe.from}" not found`, pipeId: pipe.id });
+      errors.push({
+        level: "error",
+        message: `Pipe ${pipe.id}: source "${pipe.from}" not found`,
+        pipeId: pipe.id,
+      });
     }
     if (!equipment.find((e) => e.id === pipe.to)) {
-      errors.push({ level: "error", message: `Pipe ${pipe.id}: target "${pipe.to}" not found`, pipeId: pipe.id });
+      errors.push({
+        level: "error",
+        message: `Pipe ${pipe.id}: target "${pipe.to}" not found`,
+        pipeId: pipe.id,
+      });
     }
   }
 
@@ -80,7 +92,10 @@ export function validateLayout(
     }
     for (const stageId of line.stages) {
       if (!equipment.find((e) => e.id === stageId)) {
-        errors.push({ level: "error", message: `Production line "${line.name}": stage "${stageId}" not found` });
+        errors.push({
+          level: "error",
+          message: `Production line "${line.name}": stage "${stageId}" not found`,
+        });
       }
     }
   }

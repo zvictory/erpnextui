@@ -108,10 +108,7 @@ export default function CurrencyAuditPage() {
               value={formatCurrency(totalDrift, "UZS", true)}
               tone={totalDrift === 0 ? "ok" : "warn"}
             />
-            <StatCard
-              label="Period"
-              value={`${fromDate} → ${toDate}`}
-            />
+            <StatCard label="Period" value={`${fromDate} → ${toDate}`} />
             <StatCard label="Company" value={company || "—"} />
           </div>
 
@@ -131,9 +128,7 @@ export default function CurrencyAuditPage() {
                   <AlertTriangle className="size-4 text-amber-500" />
                   Mismatches
                 </CardTitle>
-                <span className="text-xs text-muted-foreground">
-                  sorted by largest drift
-                </span>
+                <span className="text-xs text-muted-foreground">sorted by largest drift</span>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
@@ -180,9 +175,7 @@ export default function CurrencyAuditPage() {
                             <td
                               className={
                                 "px-3 py-2 text-right font-mono text-xs font-semibold " +
-                                (Math.abs(m.drift) > 1
-                                  ? "text-destructive"
-                                  : "text-amber-600")
+                                (Math.abs(m.drift) > 1 ? "text-destructive" : "text-amber-600")
                               }
                             >
                               {m.drift > 0 ? "+" : ""}
@@ -203,15 +196,7 @@ export default function CurrencyAuditPage() {
   );
 }
 
-function StatCard({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone?: "ok" | "warn";
-}) {
+function StatCard({ label, value, tone }: { label: string; value: string; tone?: "ok" | "warn" }) {
   const border =
     tone === "warn"
       ? "border-amber-500/30 bg-amber-500/5"

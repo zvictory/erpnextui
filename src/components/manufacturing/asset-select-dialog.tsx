@@ -104,7 +104,10 @@ export function AssetSelectDialog({ open, onOpenChange, onSelect }: AssetSelectD
                         <span className="ml-2 font-medium text-sm">{asset.name}</span>
                       </div>
                       {asset.status && asset.status !== "operational" && (
-                        <Badge variant={statusVariant[asset.status] ?? "outline"} className="text-xs">
+                        <Badge
+                          variant={statusVariant[asset.status] ?? "outline"}
+                          className="text-xs"
+                        >
                           {statusLabel[asset.status] ?? asset.status}
                         </Badge>
                       )}

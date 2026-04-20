@@ -103,6 +103,12 @@ export function AppHeader() {
         // non-fatal
       }
     }
+    // Tear down server-side permission session cookies.
+    try {
+      await fetch("/api/auth/establish", { method: "DELETE", credentials: "include" });
+    } catch {
+      // non-fatal
+    }
     logout();
     router.replace("/login");
   }

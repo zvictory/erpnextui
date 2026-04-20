@@ -49,9 +49,7 @@ export function CompanySwitcher() {
 
     // Try to restore this user's last-used company
     const user = useAuthStore.getState().user;
-    const saved = user
-      ? localStorage.getItem(`erpnext-company-${user}`)
-      : null;
+    const saved = user ? localStorage.getItem(`erpnext-company-${user}`) : null;
 
     if (saved && companyNames.includes(saved)) {
       setCompany(saved);

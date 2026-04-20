@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatInvoiceCurrency, formatCurrency } from "@/lib/formatters";
 import { useCurrencyMap } from "@/hooks/use-accounts";
@@ -20,6 +21,7 @@ interface PartyRow {
   outstanding_balance: number | null;
   currency_balances: CurrencyBalance[];
   currency?: string;
+  disabled?: 0 | 1;
 }
 
 interface PartyListPanelProps {
@@ -205,8 +207,23 @@ export function PartyListPanel({
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate leading-tight">
-                      {party.displayName}
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={cn(
+                          "text-sm font-medium truncate leading-tight",
+                          party.disabled && "text-muted-foreground line-through",
+                        )}
+                      >
+                        {party.displayName}
+                      </span>
+                      {party.disabled === 1 && (
+                        <Badge
+                          variant="secondary"
+                          className="text-[9px] h-3.5 px-1 shrink-0 text-red-600"
+                        >
+                          Disabled
+                        </Badge>
+                      )}
                     </div>
                     <div className="text-xs mt-0.5">
                       {balancesLoading ? (

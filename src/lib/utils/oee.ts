@@ -18,8 +18,14 @@ interface OEEInput {
  * OEE          = A × P × Q / 10000
  */
 export function calculateOEE(input: OEEInput): OEEResult {
-  const { plannedProductionTimeHours, downtimeHours, actualQty, capacityPerHour, goodQty, totalQty } =
-    input;
+  const {
+    plannedProductionTimeHours,
+    downtimeHours,
+    actualQty,
+    capacityPerHour,
+    goodQty,
+    totalQty,
+  } = input;
 
   // Availability
   const runTime = plannedProductionTimeHours - downtimeHours;

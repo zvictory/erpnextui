@@ -302,8 +302,7 @@ export async function getMaintenanceDashboardKPIs(month?: string) {
     // Default to current month
     const now = new Date();
     const monthStart =
-      month ??
-      `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+      month ?? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
     const [y, m] = monthStart.split("-").map(Number);
     const nextMonth = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
 

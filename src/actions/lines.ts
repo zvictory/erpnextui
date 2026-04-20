@@ -29,7 +29,12 @@ export async function getLines() {
       : await db
           .select()
           .from(productionLines)
-          .where(inArray(productionLines.id, [...allowed].map(Number).filter((n) => !Number.isNaN(n))))
+          .where(
+            inArray(
+              productionLines.id,
+              [...allowed].map(Number).filter((n) => !Number.isNaN(n)),
+            ),
+          )
           .orderBy(asc(productionLines.sortOrder));
 
     return { success: true as const, data: rows };
@@ -156,4 +161,3 @@ export async function deleteLine(id: number) {
     };
   }
 }
-

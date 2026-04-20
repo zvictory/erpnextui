@@ -63,11 +63,7 @@ interface ProductFormProps {
 
 // ─── Component ──────────────────────────────────────────────────────
 
-export function ProductForm({
-  open,
-  onOpenChange,
-  initialData,
-}: ProductFormProps) {
+export function ProductForm({ open, onOpenChange, initialData }: ProductFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -100,9 +96,7 @@ export function ProductForm({
 
       if (result.success) {
         toast.success(
-          isEditing
-            ? "Product updated successfully."
-            : "Product created successfully."
+          isEditing ? "Product updated successfully." : "Product created successfully.",
         );
         onOpenChange(false);
         router.refresh();

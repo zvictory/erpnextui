@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useEffect, useReducer, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,24 +25,74 @@ export function TenantForm({ tenantId }: TenantFormProps) {
   const createMutation = useCreateTenant();
   const updateMutation = useUpdateTenant();
 
-  const [slug, setSlug] = useState("");
-  const [name, setName] = useState("");
-  const [url, setUrl] = useState("");
-  const [apiKey, setApiKey] = useState("");
-  const [enabled, setEnabled] = useState(true);
-  const [enabledModuleGroups, setEnabledModuleGroups] = useState<string[]>([
-    ...ALL_MODULE_GROUP_KEYS,
-  ]);
+  type TenantState = {
+    slug: string;
+    name: string;
+    url: string;
+    apiKey: string;
+    enabled: boolean;
+    enabledModuleGroups: string[];
+  };
+  type TenantAction =
+    | { type: "POPULATE"; tenant: NonNullable<NonNullable<typeof tenantData>["tenant"]> }
+    | {
+        type: "SET_FIELD";
+        field: keyof Omit<TenantState, "enabled" | "enabledModuleGroups">;
+        value: string;
+      }
+    | { type: "SET_ENABLED"; value: boolean }
+    | { type: "SET_MODULES"; value: string[] };
 
+  const [tenantState, dispatchTenant] = useReducer(
+    (state: TenantState, action: TenantAction): TenantState => {
+      switch (action.type) {
+        case "POPULATE":
+          return {
+            ...state,
+            slug: action.tenant.id,
+            name: action.tenant.name,
+            url: action.tenant.url,
+            enabled: action.tenant.enabled,
+            enabledModuleGroups: action.tenant.enabledModuleGroups ?? [...ALL_MODULE_GROUP_KEYS],
+          };
+        case "SET_FIELD":
+          return { ...state, [action.field]: action.value };
+        case "SET_ENABLED":
+          return { ...state, enabled: action.value };
+        case "SET_MODULES":
+          return { ...state, enabledModuleGroups: action.value };
+        default:
+          return state;
+      }
+    },
+    {
+      slug: "",
+      name: "",
+      url: "",
+      apiKey: "",
+      enabled: true,
+      enabledModuleGroups: [...ALL_MODULE_GROUP_KEYS],
+    },
+  );
+
+  const { slug, name, url, apiKey, enabled, enabledModuleGroups } = tenantState;
+  const setSlug = (v: string) => dispatchTenant({ type: "SET_FIELD", field: "slug", value: v });
+  const setName = (v: string) => dispatchTenant({ type: "SET_FIELD", field: "name", value: v });
+  const setUrl = (v: string) => dispatchTenant({ type: "SET_FIELD", field: "url", value: v });
+  const setApiKey = (v: string) => dispatchTenant({ type: "SET_FIELD", field: "apiKey", value: v });
+  const setEnabled = (v: boolean) => dispatchTenant({ type: "SET_ENABLED", value: v });
+  const setEnabledModuleGroups = (v: string[] | ((prev: string[]) => string[])) => {
+    if (typeof v === "function") {
+      dispatchTenant({ type: "SET_MODULES", value: v(enabledModuleGroups) });
+    } else {
+      dispatchTenant({ type: "SET_MODULES", value: v });
+    }
+  };
+
+  // Populate form when tenant data loads (single dispatch — no cascading renders)
   useEffect(() => {
     if (tenantData?.tenant) {
-      const t = tenantData.tenant;
-      setSlug(t.id);
-      setName(t.name);
-      setUrl(t.url);
-      // apiKey is masked — leave field empty unless user types new one
-      setEnabled(t.enabled);
-      setEnabledModuleGroups(t.enabledModuleGroups ?? [...ALL_MODULE_GROUP_KEYS]);
+      dispatchTenant({ type: "POPULATE", tenant: tenantData.tenant });
     }
   }, [tenantData]);
 

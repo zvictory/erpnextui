@@ -70,3 +70,22 @@ npm run test         # Vitest — run tests once
 npm run test:watch   # Vitest — watch mode
 npx shadcn@latest add <component>  # Add shadcn/ui component
 ```
+
+## Agents & Commands
+
+- **`@verify-app`**: Run build + lint + format + tests — use after any significant change
+- **`@deploy`**: Full production deploy (build → rsync → PM2 restart)
+- **`/deploy`**: Slash command shortcut for the deploy agent
+
+## Gotchas
+
+_Add a line here every time Claude does something wrong, so it doesn't repeat._
+
+- ERPNext returns HTTP 417 for informational messages (e.g. "Item Price added") even when the doc IS saved — don't treat 417 as a hard error in `frappeCall`.
+- `Space_Grotesk` font does NOT support Cyrillic — only use `Inter` for Russian/Uzbek text.
+- Never use `git add -A` or `git add .` — always stage specific files to avoid committing `.env.local` or `data/`.
+- The proxy at `/api/proxy/[...path]` requires `X-Frappe-Site` header — requests without it return 400.
+- `frappe.client.cancel` may fail on some doctypes — the client has a fallback to `run_doc_method`.
+- Don't add redirects from `/` in `next.config.ts` — the landing page lives at `/`, the app at `/login`.
+- `clearTenantState()` must be called on login (before setting new tenant) to prevent cross-tenant data leaks.
+- `settings.local.json` is gitignored (personal/machine-specific). `settings.json` is committed (shared team config).

@@ -103,9 +103,7 @@ export function SparePartsList() {
                   </Label>
                   <Input
                     value={formData.partCode}
-                    onChange={(e) =>
-                      setFormData((p) => ({ ...p, partCode: e.target.value }))
-                    }
+                    onChange={(e) => setFormData((p) => ({ ...p, partCode: e.target.value }))}
                     required
                   />
                 </div>
@@ -115,9 +113,7 @@ export function SparePartsList() {
                   </Label>
                   <Input
                     value={formData.name}
-                    onChange={(e) =>
-                      setFormData((p) => ({ ...p, name: e.target.value }))
-                    }
+                    onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
                     required
                   />
                 </div>
@@ -127,9 +123,7 @@ export function SparePartsList() {
                   <Label>{t("category")}</Label>
                   <Input
                     value={formData.category ?? ""}
-                    onChange={(e) =>
-                      setFormData((p) => ({ ...p, category: e.target.value }))
-                    }
+                    onChange={(e) => setFormData((p) => ({ ...p, category: e.target.value }))}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -205,17 +199,13 @@ export function SparePartsList() {
                   part.currentStock < part.minStock;
                 return (
                   <TableRow key={part.id}>
-                    <TableCell className="font-medium">
-                      {part.partCode}
-                    </TableCell>
+                    <TableCell className="font-medium">{part.partCode}</TableCell>
                     <TableCell>{part.name}</TableCell>
                     <TableCell>{part.category ?? "—"}</TableCell>
                     <TableCell className="text-right">
                       {formatNumber(part.currentStock ?? 0)}
                     </TableCell>
-                    <TableCell className="text-right">
-                      {formatNumber(part.minStock ?? 0)}
-                    </TableCell>
+                    <TableCell className="text-right">{formatNumber(part.minStock ?? 0)}</TableCell>
                     <TableCell>{part.storageLocation ?? "—"}</TableCell>
                     <TableCell>
                       {lowStock ? (
@@ -223,10 +213,7 @@ export function SparePartsList() {
                           {t("lowStock")}
                         </Badge>
                       ) : (
-                        <Badge
-                          variant="outline"
-                          className="text-xs text-emerald-600"
-                        >
+                        <Badge variant="outline" className="text-xs text-emerald-600">
                           {t("inStock")}
                         </Badge>
                       )}

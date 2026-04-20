@@ -156,6 +156,8 @@ export function DeliveryNoteForm({
                       setValue(`items.${index}.item_code`, v, { shouldValidate: true })
                     }
                     disabled={isReadOnly}
+                    descriptionField="item_name"
+                    showValueWithDescription
                   />
                 </div>
                 <div className="space-y-1">

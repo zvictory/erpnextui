@@ -10,7 +10,12 @@ interface PipeSegmentProps {
   active?: boolean;
 }
 
-export function PipeSegment({ points, color = "#888888", radius = 0.08, active }: PipeSegmentProps) {
+export function PipeSegment({
+  points,
+  color = "#888888",
+  radius = 0.08,
+  active,
+}: PipeSegmentProps) {
   const { geometry } = useMemo(() => {
     const vectors = points.map((p) => new THREE.Vector3(...p));
     const curve = new THREE.CatmullRomCurve3(vectors, false, "catmullrom", 0.5);

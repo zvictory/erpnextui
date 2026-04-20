@@ -13,8 +13,7 @@ import type { JournalEntry } from "@/types/journal-entry";
 export function useEmployeeCostInfo(employeeId: string) {
   return useQuery({
     queryKey: queryKeys.costing.employeeCost(employeeId),
-    queryFn: () =>
-      frappe.getDoc<EmployeeCostInfo>("Employee", employeeId),
+    queryFn: () => frappe.getDoc<EmployeeCostInfo>("Employee", employeeId),
     enabled: !!employeeId,
   });
 }
@@ -54,10 +53,7 @@ export function useUpdateEmployeeCost() {
       default_workstation?: string;
     }) => {
       const hourly = Math.round(params.monthly_salary / params.standard_hours);
-      const doc = await frappe.getDoc<Record<string, unknown>>(
-        "Employee",
-        params.employeeId,
-      );
+      const doc = await frappe.getDoc<Record<string, unknown>>("Employee", params.employeeId);
       return frappe.save<EmployeeCostInfo>({
         ...doc,
         custom_monthly_salary: params.monthly_salary,
@@ -145,17 +141,14 @@ async function findLaborAccrualJE(
   company: string,
 ): Promise<{ name: string; docstatus: 0 | 1 | 2 } | null> {
   const tag = `[LABOR-ACCRUAL:${workOrder}:${date}]`;
-  const results = await frappe.getList<{ name: string; docstatus: 0 | 1 | 2 }>(
-    "Journal Entry",
-    {
-      filters: [
-        ["company", "=", company],
-        ["user_remark", "like", `%${tag}%`],
-      ],
-      fields: ["name", "docstatus"],
-      limitPageLength: 5,
-    },
-  );
+  const results = await frappe.getList<{ name: string; docstatus: 0 | 1 | 2 }>("Journal Entry", {
+    filters: [
+      ["company", "=", company],
+      ["user_remark", "like", `%${tag}%`],
+    ],
+    fields: ["name", "docstatus"],
+    limitPageLength: 5,
+  });
   return results[0] ?? null;
 }
 
@@ -191,9 +184,7 @@ export async function accrueLaborForDate(
     const prev = employeeTotals.get(row.employee) ?? 0;
     employeeTotals.set(row.employee, roundTo2(prev + (row.amount || 0)));
   }
-  const totalAmount = roundTo2(
-    Array.from(employeeTotals.values()).reduce((s, a) => s + a, 0),
-  );
+  const totalAmount = roundTo2(Array.from(employeeTotals.values()).reduce((s, a) => s + a, 0));
 
   const existing = await findLaborAccrualJE(workOrder, date, company);
 
@@ -532,16 +523,10 @@ export function useCumulativeCosts(period: CostingPeriod, company: string) {
       const laborTotals = await fetchLaborTotalsByWorkOrder(workOrders.map((w) => w.name));
 
       const rawMaterials = stockEntries.reduce((s, e) => s + (e.total_amount || 0), 0);
-      const labor = workOrders.reduce(
-        (s, wo) => s + (laborTotals.get(wo.name)?.cost ?? 0),
-        0,
-      );
+      const labor = workOrders.reduce((s, wo) => s + (laborTotals.get(wo.name)?.cost ?? 0), 0);
 
       // Energy and depreciation are approximations from operating cost minus labor
-      const totalOperating = workOrders.reduce(
-        (s, wo) => s + (wo.total_operating_cost || 0),
-        0,
-      );
+      const totalOperating = workOrders.reduce((s, wo) => s + (wo.total_operating_cost || 0), 0);
       const energy = Math.round(totalOperating * 0.4);
       const depreciation = Math.round(totalOperating * 0.6);
 
@@ -651,17 +636,11 @@ export function useProductCostBreakdown(
       const rawByProduct = new Map<string, number>();
       for (const wo of workOrders) {
         const cost = seCostByWO.get(wo.name) ?? 0;
-        rawByProduct.set(
-          wo.production_item,
-          (rawByProduct.get(wo.production_item) ?? 0) + cost,
-        );
+        rawByProduct.set(wo.production_item, (rawByProduct.get(wo.production_item) ?? 0) + cost);
       }
 
       const totalQty = Array.from(byProduct.values()).reduce((s, p) => s + p.produced_qty, 0);
-      const totalHours = Array.from(byProduct.values()).reduce(
-        (s, p) => s + p.labor_hours,
-        0,
-      );
+      const totalHours = Array.from(byProduct.values()).reduce((s, p) => s + p.labor_hours, 0);
       const totalValue = Array.from(byProduct.values()).reduce(
         (s, p) => s + (rawByProduct.get(p.item_code) ?? 0) + p.labor_cost,
         0,
@@ -764,14 +743,8 @@ export function useVarianceAnalysis(period: CostingPeriod, company: string) {
       });
 
       const rawMaterial = stockEntries.reduce((s, e) => s + (e.total_amount || 0), 0);
-      const laborTotal = workOrders.reduce(
-        (s, wo) => s + (laborTotals.get(wo.name)?.cost ?? 0),
-        0,
-      );
-      const operatingTotal = workOrders.reduce(
-        (s, wo) => s + (wo.total_operating_cost || 0),
-        0,
-      );
+      const laborTotal = workOrders.reduce((s, wo) => s + (laborTotals.get(wo.name)?.cost ?? 0), 0);
+      const operatingTotal = workOrders.reduce((s, wo) => s + (wo.total_operating_cost || 0), 0);
       const actual = rawMaterial + laborTotal + operatingTotal;
 
       const variance = actual - absorbed;

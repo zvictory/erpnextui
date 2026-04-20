@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  ComposedChart,
-  Area,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-} from "recharts";
+import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -16,13 +9,7 @@ import {
   ChartLegendContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { format, parseISO } from "date-fns";
 
 // --- Types ------------------------------------------------------------------
@@ -58,9 +45,7 @@ export function EnergyChart({ data }: EnergyChartProps) {
       <Card>
         <CardHeader>
           <CardTitle>Energy Consumption Trend</CardTitle>
-          <CardDescription>
-            Daily electricity and gas consumption
-          </CardDescription>
+          <CardDescription>Daily electricity and gas consumption</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex h-[300px] items-center justify-center rounded-md border border-dashed">
@@ -86,16 +71,11 @@ export function EnergyChart({ data }: EnergyChartProps) {
     <Card>
       <CardHeader>
         <CardTitle>Energy Consumption Trend</CardTitle>
-        <CardDescription>
-          Daily electricity and gas consumption
-        </CardDescription>
+        <CardDescription>Daily electricity and gas consumption</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[300px] w-full">
-          <ComposedChart
-            data={chartData}
-            margin={{ top: 5, right: 10, left: 0, bottom: 0 }}
-          >
+          <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="fillElectricity" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="var(--color-electricityKwh)" stopOpacity={0.3} />
@@ -161,10 +141,44 @@ export function EnergyChart({ data }: EnergyChartProps) {
               }
             />
             <ChartLegend content={<ChartLegendContent />} />
-            <Area yAxisId="left" dataKey="electricityKwh" stroke="none" fill="url(#fillElectricity)" legendType="none" tooltipType="none" connectNulls />
-            <Area yAxisId="right" dataKey="gasM3" stroke="none" fill="url(#fillGas)" legendType="none" tooltipType="none" connectNulls />
-            <Line yAxisId="left" type="monotone" dataKey="electricityKwh" stroke="var(--color-electricityKwh)" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} connectNulls />
-            <Line yAxisId="right" type="monotone" dataKey="gasM3" stroke="var(--color-gasM3)" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} connectNulls />
+            <Area
+              yAxisId="left"
+              dataKey="electricityKwh"
+              stroke="none"
+              fill="url(#fillElectricity)"
+              legendType="none"
+              tooltipType="none"
+              connectNulls
+            />
+            <Area
+              yAxisId="right"
+              dataKey="gasM3"
+              stroke="none"
+              fill="url(#fillGas)"
+              legendType="none"
+              tooltipType="none"
+              connectNulls
+            />
+            <Line
+              yAxisId="left"
+              type="monotone"
+              dataKey="electricityKwh"
+              stroke="var(--color-electricityKwh)"
+              strokeWidth={2.5}
+              dot={{ r: 3 }}
+              activeDot={{ r: 5 }}
+              connectNulls
+            />
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="gasM3"
+              stroke="var(--color-gasM3)"
+              strokeWidth={2.5}
+              dot={{ r: 3 }}
+              activeDot={{ r: 5 }}
+              connectNulls
+            />
           </ComposedChart>
         </ChartContainer>
       </CardContent>

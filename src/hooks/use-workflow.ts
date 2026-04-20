@@ -247,15 +247,16 @@ export function useCreateInvoiceFromSO() {
 
       if (workflows.length > 0) {
         // Use workflow: get available transitions from Draft and apply the first one
-        const transitions = await frappe.call<
-          { action: string; next_state: string }[]
-        >("frappe.model.workflow.get_transitions", {
-          doc: JSON.stringify({
-            doctype: "Sales Invoice",
-            name: saved.name,
-            workflow_state: "Draft",
-          }),
-        });
+        const transitions = await frappe.call<{ action: string; next_state: string }[]>(
+          "frappe.model.workflow.get_transitions",
+          {
+            doc: JSON.stringify({
+              doctype: "Sales Invoice",
+              name: saved.name,
+              workflow_state: "Draft",
+            }),
+          },
+        );
         const transitionList = Array.isArray(transitions) ? transitions : [];
         if (transitionList.length > 0) {
           await frappe.call("frappe.model.workflow.apply_workflow", {
@@ -265,10 +266,7 @@ export function useCreateInvoiceFromSO() {
         }
       } else {
         // No workflow — direct submit
-        const fullDoc = await frappe.getDoc<Record<string, unknown>>(
-          "Sales Invoice",
-          saved.name,
-        );
+        const fullDoc = await frappe.getDoc<Record<string, unknown>>("Sales Invoice", saved.name);
         await frappe.submit(fullDoc);
       }
 

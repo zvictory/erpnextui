@@ -31,10 +31,7 @@ export async function getWorkOrderAsset(workOrder: string) {
 export async function saveWorkOrderAsset(workOrder: string, assetId: number) {
   // Upsert: delete existing then insert
   await db.delete(workOrderAssets).where(eq(workOrderAssets.workOrder, workOrder));
-  const [row] = await db
-    .insert(workOrderAssets)
-    .values({ workOrder, assetId })
-    .returning();
+  const [row] = await db.insert(workOrderAssets).values({ workOrder, assetId }).returning();
   return row;
 }
 

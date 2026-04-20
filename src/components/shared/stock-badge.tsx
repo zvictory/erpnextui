@@ -10,19 +10,12 @@ interface StockBadgeProps {
   className?: string;
 }
 
-export function StockBadge({
-  available,
-  required,
-  className,
-}: StockBadgeProps) {
+export function StockBadge({ available, required, className }: StockBadgeProps) {
   const t = useTranslations("workflow");
   const sufficient = available >= required;
 
   return (
-    <Badge
-      variant={sufficient ? "default" : "destructive"}
-      className={cn("text-xs", className)}
-    >
+    <Badge variant={sufficient ? "default" : "destructive"} className={cn("text-xs", className)}>
       {sufficient ? t("stockAvailable") : t("stockInsufficient")} ({available})
     </Badge>
   );

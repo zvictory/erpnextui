@@ -95,6 +95,22 @@ export function useLogin() {
         useAuthStore.getState().setFullName(data.full_name);
       }
       await fetchCsrfToken();
+
+      // Establish server-side session cookies (stable-tenant, stable-user-email)
+      // for the permission system. Fire-and-forget — non-fatal if it fails
+      // (permission checks will throw PermissionResolutionError, which in
+      // dryrun mode is allowed through).
+      try {
+        await fetch("/api/auth/establish", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ siteUrl: data.siteUrl }),
+        });
+      } catch {
+        // non-fatal
+      }
+
       queryClient.invalidateQueries({ queryKey: queryKeys.auth.session });
     },
   });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronsUpDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -28,6 +28,8 @@ interface LinkFieldProps {
   descriptionField?: string;
   /** Fallback display text when the value isn't found in the options list. */
   displayValue?: string;
+  /** Show "value — description" instead of just description when both exist. */
+  showValueWithDescription?: boolean;
 }
 
 export function LinkField({
@@ -40,14 +42,52 @@ export function LinkField({
   filters,
   descriptionField,
   displayValue,
+  showValueWithDescription = false,
 }: LinkFieldProps) {
   const [open, setOpen] = useState(false);
-  const { data: options = [], isLoading } = useLinkOptions(doctype, filters, descriptionField);
+  // When popover closes, reset search immediately via lazy initializer gating
+  const [search, setSearch] = useState("");
+  const [debounced, setDebounced] = useState("");
+  // Cache the selected option's description so it persists after popover closes
+  const [cachedLabel, setCachedLabel] = useState<string | undefined>(displayValue);
+
+  // Debounce search input — 300ms delay for server-side search
+  // (setDebounced runs inside a setTimeout callback — not a synchronous setState in the effect body)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Sync cachedLabel: prefer displayValue when it's available (derived, no effect needed)
+  const effectiveCachedLabel = displayValue || cachedLabel;
+
+  // When effectiveSearch differs from debounced (e.g. popover just closed), use "" for query
+  const searchQuery = open ? debounced : "";
+
+  const { data: options = [], isLoading } = useLinkOptions(
+    doctype,
+    filters,
+    descriptionField,
+    searchQuery,
+  );
 
   const selected = value ? options.find((o) => o.value === value) : undefined;
 
+  function formatLabel(opt: { value: string; description?: string }): string {
+    if (showValueWithDescription && opt.description) {
+      return `${opt.value} — ${opt.description}`;
+    }
+    return opt.description || opt.value;
+  }
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) setSearch("");
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -61,25 +101,29 @@ export function LinkField({
           )}
         >
           <span className="truncate">
-            {selected
-              ? selected.description || selected.value
-              : displayValue || value || placeholder}
+            {selected ? formatLabel(selected) : effectiveCachedLabel || value || placeholder}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <Command>
-          <CommandInput placeholder={`Search ${doctype.toLowerCase()}...`} />
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder={`Search ${doctype.toLowerCase()}...`}
+            value={search}
+            onValueChange={setSearch}
+          />
           <CommandList>
             <CommandEmpty>{isLoading ? "Loading..." : "No results found."}</CommandEmpty>
             <CommandGroup>
               {options.map((opt) => (
                 <CommandItem
                   key={opt.value}
-                  value={opt.description ? `${opt.value} ${opt.description}` : opt.value}
+                  value={opt.value}
                   onSelect={() => {
-                    onChange(opt.value === value ? "" : opt.value);
+                    const newVal = opt.value === value ? "" : opt.value;
+                    onChange(newVal);
+                    setCachedLabel(newVal ? formatLabel(opt) : undefined);
                     setOpen(false);
                   }}
                 >
@@ -89,9 +133,7 @@ export function LinkField({
                       value === opt.value ? "opacity-100" : "opacity-0",
                     )}
                   />
-                  <span>
-                    {opt.description || opt.value}
-                  </span>
+                  <span>{formatLabel(opt)}</span>
                 </CommandItem>
               ))}
             </CommandGroup>

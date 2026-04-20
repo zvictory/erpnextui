@@ -11,13 +11,7 @@ import { toast } from "sonner";
 import { updateSettings } from "@/actions/settings";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -31,13 +25,9 @@ import { Input } from "@/components/ui/input";
 // ─── Form schema ────────────────────────────────────────────────────
 
 const formSchema = z.object({
-  electricityPerKg: z
-    .number({ error: "Required" })
-    .min(0, "Must be 0 or greater"),
+  electricityPerKg: z.number({ error: "Required" }).min(0, "Must be 0 or greater"),
   gasPerKg: z.number({ error: "Required" }).min(0, "Must be 0 or greater"),
-  electricityPrice: z
-    .number({ error: "Required" })
-    .min(0, "Must be 0 or greater"),
+  electricityPrice: z.number({ error: "Required" }).min(0, "Must be 0 or greater"),
   gasPrice: z.number({ error: "Required" }).min(0, "Must be 0 or greater"),
 });
 
@@ -60,9 +50,7 @@ export function SettingsForm({ currentSettings }: SettingsFormProps) {
     defaultValues: {
       electricityPerKg: Number(currentSettings["electricity_per_kg"] ?? "0.46"),
       gasPerKg: Number(currentSettings["gas_per_kg"] ?? "0.021"),
-      electricityPrice: Number(
-        currentSettings["electricity_price"] ?? "1000"
-      ),
+      electricityPrice: Number(currentSettings["electricity_price"] ?? "1000"),
       gasPrice: Number(currentSettings["gas_price"] ?? "900"),
     },
   });
@@ -93,9 +81,7 @@ export function SettingsForm({ currentSettings }: SettingsFormProps) {
           <Card>
             <CardHeader>
               <CardTitle>Energy Consumption Rates</CardTitle>
-              <CardDescription>
-                Energy consumed per kilogram of output.
-              </CardDescription>
+              <CardDescription>Energy consumed per kilogram of output.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
@@ -152,9 +138,7 @@ export function SettingsForm({ currentSettings }: SettingsFormProps) {
           <Card>
             <CardHeader>
               <CardTitle>Energy Prices</CardTitle>
-              <CardDescription>
-                Current energy prices in UZS.
-              </CardDescription>
+              <CardDescription>Current energy prices in UZS.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField

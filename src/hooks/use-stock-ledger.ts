@@ -67,7 +67,14 @@ export function useItemBins(itemCode: string) {
     queryFn: async () => {
       const bins = await frappe.getList<BinEntry>("Bin", {
         filters: [["item_code", "=", itemCode]],
-        fields: ["item_code", "warehouse", "actual_qty", "stock_value", "valuation_rate"],
+        fields: [
+          "item_code",
+          "warehouse",
+          "actual_qty",
+          "reserved_qty",
+          "stock_value",
+          "valuation_rate",
+        ],
         limitPageLength: 0,
       });
       return enrichBinsWithItemNames(bins);

@@ -71,7 +71,6 @@ interface CreatePaymentEntryInput {
   counterAmount?: number;
 }
 
-
 export function useCreatePaymentEntry() {
   const qc = useQueryClient();
   return useMutation({
@@ -173,7 +172,8 @@ export function useCreatePaymentEntry() {
         paidAmount = amount;
         receivedAmount = amount;
         if (paidFromCurrency !== companyCurrency) {
-          sourceRate = (await fetchExchangeRate(paidFromCurrency, companyCurrency, postingDate)) ?? 1;
+          sourceRate =
+            (await fetchExchangeRate(paidFromCurrency, companyCurrency, postingDate)) ?? 1;
           targetRate = sourceRate;
         }
       } else if (data.counterAmount !== undefined && data.counterAmount > 0) {
@@ -195,7 +195,8 @@ export function useCreatePaymentEntry() {
           sourceRate = receivedAmount / paidAmount;
         } else {
           // Neither is company currency — fetch one rate, derive the other
-          sourceRate = (await fetchExchangeRate(paidFromCurrency, companyCurrency, postingDate)) ?? 1;
+          sourceRate =
+            (await fetchExchangeRate(paidFromCurrency, companyCurrency, postingDate)) ?? 1;
           const baseAmount = paidAmount * sourceRate;
           targetRate = receivedAmount > 0 ? baseAmount / receivedAmount : 1;
         }
@@ -204,7 +205,8 @@ export function useCreatePaymentEntry() {
         // After rounding the derived amount, re-derive rates so
         // paidAmount × sourceRate === receivedAmount × targetRate exactly.
         if (paidFromCurrency !== companyCurrency) {
-          sourceRate = (await fetchExchangeRate(paidFromCurrency, companyCurrency, postingDate)) ?? 1;
+          sourceRate =
+            (await fetchExchangeRate(paidFromCurrency, companyCurrency, postingDate)) ?? 1;
         }
         if (paidToCurrency !== companyCurrency) {
           targetRate = (await fetchExchangeRate(paidToCurrency, companyCurrency, postingDate)) ?? 1;

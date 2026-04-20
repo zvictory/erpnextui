@@ -1,11 +1,6 @@
 // ── Maintenance Types ───────────────────────────────────────
 
-export type MaintenanceType =
-  | "corrective"
-  | "preventive"
-  | "calibration"
-  | "cleaning"
-  | "capital";
+export type MaintenanceType = "corrective" | "preventive" | "calibration" | "cleaning" | "capital";
 
 export type ResolutionStatus =
   | "resolved"

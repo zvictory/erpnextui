@@ -24,7 +24,7 @@ const DROP_RESP = new Set([
 
 /** Strip Domain; strip Secure and SameSite=None on HTTP so localhost works */
 function rewriteSetCookie(cookie: string, isHttps: boolean): string {
-  let parts = cookie
+  const parts = cookie
     .split(";")
     .map((p) => p.trim())
     .filter((p) => {

@@ -191,7 +191,11 @@ export const BUILTIN_CAPABILITIES = {
   "nav.trialBalance": { module: "nav", labelKey: "nav.trialBalance", scopeDim: null },
   "nav.cashFlow": { module: "nav", labelKey: "nav.cashFlow", scopeDim: null },
   "nav.accountsReceivable": { module: "nav", labelKey: "nav.accountsReceivable", scopeDim: null },
-  "nav.customerBalanceSummary": { module: "nav", labelKey: "nav.customerBalanceSummary", scopeDim: null },
+  "nav.customerBalanceSummary": {
+    module: "nav",
+    labelKey: "nav.customerBalanceSummary",
+    scopeDim: null,
+  },
   "nav.accountsPayable": { module: "nav", labelKey: "nav.accountsPayable", scopeDim: null },
   "nav.generalLedger": { module: "nav", labelKey: "nav.generalLedger", scopeDim: null },
   "nav.currencyAudit": { module: "nav", labelKey: "nav.currencyAudit", scopeDim: null },
@@ -200,7 +204,11 @@ export const BUILTIN_CAPABILITIES = {
   "nav.permissions": { module: "nav", labelKey: "nav.permissions", scopeDim: null },
 
   "nav.assets": { module: "nav", labelKey: "nav.assets", scopeDim: null },
-  "nav.maintenanceDashboard": { module: "nav", labelKey: "nav.maintenanceDashboard", scopeDim: null },
+  "nav.maintenanceDashboard": {
+    module: "nav",
+    labelKey: "nav.maintenanceDashboard",
+    scopeDim: null,
+  },
   "nav.maintenanceLogs": { module: "nav", labelKey: "nav.maintenanceLogs", scopeDim: null },
   "nav.maintenanceSchedule": { module: "nav", labelKey: "nav.maintenanceSchedule", scopeDim: null },
   "nav.spareParts": { module: "nav", labelKey: "nav.spareParts", scopeDim: null },

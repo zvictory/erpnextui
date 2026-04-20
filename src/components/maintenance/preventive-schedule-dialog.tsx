@@ -53,10 +53,7 @@ interface PreventiveScheduleDialogProps {
   trigger?: React.ReactNode;
 }
 
-export function PreventiveScheduleDialog({
-  assetId,
-  trigger,
-}: PreventiveScheduleDialogProps) {
+export function PreventiveScheduleDialog({ assetId, trigger }: PreventiveScheduleDialogProps) {
   const t = useTranslations("maintenance");
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -88,8 +85,7 @@ export function PreventiveScheduleDialog({
   });
 
   const mutation = useMutation({
-    mutationFn: (data: PreventiveScheduleFormValues) =>
-      createPreventiveSchedule(data),
+    mutationFn: (data: PreventiveScheduleFormValues) => createPreventiveSchedule(data),
     onSuccess: (res) => {
       if (res.success) {
         toast.success(t("scheduleCreated"));
@@ -104,18 +100,13 @@ export function PreventiveScheduleDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? <Button>{t("newSchedule")}</Button>}
-      </DialogTrigger>
+      <DialogTrigger asChild>{trigger ?? <Button>{t("newSchedule")}</Button>}</DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{t("newSchedule")}</DialogTitle>
         </DialogHeader>
 
-        <form
-          onSubmit={handleSubmit((data) => mutation.mutate(data))}
-          className="space-y-4"
-        >
+        <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
           {!assetId && (
             <div className="space-y-1.5">
               <Label>
@@ -137,9 +128,7 @@ export function PreventiveScheduleDialog({
                 </SelectContent>
               </Select>
               {errors.assetId && (
-                <p className="text-sm text-destructive">
-                  {errors.assetId.message}
-                </p>
+                <p className="text-sm text-destructive">{errors.assetId.message}</p>
               )}
             </div>
           )}
@@ -150,9 +139,7 @@ export function PreventiveScheduleDialog({
             </Label>
             <Input {...register("taskName")} />
             {errors.taskName && (
-              <p className="text-sm text-destructive">
-                {errors.taskName.message}
-              </p>
+              <p className="text-sm text-destructive">{errors.taskName.message}</p>
             )}
           </div>
 
@@ -164,18 +151,13 @@ export function PreventiveScheduleDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>{t("frequencyValue")}</Label>
-              <Input
-                type="number"
-                {...register("frequencyValue", { valueAsNumber: true })}
-              />
+              <Input type="number" {...register("frequencyValue", { valueAsNumber: true })} />
             </div>
             <div className="space-y-1.5">
               <Label>{t("frequencyType")}</Label>
               <Select
                 value={watch("frequencyType")}
-                onValueChange={(v) =>
-                  setValue("frequencyType", v as FormValues["frequencyType"])
-                }
+                onValueChange={(v) => setValue("frequencyType", v as FormValues["frequencyType"])}
               >
                 <SelectTrigger>
                   <SelectValue />

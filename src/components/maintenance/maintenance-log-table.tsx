@@ -72,39 +72,26 @@ export function MaintenanceLogTable({ assetId }: MaintenanceLogTableProps) {
               <TableCell>{formatDate(log.date)}</TableCell>
               {!assetId && (
                 <TableCell>
-                  <Link
-                    href={`/assets/${log.assetId}`}
-                    className="text-primary hover:underline"
-                  >
+                  <Link href={`/assets/${log.assetId}`} className="text-primary hover:underline">
                     {log.assetCode ?? log.assetName ?? `#${log.assetId}`}
                   </Link>
                 </TableCell>
               )}
               <TableCell>
-                <Badge
-                  variant="outline"
-                  className={TYPE_COLORS[log.maintenanceType] ?? ""}
-                >
+                <Badge variant="outline" className={TYPE_COLORS[log.maintenanceType] ?? ""}>
                   {t(`type.${log.maintenanceType}`)}
                 </Badge>
               </TableCell>
               <TableCell>{log.mechanicName}</TableCell>
               <TableCell>
-                {log.durationHours != null
-                  ? `${formatNumber(log.durationHours)} h`
-                  : "—"}
+                {log.durationHours != null ? `${formatNumber(log.durationHours)} h` : "—"}
               </TableCell>
               <TableCell>
-                <Badge
-                  variant="outline"
-                  className={STATUS_COLORS[log.resolutionStatus] ?? ""}
-                >
+                <Badge variant="outline" className={STATUS_COLORS[log.resolutionStatus] ?? ""}>
                   {t(`resolution.${log.resolutionStatus}`)}
                 </Badge>
               </TableCell>
-              <TableCell className="text-right">
-                {formatNumber(log.totalCost ?? 0)}
-              </TableCell>
+              <TableCell className="text-right">{formatNumber(log.totalCost ?? 0)}</TableCell>
             </TableRow>
           ))}
         </TableBody>

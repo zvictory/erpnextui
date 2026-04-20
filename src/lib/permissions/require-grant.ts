@@ -48,7 +48,8 @@ export async function requireGrant(opts: RequireGrantOptions): Promise<AuthConte
   if (decision.granted) return ctx;
 
   const scopeDim = opts.scope.dim;
-  const scopeValue = opts.scope.dim !== null && opts.scope.mode === "require" ? opts.scope.value : null;
+  const scopeValue =
+    opts.scope.dim !== null && opts.scope.mode === "require" ? opts.scope.value : null;
 
   if (getPermissionMode() === "dryrun" && !ctx.isSuperuser) {
     await logDryrunDenial(ctx, {

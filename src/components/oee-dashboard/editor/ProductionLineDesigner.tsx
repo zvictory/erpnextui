@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Plus, Trash2, GripVertical, ArrowDown, Link2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,6 @@ import { findCatalogItem } from "@/lib/editor/equipment-catalog";
 import type { Equipment } from "@/types/factory-twin";
 import type { ProductionLineTemplate } from "@/types/editor";
 
-const STAGE_SPACING_X = 0; // all in a row along Z
 const STAGE_SPACING_Z = 5; // 5m between stages
 
 function generateId(prefix: string, existing: Equipment[]): string {
@@ -58,14 +57,14 @@ export function ProductionLineDesigner() {
     setNewName("");
   };
 
-  const handleApplyTemplate = (template: ProductionLineTemplate) => {
+  const handleApplyTemplate = useCallback((template: ProductionLineTemplate) => {
     const currentEquipment = [...useEditorStore.getState().equipment];
     const newEquipmentIds: string[] = [];
     const newEquipment: Equipment[] = [];
 
     // Place equipment in a vertical row starting from Z = -20
     const startZ = -20;
-    const startX = (currentEquipment.length > 0 ? 15 : 0); // offset right if factory has existing eq
+    const startX = currentEquipment.length > 0 ? 15 : 0; // offset right if factory has existing eq
 
     for (let i = 0; i < template.stages.length; i++) {
       const stage = template.stages[i];
@@ -122,11 +121,14 @@ export function ProductionLineDesigner() {
     useEditorStore.setState({
       equipment: allEquipment,
       pipes: newPipes,
-      productionLines: [...currentLines, { id: lineId, name: template.name, stages: newEquipmentIds }],
+      productionLines: [
+        ...currentLines,
+        { id: lineId, name: template.name, stages: newEquipmentIds },
+      ],
       selectedIds: newEquipmentIds,
       isDirty: true,
     });
-  };
+  }, []);
 
   const addStage = (lineId: string, eqId: string) => {
     const line = productionLines.find((l) => l.id === lineId);
@@ -218,7 +220,7 @@ export function ProductionLineDesigner() {
                     className="h-7 text-xs shrink-0 ml-2"
                     onClick={() => handleApplyTemplate(tpl)}
                   >
-                    Qo'llash
+                    Qo&apos;llash
                   </Button>
                 </div>
               ))}
@@ -230,7 +232,7 @@ export function ProductionLineDesigner() {
           {/* Manual creation */}
           <div>
             <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
-              Qo'lda yaratish
+              Qo&apos;lda yaratish
             </h4>
             <div className="flex gap-2">
               <Input
@@ -240,7 +242,12 @@ export function ProductionLineDesigner() {
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleCreate()}
               />
-              <Button size="sm" className="h-8 text-xs" onClick={handleCreate} disabled={!newName.trim()}>
+              <Button
+                size="sm"
+                className="h-8 text-xs"
+                onClick={handleCreate}
+                disabled={!newName.trim()}
+              >
                 <Plus className="h-3 w-3 mr-1" />
                 Yaratish
               </Button>

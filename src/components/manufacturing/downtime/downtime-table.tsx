@@ -18,11 +18,7 @@ import { deleteDowntimeEvent } from "@/actions/downtime";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -133,17 +129,12 @@ function DeleteEventDialog({ eventId }: { eventId: number }) {
         <AlertDialogHeader>
           <AlertDialogTitle>Delete downtime event?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. The downtime event will be permanently
-            removed.
+            This action cannot be undone. The downtime event will be permanently removed.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={isPending}
-          >
+          <AlertDialogAction variant="destructive" onClick={handleDelete} disabled={isPending}>
             {isPending ? "Deleting..." : "Delete"}
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -199,11 +190,7 @@ const columns: ColumnDef<DowntimeEventRow>[] = [
     header: "Description",
     cell: ({ row }) => {
       const name = row.getValue("stopCodeName") as string | null;
-      return (
-        <span className="max-w-[200px] truncate block">
-          {name ?? "-"}
-        </span>
-      );
+      return <span className="max-w-[200px] truncate block">{name ?? "-"}</span>;
     },
   },
   {
@@ -234,11 +221,7 @@ const columns: ColumnDef<DowntimeEventRow>[] = [
     ),
     cell: ({ row }) => {
       const minutes = row.getValue("durationMinutes") as number;
-      return (
-        <span className="font-mono tabular-nums">
-          {formatDuration(minutes)}
-        </span>
-      );
+      return <span className="font-mono tabular-nums">{formatDuration(minutes)}</span>;
     },
   },
   {
@@ -247,9 +230,7 @@ const columns: ColumnDef<DowntimeEventRow>[] = [
     cell: ({ row }) => {
       const notes = row.getValue("notes") as string | null;
       return notes ? (
-        <span className="max-w-[150px] truncate block text-xs text-muted-foreground">
-          {notes}
-        </span>
+        <span className="max-w-[150px] truncate block text-xs text-muted-foreground">{notes}</span>
       ) : (
         <span className="text-muted-foreground">-</span>
       );
@@ -326,11 +307,7 @@ export function DowntimeTable({ data, lines }: DowntimeTableProps) {
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={dateFrom}
-              onSelect={setDateFrom}
-            />
+            <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} />
           </PopoverContent>
         </Popover>
 
@@ -347,11 +324,7 @@ export function DowntimeTable({ data, lines }: DowntimeTableProps) {
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={dateTo}
-              onSelect={setDateTo}
-            />
+            <Calendar mode="single" selected={dateTo} onSelect={setDateTo} />
           </PopoverContent>
         </Popover>
 
@@ -398,17 +371,12 @@ export function DowntimeTable({ data, lines }: DowntimeTableProps) {
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
-                  const meta = header.column.columnDef.meta as
-                    | { className?: string }
-                    | undefined;
+                  const meta = header.column.columnDef.meta as { className?: string } | undefined;
                   return (
                     <TableHead key={header.id} className={meta?.className}>
                       {header.isPlaceholder
                         ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                        : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   );
                 })}
@@ -420,15 +388,10 @@ export function DowntimeTable({ data, lines }: DowntimeTableProps) {
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => {
-                    const meta = cell.column.columnDef.meta as
-                      | { className?: string }
-                      | undefined;
+                    const meta = cell.column.columnDef.meta as { className?: string } | undefined;
                     return (
                       <TableCell key={cell.id} className={meta?.className}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     );
                   })}

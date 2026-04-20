@@ -50,17 +50,12 @@ export function DeleteRunDialog({ runId }: DeleteRunDialogProps) {
         <AlertDialogHeader>
           <AlertDialogTitle>Delete production run?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. The production run data will be
-            permanently removed.
+            This action cannot be undone. The production run data will be permanently removed.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={isPending}
-          >
+          <AlertDialogAction variant="destructive" onClick={handleDelete} disabled={isPending}>
             {isPending ? "Deleting..." : "Delete"}
           </AlertDialogAction>
         </AlertDialogFooter>

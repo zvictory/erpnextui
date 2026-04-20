@@ -18,6 +18,7 @@ import {
 interface HistoryPanelProps {
   onEdit?: (name: string) => void;
   voucherType?: string;
+  remarkFilter?: string;
 }
 
 type ConfirmAction = "submit" | "cancel" | "delete";
@@ -60,7 +61,7 @@ const CONFIRM_CONFIG: Record<
   },
 };
 
-export function HistoryPanel({ onEdit, voucherType }: HistoryPanelProps) {
+export function HistoryPanel({ onEdit, voucherType, remarkFilter }: HistoryPanelProps) {
   const t = useTranslations("expenses");
   const { company, currencySymbol, symbolOnRight } = useCompanyStore();
   const {
@@ -68,7 +69,7 @@ export function HistoryPanel({ onEdit, voucherType }: HistoryPanelProps) {
     isLoading,
     refetch,
     isRefetching,
-  } = useJournalEntryList(company, voucherType);
+  } = useJournalEntryList(company, voucherType, remarkFilter);
 
   const submitMutation = useSubmitJournalEntry();
   const cancelMutation = useCancelJournalEntry();

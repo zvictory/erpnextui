@@ -16,28 +16,108 @@ import type { Equipment, PipeConfig } from "@/types/factory-twin";
 // === Reusable parameter templates ===
 
 const TANK_PARAMS_FULL = [
-  { key: "temperature", label: "Temperatura", unit: "°C", min: 20, max: 85, critical: 95, source: "erpnext" as const },
-  { key: "pressure", label: "Bosim", unit: "MPa", min: 0.1, max: 0.6, critical: 0.8, source: "erpnext" as const },
-  { key: "level", label: "Daraja", unit: "%", min: 0, max: 100, critical: 95, source: "erpnext" as const },
+  {
+    key: "temperature",
+    label: "Temperatura",
+    unit: "°C",
+    min: 20,
+    max: 85,
+    critical: 95,
+    source: "erpnext" as const,
+  },
+  {
+    key: "pressure",
+    label: "Bosim",
+    unit: "MPa",
+    min: 0.1,
+    max: 0.6,
+    critical: 0.8,
+    source: "erpnext" as const,
+  },
+  {
+    key: "level",
+    label: "Daraja",
+    unit: "%",
+    min: 0,
+    max: 100,
+    critical: 95,
+    source: "erpnext" as const,
+  },
 ];
 
 const TANK_PARAMS_TP = [
-  { key: "temperature", label: "Temperatura", unit: "°C", min: 20, max: 85, critical: 95, source: "erpnext" as const },
-  { key: "pressure", label: "Bosim", unit: "MPa", min: 0.1, max: 0.6, critical: 0.8, source: "erpnext" as const },
+  {
+    key: "temperature",
+    label: "Temperatura",
+    unit: "°C",
+    min: 20,
+    max: 85,
+    critical: 95,
+    source: "erpnext" as const,
+  },
+  {
+    key: "pressure",
+    label: "Bosim",
+    unit: "MPa",
+    min: 0.1,
+    max: 0.6,
+    critical: 0.8,
+    source: "erpnext" as const,
+  },
 ];
 
 const TANK_PARAMS_T = [
-  { key: "temperature", label: "Temperatura", unit: "°C", min: 20, max: 85, critical: 95, source: "erpnext" as const },
+  {
+    key: "temperature",
+    label: "Temperatura",
+    unit: "°C",
+    min: 20,
+    max: 85,
+    critical: 95,
+    source: "erpnext" as const,
+  },
 ];
 
 const PRODUCTION_LINE_PARAMS = [
-  { key: "speed", label: "Tezlik", unit: "dona/soat", min: 0, max: 500, critical: 600, source: "erpnext" as const },
-  { key: "output", label: "Chiqim", unit: "kg/soat", min: 0, max: 200, critical: 250, source: "erpnext" as const },
+  {
+    key: "speed",
+    label: "Tezlik",
+    unit: "dona/soat",
+    min: 0,
+    max: 500,
+    critical: 600,
+    source: "erpnext" as const,
+  },
+  {
+    key: "output",
+    label: "Chiqim",
+    unit: "kg/soat",
+    min: 0,
+    max: 200,
+    critical: 250,
+    source: "erpnext" as const,
+  },
 ];
 
 const PACKAGING_LINE_PARAMS = [
-  { key: "speed", label: "Tezlik", unit: "dona/soat", min: 0, max: 800, critical: 1000, source: "erpnext" as const },
-  { key: "output", label: "Chiqim", unit: "dona/soat", min: 0, max: 600, critical: 750, source: "erpnext" as const },
+  {
+    key: "speed",
+    label: "Tezlik",
+    unit: "dona/soat",
+    min: 0,
+    max: 800,
+    critical: 1000,
+    source: "erpnext" as const,
+  },
+  {
+    key: "output",
+    label: "Chiqim",
+    unit: "dona/soat",
+    min: 0,
+    max: 600,
+    critical: 750,
+    source: "erpnext" as const,
+  },
 ];
 
 export const FACTORY_LAYOUT: Equipment[] = [
@@ -230,13 +310,19 @@ export const PIPE_NETWORK: PipeConfig[] = [
     id: "pipe-WHRAW-T501",
     from: "WH-RAW",
     to: "T-501",
-    waypoints: [[0, 0.5, -12], [-10, 0.5, -11]],
+    waypoints: [
+      [0, 0.5, -12],
+      [-10, 0.5, -11],
+    ],
   },
   {
     id: "pipe-WHRAW-T502",
     from: "WH-RAW",
     to: "T-502",
-    waypoints: [[0, 0.5, -12], [-5, 0.5, -11]],
+    waypoints: [
+      [0, 0.5, -12],
+      [-5, 0.5, -11],
+    ],
   },
   {
     id: "pipe-WHRAW-T503",
@@ -248,13 +334,19 @@ export const PIPE_NETWORK: PipeConfig[] = [
     id: "pipe-WHRAW-T504",
     from: "WH-RAW",
     to: "T-504",
-    waypoints: [[0, 0.5, -12], [5, 0.5, -11]],
+    waypoints: [
+      [0, 0.5, -12],
+      [5, 0.5, -11],
+    ],
   },
   {
     id: "pipe-WHRAW-T505",
     from: "WH-RAW",
     to: "T-505",
-    waypoints: [[0, 0.5, -12], [10, 0.5, -11]],
+    waypoints: [
+      [0, 0.5, -12],
+      [10, 0.5, -11],
+    ],
   },
 
   // === Group B: Tanks → WH-SEMI (converge) ===
@@ -262,13 +354,19 @@ export const PIPE_NETWORK: PipeConfig[] = [
     id: "pipe-T501-WHSEMI",
     from: "T-501",
     to: "WH-SEMI",
-    waypoints: [[-10, 0.5, -6], [-4, 0.5, -5]],
+    waypoints: [
+      [-10, 0.5, -6],
+      [-4, 0.5, -5],
+    ],
   },
   {
     id: "pipe-T502-WHSEMI",
     from: "T-502",
     to: "WH-SEMI",
-    waypoints: [[-5, 0.5, -6], [-2, 0.5, -5]],
+    waypoints: [
+      [-5, 0.5, -6],
+      [-2, 0.5, -5],
+    ],
   },
   {
     id: "pipe-T503-WHSEMI",
@@ -280,13 +378,19 @@ export const PIPE_NETWORK: PipeConfig[] = [
     id: "pipe-T504-WHSEMI",
     from: "T-504",
     to: "WH-SEMI",
-    waypoints: [[5, 0.5, -6], [2, 0.5, -5]],
+    waypoints: [
+      [5, 0.5, -6],
+      [2, 0.5, -5],
+    ],
   },
   {
     id: "pipe-T505-WHSEMI",
     from: "T-505",
     to: "WH-SEMI",
-    waypoints: [[10, 0.5, -6], [4, 0.5, -5]],
+    waypoints: [
+      [10, 0.5, -6],
+      [4, 0.5, -5],
+    ],
   },
 
   // === Group C: WH-SEMI → Production Lines (fan out) ===
@@ -294,7 +398,11 @@ export const PIPE_NETWORK: PipeConfig[] = [
     id: "pipe-WHSEMI-L101",
     from: "WH-SEMI",
     to: "L-101",
-    waypoints: [[0, 0.5, -1], [-6, 0.5, 0], [-10, 0.5, 1]],
+    waypoints: [
+      [0, 0.5, -1],
+      [-6, 0.5, 0],
+      [-10, 0.5, 1],
+    ],
   },
   {
     id: "pipe-WHSEMI-L102",
@@ -306,7 +414,11 @@ export const PIPE_NETWORK: PipeConfig[] = [
     id: "pipe-WHSEMI-L103",
     from: "WH-SEMI",
     to: "L-103",
-    waypoints: [[0, 0.5, -1], [6, 0.5, 0], [10, 0.5, 1]],
+    waypoints: [
+      [0, 0.5, -1],
+      [6, 0.5, 0],
+      [10, 0.5, 1],
+    ],
   },
 
   // === Group D: Production Lines → WH-MID (converge) ===
@@ -314,7 +426,10 @@ export const PIPE_NETWORK: PipeConfig[] = [
     id: "pipe-L101-WHMID",
     from: "L-101",
     to: "WH-MID",
-    waypoints: [[-10, 0.5, 3.5], [-4, 0.5, 4.5]],
+    waypoints: [
+      [-10, 0.5, 3.5],
+      [-4, 0.5, 4.5],
+    ],
   },
   {
     id: "pipe-L102-WHMID",
@@ -326,7 +441,10 @@ export const PIPE_NETWORK: PipeConfig[] = [
     id: "pipe-L103-WHMID",
     from: "L-103",
     to: "WH-MID",
-    waypoints: [[10, 0.5, 3.5], [4, 0.5, 4.5]],
+    waypoints: [
+      [10, 0.5, 3.5],
+      [4, 0.5, 4.5],
+    ],
   },
 
   // === Group E: WH-MID → Packaging Lines (fan out) ===
@@ -334,7 +452,11 @@ export const PIPE_NETWORK: PipeConfig[] = [
     id: "pipe-WHMID-L104",
     from: "WH-MID",
     to: "L-104",
-    waypoints: [[0, 0.5, 7.5], [-6, 0.5, 8], [-10, 0.5, 9]],
+    waypoints: [
+      [0, 0.5, 7.5],
+      [-6, 0.5, 8],
+      [-10, 0.5, 9],
+    ],
   },
   {
     id: "pipe-WHMID-L105",
@@ -346,7 +468,11 @@ export const PIPE_NETWORK: PipeConfig[] = [
     id: "pipe-WHMID-L106",
     from: "WH-MID",
     to: "L-106",
-    waypoints: [[0, 0.5, 7.5], [6, 0.5, 8], [10, 0.5, 9]],
+    waypoints: [
+      [0, 0.5, 7.5],
+      [6, 0.5, 8],
+      [10, 0.5, 9],
+    ],
   },
 
   // === Group F: Packaging Lines → WH-FIN (converge) ===
@@ -354,7 +480,10 @@ export const PIPE_NETWORK: PipeConfig[] = [
     id: "pipe-L104-WHFIN",
     from: "L-104",
     to: "WH-FIN",
-    waypoints: [[-10, 0.5, 12], [-4, 0.5, 13]],
+    waypoints: [
+      [-10, 0.5, 12],
+      [-4, 0.5, 13],
+    ],
   },
   {
     id: "pipe-L105-WHFIN",
@@ -366,6 +495,9 @@ export const PIPE_NETWORK: PipeConfig[] = [
     id: "pipe-L106-WHFIN",
     from: "L-106",
     to: "WH-FIN",
-    waypoints: [[10, 0.5, 12], [4, 0.5, 13]],
+    waypoints: [
+      [10, 0.5, 12],
+      [4, 0.5, 13],
+    ],
   },
 ];

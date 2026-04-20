@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -32,6 +33,8 @@ import { useCreateStockEntry } from "@/hooks/use-stock-entries";
 import { batchUpdateIMEI } from "@/hooks/use-serial-numbers";
 import { frappe } from "@/lib/frappe-client";
 import { useCompanyStore } from "@/stores/company-store";
+import { formatNumber } from "@/lib/formatters";
+import { StockAvailabilityIndicator } from "@/components/shared/stock-availability-indicator";
 import type { StockEntryDetail } from "@/types/stock-entry";
 
 type EntryType = "Material Receipt" | "Material Issue" | "Material Transfer";
@@ -50,6 +53,7 @@ interface ItemRow {
   s_warehouse: string;
   t_warehouse: string;
   has_serial_no: boolean;
+  is_stock_item: boolean;
   serials: SerialEntryRow[];
 }
 
@@ -58,10 +62,11 @@ function emptyRow(): ItemRow {
     item_code: "",
     qty: 1,
     basic_rate: 0,
-    uom: "Nos",
+    uom: "Korobka",
     s_warehouse: "",
     t_warehouse: "",
     has_serial_no: false,
+    is_stock_item: true,
     serials: [],
   };
 }
@@ -95,10 +100,21 @@ export default function NewStockEntryPage() {
     updateItem(index, "item_code", itemCode);
     if (itemCode) {
       try {
-        const item = await frappe.getDoc<{ has_serial_no: 0 | 1 }>("Item", itemCode);
+        const item = await frappe.getDoc<{
+          has_serial_no: 0 | 1;
+          is_stock_item: 0 | 1;
+          stock_uom: string;
+        }>("Item", itemCode);
         setItems((prev) =>
           prev.map((row, i) =>
-            i === index ? { ...row, has_serial_no: item.has_serial_no === 1 } : row,
+            i === index
+              ? {
+                  ...row,
+                  has_serial_no: item.has_serial_no === 1,
+                  is_stock_item: item.is_stock_item === 1,
+                  uom: item.stock_uom || "Dona",
+                }
+              : row,
           ),
         );
       } catch {
@@ -169,7 +185,7 @@ export default function NewStockEntryPage() {
         qty: item.qty,
         basic_rate: item.basic_rate,
         amount: item.qty * item.basic_rate,
-        uom: item.uom || "Nos",
+        uom: item.uom || "Dona",
         ...(serialNoStr ? { serial_no: serialNoStr } : {}),
         ...(showFrom
           ? {
@@ -220,7 +236,8 @@ export default function NewStockEntryPage() {
     );
   }
 
-  const colSpan = entryType === "Material Transfer" ? 8 : 6;
+  const isTransfer = entryType === "Material Transfer";
+  const colSpan = isTransfer ? 4 : 6; // Transfer: Item, UOM, Qty, Actions | Others: + Rate, Amount
 
   return (
     <FormPageLayout title={t("newStockEntry")} backHref="/stock-entries">
@@ -289,15 +306,10 @@ export default function NewStockEntryPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("item")}</TableHead>
+                  <TableHead className="w-20">UOM</TableHead>
                   <TableHead className="w-24">{t("qty")}</TableHead>
-                  <TableHead className="w-28">{t("rate")}</TableHead>
-                  <TableHead className="w-28 text-right">{t("amount")}</TableHead>
-                  {entryType === "Material Transfer" && (
-                    <>
-                      <TableHead>{t("sourceWarehouse")}</TableHead>
-                      <TableHead>{t("targetWarehouse")}</TableHead>
-                    </>
-                  )}
+                  {!isTransfer && <TableHead className="w-28">{t("rate")}</TableHead>}
+                  {!isTransfer && <TableHead className="w-28 text-right">{t("amount")}</TableHead>}
                   <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
@@ -311,53 +323,42 @@ export default function NewStockEntryPage() {
                           value={item.item_code}
                           onChange={(v) => handleItemChange(index, v)}
                           placeholder={t("selectItem")}
+                          descriptionField="item_name"
+                          showValueWithDescription
                         />
                       </TableCell>
                       <TableCell>
-                        <Input
-                          type="number"
-                          min={0}
+                        <LinkField
+                          doctype="UOM"
+                          value={item.uom}
+                          onChange={(v) => updateItem(index, "uom", v)}
+                          filters={[["name", "in", ["Dona", "Korobka"]]]}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <NumberInput
                           value={item.qty}
-                          onChange={(e) =>
-                            updateItem(index, "qty", parseFloat(e.target.value) || 0)
-                          }
+                          onChange={(v) => updateItem(index, "qty", v)}
+                          min={0}
+                          decimals={0}
                           className="w-20"
                         />
                       </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          min={0}
-                          step="0.01"
-                          value={item.basic_rate}
-                          onChange={(e) =>
-                            updateItem(index, "basic_rate", parseFloat(e.target.value) || 0)
-                          }
-                          className="w-24"
-                        />
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {(item.qty * item.basic_rate).toFixed(2)}
-                      </TableCell>
-                      {entryType === "Material Transfer" && (
-                        <>
-                          <TableCell>
-                            <LinkField
-                              doctype="Warehouse"
-                              value={item.s_warehouse}
-                              onChange={(v) => updateItem(index, "s_warehouse", v)}
-                              placeholder={t("selectWarehouse")}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <LinkField
-                              doctype="Warehouse"
-                              value={item.t_warehouse}
-                              onChange={(v) => updateItem(index, "t_warehouse", v)}
-                              placeholder={t("selectWarehouse")}
-                            />
-                          </TableCell>
-                        </>
+                      {!isTransfer && (
+                        <TableCell>
+                          <NumberInput
+                            value={item.basic_rate}
+                            onChange={(v) => updateItem(index, "basic_rate", v)}
+                            min={0}
+                            decimals={0}
+                            className="w-24"
+                          />
+                        </TableCell>
+                      )}
+                      {!isTransfer && (
+                        <TableCell className="text-right font-medium">
+                          {formatNumber(item.qty * item.basic_rate, 2)}
+                        </TableCell>
                       )}
                       <TableCell>
                         {items.length > 1 && (
@@ -373,6 +374,16 @@ export default function NewStockEntryPage() {
                         )}
                       </TableCell>
                     </TableRow>
+                    {item.item_code && item.is_stock_item && (
+                      <TableRow key={`stock-${index}`}>
+                        <TableCell colSpan={colSpan} className="pt-0 pb-1 border-0">
+                          <StockAvailabilityIndicator
+                            itemCode={item.item_code}
+                            isStockItem={item.is_stock_item}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    )}
                     {item.has_serial_no && (
                       <TableRow key={`serial-${index}`}>
                         <TableCell colSpan={colSpan} className="bg-muted/30 p-3">

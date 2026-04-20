@@ -81,10 +81,11 @@ export function useCreateSalesInvoice() {
       if (data.currency && data.customer) {
         try {
           // Use ERPNext's built-in party account resolution
-          const result = await frappe.call<string>(
-            "erpnext.accounts.party.get_party_account",
-            { party_type: "Customer", party: data.customer, company: data.company },
-          );
+          const result = await frappe.call<string>("erpnext.accounts.party.get_party_account", {
+            party_type: "Customer",
+            party: data.customer,
+            company: data.company,
+          });
           if (result) {
             // Verify the account currency matches the document currency
             const acct = await frappe.getList<{ account_currency: string }>("Account", {
@@ -129,6 +130,9 @@ export function useCreateSalesInvoice() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["salesInvoices"] });
+      qc.invalidateQueries({ queryKey: ["partyBalances"] });
+      qc.invalidateQueries({ queryKey: ["partyLedger"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -179,6 +183,9 @@ export function useSubmitSalesInvoice() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["salesInvoices"] });
+      qc.invalidateQueries({ queryKey: ["partyBalances"] });
+      qc.invalidateQueries({ queryKey: ["partyLedger"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }

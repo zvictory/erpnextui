@@ -22,7 +22,10 @@ export async function GET(req: NextRequest) {
 
   if (source === "dryrun") {
     const where = userFilter
-      ? and(eq(permissionAuditDryrun.tenant, tenant), eq(permissionAuditDryrun.userEmail, userFilter))
+      ? and(
+          eq(permissionAuditDryrun.tenant, tenant),
+          eq(permissionAuditDryrun.userEmail, userFilter),
+        )
       : eq(permissionAuditDryrun.tenant, tenant);
 
     const rows = await db

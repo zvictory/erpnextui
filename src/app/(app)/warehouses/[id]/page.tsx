@@ -119,8 +119,12 @@ export default function WarehouseDetailPage() {
                 <TableRow key={`${bin.item_code}-${bin.warehouse}`}>
                   <TableCell>{bin.item_name || bin.item_code}</TableCell>
                   <TableCell className="text-right">{formatNumber(bin.actual_qty)}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(bin.valuation_rate, currencySymbol, symbolOnRight)}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(bin.stock_value, currencySymbol, symbolOnRight)}</TableCell>
+                  <TableCell className="text-right">
+                    {formatCurrency(bin.valuation_rate, currencySymbol, symbolOnRight)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatCurrency(bin.stock_value, currencySymbol, symbolOnRight)}
+                  </TableCell>
                 </TableRow>
               ))
             )}

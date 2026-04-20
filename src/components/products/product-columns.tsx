@@ -13,6 +13,7 @@ import {
 import type { ColumnDef } from "@/components/shared/data-table";
 import type { ItemListItem } from "@/types/item";
 import { formatCurrency } from "@/lib/utils";
+import { formatNumber } from "@/lib/formatters";
 
 type TFunc = (key: string) => string;
 
@@ -22,6 +23,7 @@ export function getProductColumns(
   onDelete: (name: string) => void,
   canDelete = true,
   t?: TFunc,
+  stockMap?: Map<string, number>,
 ): ColumnDef<ItemListItem>[] {
   const tr = t ?? ((k: string) => k);
 
@@ -56,6 +58,22 @@ export function getProductColumns(
       className: "text-right",
       sortKey: "standard_rate",
       render: (row) => formatCurrency(row.standard_rate ?? 0, currencySymbol, symbolOnRight),
+    },
+    {
+      key: "stock",
+      header: tr("stock") || "Stock",
+      className: "text-right",
+      render: (row) => {
+        const qty = stockMap?.get(row.item_code);
+        if (qty == null) return <span className="text-muted-foreground">—</span>;
+        return (
+          <span
+            className={`tabular-nums font-medium ${qty > 0 ? "text-green-600" : "text-muted-foreground"}`}
+          >
+            {formatNumber(qty, 0)}
+          </span>
+        );
+      },
     },
     {
       key: "status",

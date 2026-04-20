@@ -25,13 +25,10 @@ export function ConnectionTab() {
   const siteUrl = useAuthStore((s) => s.siteUrl);
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
-  const [connected, setConnected] = useState<boolean | null>(null);
+  const [connected, setConnected] = useState<boolean | null>(() => (siteUrl ? null : false));
 
   useEffect(() => {
-    if (!siteUrl) {
-      setConnected(false);
-      return;
-    }
+    if (!siteUrl) return;
     let cancelled = false;
     fetch("/api/proxy/api/method/frappe.auth.get_logged_user", {
       headers: { "X-Frappe-Site": siteUrl },

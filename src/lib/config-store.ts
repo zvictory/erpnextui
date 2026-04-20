@@ -4,6 +4,19 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 
+export type BillingPlan = "starter" | "pro" | "enterprise";
+
+export type BillingStatus = "trial" | "active" | "past_due" | "canceled" | "grandfathered";
+
+export interface BillingInfo {
+  plan: BillingPlan;
+  status: BillingStatus;
+  trialEndsAt: string; // ISO date
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  currentPeriodEnd?: string; // ISO date
+}
+
 export interface TenantConfig {
   id: string;
   name: string;
@@ -11,6 +24,8 @@ export interface TenantConfig {
   apiKey: string;
   enabled: boolean;
   enabledModuleGroups?: string[];
+  billing?: BillingInfo;
+  referralCode?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -31,6 +46,8 @@ export interface RegistrationRequest {
   phone: string;
   country: string;
   currency: string;
+  plan?: BillingPlan;
+  referralCode?: string;
   status: RegistrationStatus;
   rejectReason?: string;
   provisioningError?: string;
@@ -156,6 +173,19 @@ export function getRegistrations(): RegistrationRequest[] {
 
 export function getRegistration(id: string): RegistrationRequest | undefined {
   return readConfig().registrations.find((r) => r.id === id);
+}
+
+// Referral code helpers
+
+export function generateReferralCode(tenantId: string): string {
+  const suffix = crypto.randomBytes(2).toString("hex").toUpperCase();
+  return `${tenantId.toUpperCase()}-${suffix}`;
+}
+
+export function findTenantByReferralCode(code: string): TenantConfig | undefined {
+  return readConfig().tenants.find(
+    (t) => t.referralCode?.toUpperCase() === code.toUpperCase() && t.enabled,
+  );
 }
 
 // AES-256-GCM password encryption/decryption

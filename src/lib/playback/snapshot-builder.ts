@@ -47,7 +47,5 @@ export function getRecentEvents(
   atTime: number,
   windowMs = 5000,
 ): ProductionEvent[] {
-  return events.filter(
-    (e) => e.timestamp <= atTime && e.timestamp > atTime - windowMs,
-  );
+  return events.filter((e) => e.timestamp <= atTime && e.timestamp > atTime - windowMs);
 }

@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useForm, useWatch, FormProvider, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Printer, RotateCcw } from "lucide-react";
+import { Printer, RotateCcw, FileText, CreditCard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DateInput } from "@/components/shared/date-input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +29,7 @@ import {
 import type { SalesInvoice } from "@/types/sales-invoice";
 import type { TaxRow } from "@/types/tax";
 import { useCompanyStore } from "@/stores/company-store";
+import { useUISettingsStore } from "@/stores/ui-settings-store";
 import { useCurrencyMap } from "@/hooks/use-accounts";
 import { useCompanies } from "@/hooks/use-companies";
 import { useCustomer } from "@/hooks/use-customers";
@@ -45,6 +46,9 @@ interface SalesInvoiceFormProps {
   isCancellingDoc?: boolean;
   onCreateReturn?: () => void;
   returnLabel?: string;
+  onPrintReceipt?: () => void;
+  onPrintYukXati?: () => void;
+  onReceivePayment?: () => void;
 }
 
 export function SalesInvoiceForm({
@@ -58,6 +62,9 @@ export function SalesInvoiceForm({
   isCancellingDoc = false,
   onCreateReturn,
   returnLabel,
+  onPrintReceipt,
+  onPrintYukXati,
+  onReceivePayment,
 }: SalesInvoiceFormProps) {
   const t = useTranslations("invoices");
   const docstatus = defaultValues?.docstatus ?? 0;
@@ -70,6 +77,9 @@ export function SalesInvoiceForm({
     currencyCode: companyCurrencyCode,
   } = useCompanyStore();
   const { data: currencyMap } = useCurrencyMap();
+  const sellingWarehouse = useUISettingsStore(
+    (s) => s.getCompanySettings(company).sellingWarehouse,
+  );
   const { data: companiesList } = useCompanies();
   const companyDefaultCurrency = companiesList?.find((c) => c.name === company)?.default_currency;
 
@@ -94,35 +104,36 @@ export function SalesInvoiceForm({
     defaultValues: defaultValues
       ? (() => {
           // If ERPNext has an invoice-level discount, show it as per-item discount_percentage
-          const invoiceDiscPct = (defaultValues as Record<string, unknown>)
+          const _invoiceDiscPct = (defaultValues as Record<string, unknown>)
             .additional_discount_percentage as number | undefined;
           return {
             customer: defaultValues.customer,
             posting_date: defaultValues.posting_date,
             due_date: defaultValues.due_date ?? defaultValues.posting_date,
             items: defaultValues.items.map((item) => {
-              // Use price_list_rate (original) as the form rate — discount is shown separately
+              // Use price_list_rate as display rate so per-item discount is visible
               const plr = (item as Record<string, unknown>).price_list_rate as number | undefined;
-              const originalRate = plr && plr > 0 ? plr : item.rate;
+              const displayRate = plr && plr > 0 ? plr : item.rate;
               return {
                 item_code: item.item_code,
                 qty: item.qty,
-                rate: originalRate,
+                rate: displayRate,
                 amount: item.amount,
                 uom: item.uom,
-                discount_percentage: item.discount_percentage || invoiceDiscPct || 0,
-                discount_amount: item.discount_amount,
+                discount_percentage: item.discount_percentage || 0,
+                discount_amount: item.discount_amount || 0,
               };
             }),
           };
         })()
       : (() => {
           const today = new Date().toISOString().slice(0, 10);
+          const emptyItem = { item_code: "", qty: 1, rate: 0, amount: 0, uom: "" };
           return {
             customer: "",
             posting_date: today,
             due_date: today,
-            items: [{ item_code: "", qty: 1, rate: 0, amount: 0, uom: "" }],
+            items: [{ ...emptyItem }, { ...emptyItem }, { ...emptyItem }],
           };
         })(),
   });
@@ -146,9 +157,16 @@ export function SalesInvoiceForm({
   // For submitted/cancelled: respect the saved currency (historical record).
   const effectiveCurrency =
     docstatus > 0
-      ? defaultValues?.currency || customerDoc?.default_currency || companyDefaultCurrency || companyCurrencyCode
-      : customerDoc?.default_currency || defaultValues?.currency || companyDefaultCurrency || companyCurrencyCode;
-  const currInfo = typeof effectiveCurrency === "string" ? currencyMap?.get(effectiveCurrency) : undefined;
+      ? defaultValues?.currency ||
+        customerDoc?.default_currency ||
+        companyDefaultCurrency ||
+        companyCurrencyCode
+      : customerDoc?.default_currency ||
+        defaultValues?.currency ||
+        companyDefaultCurrency ||
+        companyCurrencyCode;
+  const currInfo =
+    typeof effectiveCurrency === "string" ? currencyMap?.get(effectiveCurrency) : undefined;
   const currencySymbol = currInfo?.symbol ?? companyCurrencySymbol;
   const symbolOnRight = currInfo?.onRight ?? companySymbolOnRight;
 
@@ -221,6 +239,7 @@ export function SalesInvoiceForm({
               value={watch("customer")}
               onChange={(v) => setValue("customer", v, { shouldValidate: true })}
               disabled={isReadOnly}
+              displayValue={customerDoc?.customer_name}
             />
             {errors.customer && (
               <p className="text-sm text-destructive">{errors.customer.message}</p>
@@ -302,6 +321,7 @@ export function SalesInvoiceForm({
           currencySymbol={currencySymbol}
           symbolOnRight={symbolOnRight}
           showStockAvailability={!isReadOnly}
+          sellingWarehouse={sellingWarehouse}
         />
 
         {errors.items && (
@@ -318,19 +338,28 @@ export function SalesInvoiceForm({
           onTaxesChange={setTaxes}
           subtotal={subtotal}
           isEditable={!isReadOnly}
+          invoiceDiscountAmount={Number(
+            (defaultValues as Record<string, unknown> | undefined)?.discount_amount ?? 0,
+          )}
         />
 
         <div className="flex justify-end gap-3 pt-2">
-          {isEdit && defaultValues && (
-            <Button type="button" variant="outline" asChild>
-              <a
-                href={`/sales-invoices/${encodeURIComponent(defaultValues.name)}/print`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Printer className="h-4 w-4 mr-1.5" />
-                {t("printReceipt")}
-              </a>
+          {isEdit && onPrintReceipt && (
+            <Button type="button" variant="outline" onClick={onPrintReceipt}>
+              <Printer className="h-4 w-4 mr-1.5" />
+              Chek chop etish
+            </Button>
+          )}
+          {isEdit && onPrintYukXati && (
+            <Button type="button" variant="outline" onClick={onPrintYukXati}>
+              <FileText className="h-4 w-4 mr-1.5" />
+              Yuk xati
+            </Button>
+          )}
+          {isEdit && onReceivePayment && (
+            <Button type="button" variant="default" onClick={onReceivePayment}>
+              <CreditCard className="h-4 w-4 mr-1.5" />
+              {t("receivePayment")}
             </Button>
           )}
           {docstatus === 0 && (

@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense, useEffect, useState, useRef, useCallback } from "react";
-import { Canvas, useThree, useFrame } from "@react-three/fiber";
+import { useEffect, useState, useRef, useCallback, useSyncExternalStore } from "react";
+import { Canvas } from "@react-three/fiber";
 import { OrbitControls, TransformControls, Html } from "@react-three/drei";
 import * as THREE from "three";
 import { useEditorStore } from "@/stores/editor-store";
@@ -10,7 +10,15 @@ import type { Equipment } from "@/types/factory-twin";
 
 /* ── Reuse equipment geometry from FactoryScene ─────────────── */
 
-function TankGeom({ eq, selected, onClick }: { eq: Equipment; selected: boolean; onClick: () => void }) {
+function TankGeom({
+  eq,
+  selected,
+  onClick,
+}: {
+  eq: Equipment;
+  selected: boolean;
+  onClick: () => void;
+}) {
   const [hovered, setHovered] = useState(false);
   const c = eq.color || "#4a9eff";
   return (
@@ -20,7 +28,10 @@ function TankGeom({ eq, selected, onClick }: { eq: Equipment; selected: boolean;
         castShadow
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
-        onClick={(e) => { e.stopPropagation(); onClick(); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
       >
         <cylinderGeometry args={[1.2, 1.2, 3, 32]} />
         <meshStandardMaterial
@@ -43,7 +54,15 @@ function TankGeom({ eq, selected, onClick }: { eq: Equipment; selected: boolean;
   );
 }
 
-function LineGeom({ eq, selected, onClick }: { eq: Equipment; selected: boolean; onClick: () => void }) {
+function LineGeom({
+  eq,
+  selected,
+  onClick,
+}: {
+  eq: Equipment;
+  selected: boolean;
+  onClick: () => void;
+}) {
   const [hovered, setHovered] = useState(false);
   const c = eq.color || "#2ed573";
   return (
@@ -53,7 +72,10 @@ function LineGeom({ eq, selected, onClick }: { eq: Equipment; selected: boolean;
         castShadow
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
-        onClick={(e) => { e.stopPropagation(); onClick(); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
       >
         <boxGeometry args={[8, 0.4, 1.5]} />
         <meshStandardMaterial
@@ -72,7 +94,15 @@ function LineGeom({ eq, selected, onClick }: { eq: Equipment; selected: boolean;
   );
 }
 
-function WarehouseGeom({ eq, selected, onClick }: { eq: Equipment; selected: boolean; onClick: () => void }) {
+function WarehouseGeom({
+  eq,
+  selected,
+  onClick,
+}: {
+  eq: Equipment;
+  selected: boolean;
+  onClick: () => void;
+}) {
   const [hovered, setHovered] = useState(false);
   const c = eq.color || "#a4b0be";
   return (
@@ -82,7 +112,10 @@ function WarehouseGeom({ eq, selected, onClick }: { eq: Equipment; selected: boo
         castShadow
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
-        onClick={(e) => { e.stopPropagation(); onClick(); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
       >
         <boxGeometry args={[6, 3, 4]} />
         <meshStandardMaterial
@@ -100,7 +133,15 @@ function WarehouseGeom({ eq, selected, onClick }: { eq: Equipment; selected: boo
   );
 }
 
-function PumpGeom({ eq, selected, onClick }: { eq: Equipment; selected: boolean; onClick: () => void }) {
+function PumpGeom({
+  eq,
+  selected,
+  onClick,
+}: {
+  eq: Equipment;
+  selected: boolean;
+  onClick: () => void;
+}) {
   const [hovered, setHovered] = useState(false);
   const c = eq.color || "#ff9f43";
   return (
@@ -110,7 +151,10 @@ function PumpGeom({ eq, selected, onClick }: { eq: Equipment; selected: boolean;
         castShadow
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
-        onClick={(e) => { e.stopPropagation(); onClick(); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
       >
         <boxGeometry args={[1.2, 0.8, 0.8]} />
         <meshStandardMaterial
@@ -129,16 +173,28 @@ function PumpGeom({ eq, selected, onClick }: { eq: Equipment; selected: boolean;
   );
 }
 
-function EquipmentGeom({ eq, selected, onClick }: { eq: Equipment; selected: boolean; onClick: () => void }) {
+function EquipmentGeom({
+  eq,
+  selected,
+  onClick,
+}: {
+  eq: Equipment;
+  selected: boolean;
+  onClick: () => void;
+}) {
   switch (eq.type) {
-    case "tank": return <TankGeom eq={eq} selected={selected} onClick={onClick} />;
-    case "line": return <LineGeom eq={eq} selected={selected} onClick={onClick} />;
-    case "warehouse": return <WarehouseGeom eq={eq} selected={selected} onClick={onClick} />;
+    case "tank":
+      return <TankGeom eq={eq} selected={selected} onClick={onClick} />;
+    case "line":
+      return <LineGeom eq={eq} selected={selected} onClick={onClick} />;
+    case "warehouse":
+      return <WarehouseGeom eq={eq} selected={selected} onClick={onClick} />;
     case "pump":
     case "compressor":
     case "generator":
       return <PumpGeom eq={eq} selected={selected} onClick={onClick} />;
-    default: return null;
+    default:
+      return null;
   }
 }
 
@@ -163,11 +219,20 @@ function EditorLabel({ eq }: { eq: Equipment }) {
 /* ── Draggable Equipment Wrapper ───────────────────────────── */
 
 function DraggableEquipment({ eq }: { eq: Equipment }) {
-  const { activeTool, selectedIds, selectEquipment, moveEquipment, startPipeDrawing } = useEditorStore();
+  const { activeTool, selectedIds, selectEquipment, moveEquipment, startPipeDrawing } =
+    useEditorStore();
   const groupRef = useRef<THREE.Group>(null);
+  const [groupNode, setGroupNode] = useState<THREE.Group | null>(null);
   const isSelected = selectedIds.includes(eq.id);
-  const showTransform = isSelected && (activeTool === "move" || activeTool === "rotate" || activeTool === "scale");
-  const transformMode = activeTool === "move" ? "translate" : activeTool === "rotate" ? "rotate" : "scale";
+  const showTransform =
+    isSelected && (activeTool === "move" || activeTool === "rotate" || activeTool === "scale");
+  const transformMode =
+    activeTool === "move" ? "translate" : activeTool === "rotate" ? "rotate" : "scale";
+
+  const callbackRef = useCallback((node: THREE.Group | null) => {
+    (groupRef as React.MutableRefObject<THREE.Group | null>).current = node;
+    setGroupNode(node);
+  }, []);
 
   const handleClick = useCallback(() => {
     if (activeTool === "pipe") {
@@ -194,13 +259,13 @@ function DraggableEquipment({ eq }: { eq: Equipment }) {
 
   return (
     <>
-      <group ref={groupRef} position={eq.position}>
+      <group ref={callbackRef} position={eq.position}>
         <EquipmentGeom eq={eq} selected={isSelected} onClick={handleClick} />
       </group>
       <EditorLabel eq={eq} />
-      {showTransform && groupRef.current && (
+      {showTransform && groupNode && (
         <TransformControls
-          object={groupRef.current}
+          object={groupNode}
           mode={transformMode}
           onMouseUp={handleTransformChange}
           translationSnap={1}
@@ -263,8 +328,12 @@ function EditorPipes() {
 
 export function EditorCanvas() {
   const { equipment, showGrid, clearSelection } = useEditorStore();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  // useSyncExternalStore gives false on server (SSR), true on client — no effect needed
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   if (!mounted) return <div className="w-full h-full bg-neutral-100 dark:bg-neutral-900" />;
 

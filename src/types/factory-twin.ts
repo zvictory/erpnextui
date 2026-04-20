@@ -19,20 +19,20 @@ export interface PipeConfig {
 
 /** A single production event for the playback timeline */
 export interface ProductionEvent {
-  timestamp: number;       // unix ms
+  timestamp: number; // unix ms
   type: "wo_start" | "wo_complete" | "manufacture" | "transfer" | "quality_pass" | "quality_fail";
-  equipmentId: string;     // linked equipment ID
-  pipeId?: string;         // pipe that carries this flow
-  label: string;           // human-readable description
+  equipmentId: string; // linked equipment ID
+  pipeId?: string; // pipe that carries this flow
+  label: string; // human-readable description
   data: Record<string, unknown>;
 }
 
 /** Snapshot of factory state at a point in time */
 export interface FactorySnapshot {
   time: number;
-  activeEquipment: Set<string>;   // equipment IDs currently running
-  activeFlows: Set<string>;       // pipe IDs with active flow
-  alerts: Map<string, string>;    // equipmentId → alert message
+  activeEquipment: Set<string>; // equipment IDs currently running
+  activeFlows: Set<string>; // pipe IDs with active flow
+  alerts: Map<string, string>; // equipmentId → alert message
 }
 
 export interface Equipment {

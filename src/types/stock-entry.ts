@@ -9,6 +9,7 @@ export interface StockEntryDetail {
   amount: number;
   uom?: string;
   serial_no?: string;
+  is_finished_item?: number;
   [key: string]: unknown;
 }
 
@@ -16,11 +17,18 @@ export interface StockEntry {
   name: string;
   doctype: "Stock Entry";
   docstatus: 0 | 1 | 2;
-  stock_entry_type: "Material Receipt" | "Material Issue" | "Material Transfer";
+  stock_entry_type:
+    | "Material Receipt"
+    | "Material Issue"
+    | "Material Transfer"
+    | "Manufacture"
+    | "Material Transfer for Manufacture";
   posting_date: string;
   company: string;
   from_warehouse?: string;
   to_warehouse?: string;
+  work_order?: string;
+  purpose?: string;
   items: StockEntryDetail[];
   total_amount: number;
   status: string;
@@ -35,6 +43,8 @@ export interface StockEntryListItem {
   total_amount: number;
   status: string;
   docstatus: 0 | 1 | 2;
+  from_warehouse?: string;
+  to_warehouse?: string;
 }
 
 export interface StockLedgerEntry {
@@ -56,6 +66,7 @@ export interface BinEntry {
   item_name?: string;
   warehouse: string;
   actual_qty: number;
+  reserved_qty: number;
   stock_value: number;
   valuation_rate: number;
 }

@@ -20,6 +20,7 @@ export interface CustomerListItem {
   customer_group: string;
   territory: string;
   default_currency?: string;
+  disabled?: 0 | 1;
 }
 
 export interface CustomerWithBalance extends CustomerListItem {

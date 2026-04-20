@@ -112,6 +112,18 @@ export async function frappeCall<T>(endpoint: string, options?: RequestInit): Pr
   }
 
   if (!resp.ok) {
+    // ERPNext returns 417 for informational messages (e.g., "Item Price added")
+    // when the document IS actually saved. Check if response has valid data.
+    if (resp.status === 417) {
+      const bodyText = await resp.text();
+      try {
+        const body = JSON.parse(bodyText);
+        if (body.data || body.message) return body;
+      } catch {
+        // Not valid JSON — fall through to error
+      }
+      throw new FrappeAPIError(bodyText, resp.status);
+    }
     throw await parseErrorResponse(resp);
   }
 
@@ -120,6 +132,7 @@ export async function frappeCall<T>(endpoint: string, options?: RequestInit): Pr
 
 interface GetListOptions {
   filters?: unknown[];
+  orFilters?: unknown[];
   fields?: (string | Record<string, string>)[];
   orderBy?: string;
   groupBy?: string;
@@ -132,6 +145,9 @@ export const frappe = {
     const params = new URLSearchParams();
     if (options?.filters) {
       params.set("filters", JSON.stringify(options.filters));
+    }
+    if (options?.orFilters) {
+      params.set("or_filters", JSON.stringify(options.orFilters));
     }
     if (options?.fields) {
       params.set("fields", JSON.stringify(options.fields));
@@ -207,6 +223,24 @@ export const frappe = {
       body: JSON.stringify({ doc: JSON.stringify(doc) }),
     });
     return result.message;
+  },
+
+  async submitWithRetry<T>(doctype: string, name: string, maxRetries = 2): Promise<T> {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const fullDoc = await this.getDoc<T>(doctype, name);
+      try {
+        return await this.submit<T>(fullDoc as unknown as Record<string, unknown>);
+      } catch (error) {
+        const isTimestampMismatch =
+          error instanceof FrappeAPIError && error.excType === "TimestampMismatchError";
+        if (isTimestampMismatch && attempt < maxRetries) {
+          await new Promise((r) => setTimeout(r, 150));
+          continue;
+        }
+        throw error;
+      }
+    }
+    throw new Error("Unreachable");
   },
 
   async getCount(doctype: string, filters?: unknown[]): Promise<number> {

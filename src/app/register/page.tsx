@@ -1,6 +1,8 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Scale, Shield, Zap, Globe } from "lucide-react";
 import { RegistrationForm } from "@/components/auth/registration-form";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
@@ -10,6 +12,32 @@ const features = [
   { icon: Zap, text: "Высокая производительность" },
   { icon: Globe, text: "Доступ из любой точки мира" },
 ];
+
+const PLAN_LABELS: Record<string, string> = {
+  starter: "Старт",
+  pro: "Про",
+  enterprise: "Бизнес",
+};
+
+function RegisterFormWithPlan() {
+  const searchParams = useSearchParams();
+  const plan = searchParams.get("plan");
+  const referral = searchParams.get("ref");
+
+  return (
+    <>
+      {plan && PLAN_LABELS[plan] && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-teal-500/20 bg-teal-500/5 px-4 py-2.5">
+          <span className="text-sm text-muted-foreground">Выбранный тариф:</span>
+          <span className="rounded-full bg-teal-500/10 px-3 py-0.5 text-sm font-medium text-teal-600 dark:text-teal-400">
+            {PLAN_LABELS[plan]}
+          </span>
+        </div>
+      )}
+      <RegistrationForm plan={plan} referral={referral} />
+    </>
+  );
+}
 
 export default function RegisterPage() {
   return (
@@ -75,7 +103,9 @@ export default function RegisterPage() {
               <span className="text-lg font-bold">Stable ERP</span>
             </Link>
           </div>
-          <RegistrationForm />
+          <Suspense>
+            <RegisterFormWithPlan />
+          </Suspense>
         </div>
       </div>
     </div>

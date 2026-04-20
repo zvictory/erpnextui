@@ -2,45 +2,44 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { format, parseISO } from "date-fns";
-import { ArrowUpDown, Pencil, Trash2 } from "lucide-react";
+import { ArrowUpDown, Pencil } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DeleteRunDialog } from "./delete-run-dialog";
+import { formatNumber } from "@/lib/formatters";
 
-// --- Types ------------------------------------------------------------------
+// --- Unified row type -------------------------------------------------------
 
-export interface ProductionRunRow {
-  id: number;
+export interface ProductionRow {
+  /** Unique key: "local-{id}" or "erp-{name}" */
+  key: string;
+  source: "local" | "work-order";
   date: string;
-  shift: string | null;
-  lineId: number | null;
-  productId: number | null;
-  actualOutput: number;
-  totalHours: number;
-  plannedStopHours: number | null;
-  createdAt: string | null;
-  productCode: string | null;
-  productName: string | null;
-  nominalSpeed: number | null;
-  productWeightKg: number | null;
-  lineName: string | null;
-  netWorkHours: number;
-  plannedWorkHours: number;
-  unplannedStopHours: number;
-  productivity: number;
-  efficiency: number;
+
+  // Product info (shared)
+  itemCode: string;
+  itemName: string;
+  qty: number;
+
+  // Local-only (OEE)
+  localId?: number;
+  shift?: string | null;
+  lineName?: string | null;
+  totalHours?: number | null;
+  productivity?: number | null;
+  efficiency?: number | null;
+
+  // ERPNext-only
+  stockEntry?: string;
+  workOrder?: string;
 }
 
 // --- Helpers ----------------------------------------------------------------
 
-function formatNumber(value: number): string {
-  return value.toLocaleString("en-US");
-}
-
 function formatPercent(value: number): string {
-  return `${(value * 100).toFixed(1)}%`;
+  return `${formatNumber(value * 100, 1)}%`;
 }
 
 function getPercentColor(value: number): string {
@@ -52,7 +51,7 @@ function getPercentColor(value: number): string {
 
 // --- Columns ----------------------------------------------------------------
 
-export const columns: ColumnDef<ProductionRunRow>[] = [
+export const columns: ColumnDef<ProductionRow>[] = [
   {
     accessorKey: "date",
     header: ({ column }) => (
@@ -76,39 +75,41 @@ export const columns: ColumnDef<ProductionRunRow>[] = [
     },
   },
   {
-    accessorKey: "shift",
-    header: "Shift",
+    accessorKey: "source",
+    header: "Source",
     cell: ({ row }) => {
-      const shift = row.getValue("shift") as string | null;
-      return shift ? (
-        <Badge variant="outline">{shift}</Badge>
-      ) : (
-        <span className="text-muted-foreground">-</span>
+      const source = row.getValue("source") as string;
+      if (source === "work-order") {
+        return (
+          <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 border-blue-200 dark:border-blue-800 text-[10px]">
+            Work Order
+          </Badge>
+        );
+      }
+      return (
+        <Badge variant="secondary" className="text-[10px]">
+          Manual
+        </Badge>
       );
     },
-  },
-  {
-    accessorKey: "lineName",
-    header: "Line",
-    cell: ({ row }) => row.getValue("lineName") ?? "-",
   },
   {
     id: "product",
     header: "Product",
     cell: ({ row }) => {
-      const code = row.original.productCode;
-      const name = row.original.productName;
+      const code = row.original.itemCode;
+      const name = row.original.itemName;
       if (!code && !name) return "-";
       return (
         <div className="max-w-[200px]">
-          <div className="font-medium truncate">{code}</div>
+          <div className="font-medium truncate text-sm">{code}</div>
           <div className="text-xs text-muted-foreground truncate">{name}</div>
         </div>
       );
     },
   },
   {
-    accessorKey: "actualOutput",
+    accessorKey: "qty",
     header: ({ column }) => (
       <Button
         variant="ghost"
@@ -121,50 +122,44 @@ export const columns: ColumnDef<ProductionRunRow>[] = [
       </Button>
     ),
     cell: ({ row }) => (
-      <span className="font-mono tabular-nums">
-        {formatNumber(row.getValue("actualOutput") as number)}
-      </span>
+      <span className="font-mono tabular-nums">{formatNumber(row.getValue("qty") as number)}</span>
     ),
   },
   {
-    accessorKey: "totalHours",
-    header: "Total Hrs",
-    cell: ({ row }) => (
-      <span className="font-mono tabular-nums">
-        {(row.getValue("totalHours") as number).toFixed(1)}
-      </span>
-    ),
-    meta: { className: "hidden lg:table-cell" },
+    accessorKey: "shift",
+    header: "Shift",
+    cell: ({ row }) => {
+      const shift = row.original.shift;
+      return shift ? (
+        <Badge variant="outline">{shift}</Badge>
+      ) : (
+        <span className="text-muted-foreground">-</span>
+      );
+    },
   },
   {
-    accessorKey: "netWorkHours",
-    header: "Net Work Hrs",
-    cell: ({ row }) => (
-      <span className="font-mono tabular-nums">
-        {(row.getValue("netWorkHours") as number).toFixed(2)}
-      </span>
-    ),
-    meta: { className: "hidden lg:table-cell" },
+    accessorKey: "lineName",
+    header: "Line",
+    cell: ({ row }) => {
+      const line = row.original.lineName;
+      return line || <span className="text-muted-foreground">-</span>;
+    },
   },
   {
-    accessorKey: "plannedWorkHours",
-    header: "Planned Hrs",
-    cell: ({ row }) => (
-      <span className="font-mono tabular-nums">
-        {(row.getValue("plannedWorkHours") as number).toFixed(2)}
-      </span>
-    ),
-    meta: { className: "hidden xl:table-cell" },
-  },
-  {
-    accessorKey: "unplannedStopHours",
-    header: "Unplanned",
-    cell: ({ row }) => (
-      <span className="font-mono tabular-nums">
-        {(row.getValue("unplannedStopHours") as number).toFixed(2)}
-      </span>
-    ),
-    meta: { className: "hidden xl:table-cell" },
+    accessorKey: "workOrder",
+    header: "Work Order",
+    cell: ({ row }) => {
+      const wo = row.original.workOrder;
+      if (!wo) return <span className="text-muted-foreground">-</span>;
+      return (
+        <Link
+          href={`/manufacturing/work-orders/${encodeURIComponent(wo)}`}
+          className="text-sm text-primary hover:underline font-mono"
+        >
+          {wo}
+        </Link>
+      );
+    },
   },
   {
     accessorKey: "productivity",
@@ -180,7 +175,8 @@ export const columns: ColumnDef<ProductionRunRow>[] = [
       </Button>
     ),
     cell: ({ row }) => {
-      const value = row.getValue("productivity") as number;
+      const value = row.original.productivity;
+      if (value == null) return <span className="text-muted-foreground">-</span>;
       return (
         <span
           className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${getPercentColor(value)}`}
@@ -189,6 +185,7 @@ export const columns: ColumnDef<ProductionRunRow>[] = [
         </span>
       );
     },
+    meta: { className: "hidden lg:table-cell" },
   },
   {
     accessorKey: "efficiency",
@@ -204,7 +201,8 @@ export const columns: ColumnDef<ProductionRunRow>[] = [
       </Button>
     ),
     cell: ({ row }) => {
-      const value = row.getValue("efficiency") as number;
+      const value = row.original.efficiency;
+      if (value == null) return <span className="text-muted-foreground">-</span>;
       return (
         <span
           className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${getPercentColor(value)}`}
@@ -213,21 +211,24 @@ export const columns: ColumnDef<ProductionRunRow>[] = [
         </span>
       );
     },
+    meta: { className: "hidden lg:table-cell" },
   },
   {
     id: "actions",
     header: () => <span className="sr-only">Actions</span>,
     cell: ({ row }) => {
-      const run = row.original;
+      const r = row.original;
+      // Only local runs have edit/delete
+      if (r.source !== "local" || !r.localId) return null;
       return (
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon-xs" asChild>
-            <Link href={`/production/${run.id}/edit`}>
+            <Link href={`/manufacturing/production/${r.localId}/edit`}>
               <Pencil className="size-3" />
               <span className="sr-only">Edit</span>
             </Link>
           </Button>
-          <DeleteRunDialog runId={run.id} />
+          <DeleteRunDialog runId={r.localId} />
         </div>
       );
     },

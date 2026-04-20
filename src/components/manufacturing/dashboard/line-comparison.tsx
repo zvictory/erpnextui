@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-} from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -85,12 +79,7 @@ export function LineComparison({ data }: LineComparisonProps) {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis
-              dataKey="lineName"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-            />
+            <XAxis dataKey="lineName" tickLine={false} axisLine={false} tickMargin={8} />
             <YAxis
               domain={[0, 100]}
               tickLine={false}
@@ -98,24 +87,10 @@ export function LineComparison({ data }: LineComparisonProps) {
               tickFormatter={(value: number) => `${value}%`}
               width={45}
             />
-            <ChartTooltip
-              content={
-                <ChartTooltipContent
-                  formatter={(value) => `${value}%`}
-                />
-              }
-            />
+            <ChartTooltip content={<ChartTooltipContent formatter={(value) => `${value}%`} />} />
             <ChartLegend content={<ChartLegendContent />} />
-            <Bar
-              dataKey="productivity"
-              fill="url(#gradProductivity)"
-              radius={[4, 4, 0, 0]}
-            />
-            <Bar
-              dataKey="efficiency"
-              fill="url(#gradEfficiency)"
-              radius={[4, 4, 0, 0]}
-            />
+            <Bar dataKey="productivity" fill="url(#gradProductivity)" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="efficiency" fill="url(#gradEfficiency)" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ChartContainer>
       </CardContent>

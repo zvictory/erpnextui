@@ -16,8 +16,18 @@ export interface FactoryAlert {
 }
 
 const SEVERITY_CONFIG = {
-  critical: { icon: AlertCircle, color: "text-red-500", bg: "bg-red-500/10", badge: "destructive" as const },
-  warning: { icon: AlertTriangle, color: "text-amber-500", bg: "bg-amber-500/10", badge: "secondary" as const },
+  critical: {
+    icon: AlertCircle,
+    color: "text-red-500",
+    bg: "bg-red-500/10",
+    badge: "destructive" as const,
+  },
+  warning: {
+    icon: AlertTriangle,
+    color: "text-amber-500",
+    bg: "bg-amber-500/10",
+    badge: "secondary" as const,
+  },
   info: { icon: Info, color: "text-blue-400", bg: "bg-blue-400/10", badge: "outline" as const },
 };
 
@@ -28,7 +38,11 @@ interface AlertLogProps {
 }
 
 function formatTime(ms: number): string {
-  return new Date(ms).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  return new Date(ms).toLocaleTimeString("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 }
 
 export function AlertLog({ alerts, onAcknowledge, className }: AlertLogProps) {
@@ -46,9 +60,7 @@ export function AlertLog({ alerts, onAcknowledge, className }: AlertLogProps) {
             key={f}
             onClick={() => setFilter(f)}
             className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
-              filter === f
-                ? "bg-white/20 text-white"
-                : "text-white/40 hover:text-white/70"
+              filter === f ? "bg-white/20 text-white" : "text-white/40 hover:text-white/70"
             }`}
           >
             {f === "all" ? `All (${alerts.length})` : f}

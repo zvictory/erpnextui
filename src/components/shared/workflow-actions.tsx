@@ -13,22 +13,14 @@ import {
 } from "@/components/ui/dialog";
 import { useWorkflowTransition } from "@/hooks/use-workflow";
 import { toast } from "sonner";
-import {
-  Check,
-  X,
-  Send,
-  Package,
-  PackageCheck,
-  Truck,
-  CheckCircle2,
-  RotateCcw,
-} from "lucide-react";
+import { Check, Send, Package, ClipboardCheck, FileText, RotateCcw } from "lucide-react";
 
 interface WorkflowActionsProps {
   doctype: string;
   docname: string;
   currentState: string;
   onTransition?: () => void;
+  onSpecialAction?: (action: string) => Promise<void>;
 }
 
 /** Map: state -> available actions with metadata */
@@ -41,31 +33,18 @@ const STATE_ACTIONS: Record<
     variant?: "default" | "destructive" | "outline";
   }[]
 > = {
-  Draft: [
-    { action: "Submit for Approval", tKey: "submitForApproval", icon: Send },
-  ],
-  "Pending Approval": [
-    { action: "Approve", tKey: "approve", icon: Check },
-    { action: "Reject", tKey: "reject", icon: X, variant: "destructive" },
-  ],
-  Rejected: [
-    { action: "Resubmit", tKey: "resubmit", icon: RotateCcw },
-  ],
-  Approved: [
-    { action: "Send to Warehouse", tKey: "sendToWarehouse", icon: Send },
-  ],
-  "Ready for Pickup": [
-    { action: "Mark as Picked", tKey: "markAsPicked", icon: Package },
-  ],
-  Picked: [
-    { action: "Mark as Packed", tKey: "markAsPacked", icon: PackageCheck },
+  Submitted: [{ action: "Send to Pick", tKey: "sendToPick", icon: Send }],
+  "Pending Pick": [{ action: "Start Picking", tKey: "startPicking", icon: Package }],
+  Picking: [{ action: "Complete Pick", tKey: "completePick", icon: ClipboardCheck }],
+  "Stock Check": [
+    { action: "Confirm Stock", tKey: "confirmStock", icon: Check },
+    { action: "Re-pick", tKey: "rePick", icon: RotateCcw, variant: "destructive" },
   ],
   Packed: [
-    { action: "Mark as Delivered", tKey: "markAsDelivered", icon: Truck },
+    { action: "Send to Invoice", tKey: "sendToInvoice", icon: FileText },
+    { action: "Re-pick Error", tKey: "rePickError", icon: RotateCcw, variant: "destructive" },
   ],
-  Delivered: [
-    { action: "Complete", tKey: "complete", icon: CheckCircle2 },
-  ],
+  "To Invoice": [{ action: "Create Invoice", tKey: "createInvoice", icon: FileText }],
 };
 
 export function WorkflowActions({
@@ -73,19 +52,33 @@ export function WorkflowActions({
   docname,
   currentState,
   onTransition,
+  onSpecialAction,
 }: WorkflowActionsProps) {
   const t = useTranslations("workflow");
   const transition = useWorkflowTransition();
-  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
-  const [rejectReason, setRejectReason] = useState("");
+  const [rePickDialogOpen, setRePickDialogOpen] = useState(false);
+  const [rePickReason, setRePickReason] = useState("");
+  const [rePickAction, setRePickAction] = useState("");
 
   const actions = STATE_ACTIONS[currentState] ?? [];
   if (actions.length === 0) return null;
 
   async function handleAction(action: string) {
-    // Reject needs a reason dialog
-    if (action === "Reject") {
-      setRejectDialogOpen(true);
+    // Re-pick actions need a reason dialog
+    if (action === "Re-pick" || action === "Re-pick Error") {
+      setRePickAction(action);
+      setRePickDialogOpen(true);
+      return;
+    }
+
+    // "Create Invoice" delegates to special handler if provided
+    if (action === "Create Invoice" && onSpecialAction) {
+      try {
+        await onSpecialAction(action);
+        onTransition?.();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Action failed");
+      }
       return;
     }
 
@@ -98,15 +91,16 @@ export function WorkflowActions({
     }
   }
 
-  async function handleRejectConfirm() {
+  async function handleRePickConfirm() {
     try {
-      await transition.mutateAsync({ doctype, docname, action: "Reject" });
-      toast.success("Rejected");
-      setRejectDialogOpen(false);
-      setRejectReason("");
+      await transition.mutateAsync({ doctype, docname, action: rePickAction });
+      toast.success(`${rePickAction} successful`);
+      setRePickDialogOpen(false);
+      setRePickReason("");
+      setRePickAction("");
       onTransition?.();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Reject failed");
+      toast.error(err instanceof Error ? err.message : `${rePickAction} failed`);
     }
   }
 
@@ -126,30 +120,27 @@ export function WorkflowActions({
         ))}
       </div>
 
-      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+      <Dialog open={rePickDialogOpen} onOpenChange={setRePickDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t("reject")}</DialogTitle>
+            <DialogTitle>{t(rePickAction === "Re-pick" ? "rePick" : "rePickError")}</DialogTitle>
           </DialogHeader>
           <Textarea
-            placeholder={t("rejectReason")}
-            value={rejectReason}
-            onChange={(e) => setRejectReason(e.target.value)}
+            placeholder={t("rePickReason")}
+            value={rePickReason}
+            onChange={(e) => setRePickReason(e.target.value)}
             rows={3}
           />
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setRejectDialogOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setRePickDialogOpen(false)}>
               {t("cancel") ?? "Cancel"}
             </Button>
             <Button
               variant="destructive"
-              onClick={handleRejectConfirm}
-              disabled={transition.isPending}
+              onClick={handleRePickConfirm}
+              disabled={transition.isPending || !rePickReason.trim()}
             >
-              {t("reject")}
+              {t(rePickAction === "Re-pick" ? "rePick" : "rePickError")}
             </Button>
           </DialogFooter>
         </DialogContent>

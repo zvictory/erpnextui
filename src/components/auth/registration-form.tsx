@@ -22,7 +22,13 @@ const COUNTRIES = [
 
 const CURRENCIES = ["UZS", "KZT", "RUB", "USD", "EUR"];
 
-export function RegistrationForm() {
+export function RegistrationForm({
+  plan,
+  referral,
+}: {
+  plan?: string | null;
+  referral?: string | null;
+}) {
   const t = useTranslations("auth");
   const registerMutation = useRegister();
   const [success, setSuccess] = useState(false);
@@ -34,6 +40,7 @@ export function RegistrationForm() {
   const [phone, setPhone] = useState("");
   const [country, setCountry] = useState("");
   const [currency, setCurrency] = useState("");
+  const [referralCode, setReferralCode] = useState(referral ?? "");
   const [clientError, setClientError] = useState<string | null>(null);
 
   function handleSubmit(e: FormEvent) {
@@ -50,7 +57,17 @@ export function RegistrationForm() {
     }
 
     registerMutation.mutate(
-      { companyName, email, password, confirmPassword, phone, country, currency },
+      {
+        companyName,
+        email,
+        password,
+        confirmPassword,
+        phone,
+        country,
+        currency,
+        plan: plan ?? undefined,
+        referralCode: referralCode.trim() || undefined,
+      },
       { onSuccess: () => setSuccess(true) },
     );
   }
@@ -192,6 +209,17 @@ export function RegistrationForm() {
               ))}
             </select>
           </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="referralCode">{t("register.referralCode")}</Label>
+          <Input
+            id="referralCode"
+            placeholder={t("register.referralPlaceholder")}
+            value={referralCode}
+            onChange={(e) => setReferralCode(e.target.value)}
+            disabled={registerMutation.isPending}
+          />
         </div>
 
         {errorMessage && <p className="text-sm text-destructive">{errorMessage}</p>}

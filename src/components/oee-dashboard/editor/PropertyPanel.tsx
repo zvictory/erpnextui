@@ -70,7 +70,12 @@ function EquipmentProperties({ eq }: { eq: Equipment }) {
       <div className="flex items-center justify-between">
         <span className="font-mono font-bold text-sm">{eq.id}</span>
         <div className="flex gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => duplicateEquipment(eq.id)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => duplicateEquipment(eq.id)}
+          >
             <Copy className="h-3.5 w-3.5" />
           </Button>
           <Button
@@ -167,7 +172,7 @@ function EquipmentProperties({ eq }: { eq: Equipment }) {
           ))}
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">O'lcham</Label>
+          <Label className="text-xs">O&apos;lcham</Label>
           <Input
             type="number"
             step="0.1"
@@ -190,7 +195,9 @@ function EquipmentProperties({ eq }: { eq: Equipment }) {
             className="h-8 text-xs"
             value={eq.linkedWorkstation || ""}
             placeholder="masalan: Qozon-1"
-            onChange={(e) => updateEquipment(eq.id, { linkedWorkstation: e.target.value || undefined })}
+            onChange={(e) =>
+              updateEquipment(eq.id, { linkedWorkstation: e.target.value || undefined })
+            }
           />
         </div>
         <div className="space-y-1.5">
@@ -199,7 +206,9 @@ function EquipmentProperties({ eq }: { eq: Equipment }) {
             className="h-8 text-xs"
             value={eq.linkedWarehouse || ""}
             placeholder="masalan: Tayyor mahsulot skladi"
-            onChange={(e) => updateEquipment(eq.id, { linkedWarehouse: e.target.value || undefined })}
+            onChange={(e) =>
+              updateEquipment(eq.id, { linkedWarehouse: e.target.value || undefined })
+            }
           />
         </div>
       </div>
@@ -212,7 +221,7 @@ function EquipmentProperties({ eq }: { eq: Equipment }) {
           <h4 className="text-xs font-semibold text-muted-foreground uppercase">Parametrlar</h4>
           <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={addParam}>
             <Plus className="h-3 w-3 mr-1" />
-            Qo'shish
+            Qo&apos;shish
           </Button>
         </div>
         {eq.parameters.map((param, idx) => (
@@ -371,7 +380,7 @@ export function PropertyPanel() {
     return (
       <div className="flex h-full items-center justify-center p-4">
         <p className="text-xs text-muted-foreground text-center">
-          Uskunani tanlang xususiyatlarni ko'rish uchun
+          Uskunani tanlang xususiyatlarni ko&apos;rish uchun
         </p>
       </div>
     );

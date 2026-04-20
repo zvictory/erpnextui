@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { LinkField } from "@/components/shared/link-field";
 import { customerSchema, type CustomerFormValues } from "@/lib/schemas/customer-schema";
+import { useCompanyStore } from "@/stores/company-store";
 import type { Customer } from "@/types/customer";
 
 interface CustomerFormProps {
@@ -30,6 +31,8 @@ export function CustomerForm({
   isSubmitting,
   isEdit = false,
 }: CustomerFormProps) {
+  const companyCurrency = useCompanyStore((s) => s.currencyCode);
+
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerSchema),
     defaultValues: defaultValues
@@ -48,7 +51,7 @@ export function CustomerForm({
           customer_type: "Company",
           customer_group: "",
           territory: "",
-          default_currency: "",
+          default_currency: companyCurrency || "",
           tax_id: "",
           email_id: "",
           mobile_no: "",

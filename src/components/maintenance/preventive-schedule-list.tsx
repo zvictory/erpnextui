@@ -15,10 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  getPreventiveSchedule,
-  completePreventiveTask,
-} from "@/actions/preventive-schedule";
+import { getPreventiveSchedule, completePreventiveTask } from "@/actions/preventive-schedule";
 import { formatDate } from "@/lib/formatters";
 
 interface PreventiveScheduleListProps {
@@ -80,10 +77,7 @@ export function PreventiveScheduleList({ assetId }: PreventiveScheduleListProps)
                 <TableCell className="font-medium">{task.taskName}</TableCell>
                 {!assetId && (
                   <TableCell>
-                    <Link
-                      href={`/assets/${task.assetId}`}
-                      className="text-primary hover:underline"
-                    >
+                    <Link href={`/assets/${task.assetId}`} className="text-primary hover:underline">
                       {task.assetCode ?? task.assetName ?? `#${task.assetId}`}
                     </Link>
                   </TableCell>
@@ -91,9 +85,7 @@ export function PreventiveScheduleList({ assetId }: PreventiveScheduleListProps)
                 <TableCell>
                   {task.frequencyValue} {t(`freq.${task.frequencyType}`)}
                 </TableCell>
-                <TableCell>
-                  {task.lastPerformed ? formatDate(task.lastPerformed) : "—"}
-                </TableCell>
+                <TableCell>{task.lastPerformed ? formatDate(task.lastPerformed) : "—"}</TableCell>
                 <TableCell>
                   {overdue ? (
                     <Badge variant="destructive" className="text-xs">

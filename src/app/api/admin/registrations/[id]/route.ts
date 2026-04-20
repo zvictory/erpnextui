@@ -18,7 +18,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Registration not found" }, { status: 404 });
   }
 
-  const { encryptedPassword: _, ...safe } = reg;
+  const { encryptedPassword: _encryptedPassword, ...safe } = reg;
   return NextResponse.json({ registration: safe });
 }
 

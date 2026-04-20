@@ -79,7 +79,7 @@ export function getWorkOrderColumns(
             className: "min-w-[140px]",
             render: (row: WorkOrderListItem) => {
               const summary = tabelSummaries?.[row.name];
-              const hasLabor = (row.custom_labor_hours ?? 0) > 0 && summary;
+              const hasLabor = !!summary && summary.totalHours > 0;
 
               if (hasLabor) {
                 return (
@@ -143,12 +143,14 @@ export function getWorkOrderColumns(
       key: "custom_total_labor_cost",
       header: t("laborCost"),
       className: "text-right w-[100px]",
-      render: (row) =>
-        row.custom_total_labor_cost ? (
-          <span className="tabular-nums text-sm">{formatNumber(row.custom_total_labor_cost, 0)}</span>
+      render: (row) => {
+        const cost = tabelSummaries?.[row.name]?.totalCost ?? 0;
+        return cost > 0 ? (
+          <span className="tabular-nums text-sm">{formatNumber(cost, 0)}</span>
         ) : (
           <span className="text-muted-foreground">—</span>
-        ),
+        );
+      },
     },
     {
       key: "expected_delivery_date",

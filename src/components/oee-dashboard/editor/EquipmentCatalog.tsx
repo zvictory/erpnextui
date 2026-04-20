@@ -1,9 +1,32 @@
 "use client";
 
 import {
-  Cylinder, ArrowRight, Package, Warehouse, Fan, Gauge, Zap, Truck, Droplets, Wind,
-  Thermometer, Clock, Snowflake, GitBranch, Tag, Printer, Scan, Scale, Activity,
-  ArrowUpCircle, ToggleRight, Flame, FlaskConical, CupSoda, Box, Cherry,
+  Cylinder,
+  ArrowRight,
+  Package,
+  Warehouse,
+  Fan,
+  Gauge,
+  Zap,
+  Truck,
+  Droplets,
+  Wind,
+  Thermometer,
+  Clock,
+  Snowflake,
+  GitBranch,
+  Tag,
+  Printer,
+  Scan,
+  Scale,
+  Activity,
+  ArrowUpCircle,
+  ToggleRight,
+  Flame,
+  FlaskConical,
+  CupSoda,
+  Box,
+  Cherry,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -97,7 +120,10 @@ export function EquipmentCatalog() {
                     className="w-full justify-start h-7 text-[11px] px-2"
                     onClick={() => handleAdd(item)}
                   >
-                    <Icon className="h-3 w-3 mr-1.5 shrink-0" style={{ color: item.defaultColor }} />
+                    <Icon
+                      className="h-3 w-3 mr-1.5 shrink-0"
+                      style={{ color: item.defaultColor }}
+                    />
                     <span className="truncate">{item.label}</span>
                   </Button>
                 );
@@ -108,7 +134,7 @@ export function EquipmentCatalog() {
 
         <div className="pt-2 border-t">
           <p className="text-[10px] text-muted-foreground leading-relaxed">
-            Uskunani qo'shish uchun bosing. Keyin 3D sahnada joylashtiring.
+            Uskunani qo&apos;shish uchun bosing. Keyin 3D sahnada joylashtiring.
           </p>
         </div>
       </div>

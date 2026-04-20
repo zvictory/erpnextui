@@ -11,14 +11,13 @@ interface WarehouseState {
 
 const WORKFLOW_STATES = [
   "Draft",
-  "Pending Approval",
-  "Approved",
-  "Rejected",
-  "Ready for Pickup",
-  "Picked",
+  "Submitted",
+  "Pending Pick",
+  "Picking",
+  "Stock Check",
   "Packed",
-  "Delivered",
-  "Completed",
+  "To Invoice",
+  "Invoiced",
 ];
 
 export const useWarehouseStore = create<WarehouseState>((set) => ({
@@ -32,7 +31,7 @@ export const useWarehouseStore = create<WarehouseState>((set) => ({
       const results: Record<string, number> = {};
       await Promise.all(
         WORKFLOW_STATES.map(async (state) => {
-          const count = await frappe.getCount("Sales Invoice", [
+          const count = await frappe.getCount("Sales Order", [
             ["company", "=", company],
             ["workflow_state", "=", state],
             ["docstatus", "<", 2],

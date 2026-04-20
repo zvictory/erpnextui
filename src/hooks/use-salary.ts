@@ -141,8 +141,7 @@ export function useSubmitSalaryAccrual() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (name: string) => {
-      const fullDoc = await frappe.getDoc<JournalEntry>("Journal Entry", name);
-      await frappe.submit<JournalEntry>(fullDoc as unknown as Record<string, unknown>);
+      await frappe.submitWithRetry<JournalEntry>("Journal Entry", name);
     },
     onSuccess: () => {
       for (const key of salaryInvalidationKeys()) {
@@ -260,8 +259,7 @@ export function useAccrueSalary() {
         accounts,
       });
 
-      const fullDoc = await frappe.getDoc<JournalEntry>("Journal Entry", created.name);
-      await frappe.submit<JournalEntry>(fullDoc as unknown as Record<string, unknown>);
+      await frappe.submitWithRetry<JournalEntry>("Journal Entry", created.name);
 
       return { name: created.name };
     },
@@ -274,7 +272,6 @@ export function useAccrueSalary() {
     },
   });
 }
-
 
 // ---------------------------------------------------------------------------
 // Pay salary (create + submit JE)
@@ -308,24 +305,27 @@ export function usePaySalary() {
       const payableCurrency = payableAccDoc.account_currency;
       const bankCurrency = bankAccDoc.account_currency;
 
-      const isMultiCurrency = bankCurrency !== payableCurrency;
+      // Fetch company currency BEFORE multi-currency check — ERPNext requires
+      // multi_currency: 1 when ANY account differs from the company currency,
+      // not just when the two accounts differ from each other.
+      const companyDoc = await frappe.getDoc<{ default_currency: string }>("Company", p.company);
+      const companyCurrency = companyDoc.default_currency;
+
+      const isMultiCurrency =
+        bankCurrency !== companyCurrency || payableCurrency !== companyCurrency;
       if (isMultiCurrency) {
         await ensureMultiCurrencyEnabled(p.company, [payableCurrency, bankCurrency]);
       }
-
-      // Golden rule: both amounts are sacred. Derive exchange rates from amounts.
-      // ERPNext convention: exchange_rate = "1 account_currency = X company_currency"
-      // ERPNext computes base = amount_in_account_currency × exchange_rate
-      // Both sides must produce the SAME base amount.
-      const companyDoc = await frappe.getDoc<{ default_currency: string }>("Company", p.company);
-      const companyCurrency = companyDoc.default_currency;
 
       let bankRate: number;
       let payableRate: number;
 
       if (bankCurrency === payableCurrency) {
         // Same currency — no conversion
-        bankRate = bankCurrency === companyCurrency ? 1 : (await fetchExchangeRate(bankCurrency, companyCurrency, p.postingDate)) ?? 1;
+        bankRate =
+          bankCurrency === companyCurrency
+            ? 1
+            : ((await fetchExchangeRate(bankCurrency, companyCurrency, p.postingDate)) ?? 1);
         payableRate = bankRate;
       } else if (bankCurrency === companyCurrency) {
         // Bank is in company currency (e.g. UZS), payable is foreign (e.g. USD)
@@ -338,7 +338,8 @@ export function usePaySalary() {
         bankRate = p.payableAmount / p.bankAmount;
       } else {
         // Neither is company currency — anchor to bank side via fetched rate
-        const fetchedBankRate = (await fetchExchangeRate(bankCurrency, companyCurrency, p.postingDate)) ?? 1;
+        const fetchedBankRate =
+          (await fetchExchangeRate(bankCurrency, companyCurrency, p.postingDate)) ?? 1;
         const companyAmount = p.bankAmount * fetchedBankRate;
         bankRate = fetchedBankRate;
         payableRate = companyAmount / p.payableAmount;
@@ -378,8 +379,7 @@ export function usePaySalary() {
         accounts,
       });
 
-      const fullDoc = await frappe.getDoc<JournalEntry>("Journal Entry", created.name);
-      await frappe.submit<JournalEntry>(fullDoc as unknown as Record<string, unknown>);
+      await frappe.submitWithRetry<JournalEntry>("Journal Entry", created.name);
 
       return { name: created.name };
     },

@@ -108,7 +108,13 @@ function InvoiceBody({
     supplier?: string;
     posting_date: string;
     due_date: string;
-    items: { item_code?: string; description?: string; qty: number; rate: number; amount: number }[];
+    items: {
+      item_code?: string;
+      description?: string;
+      qty: number;
+      rate: number;
+      amount: number;
+    }[];
     total: number;
     grand_total: number;
     status: string;
@@ -209,7 +215,9 @@ function InvoiceBody({
           <TableBody>
             {invoice.items.map((item, i) => (
               <TableRow key={i}>
-                <TableCell className="font-medium">{item.item_code || item.description || "—"}</TableCell>
+                <TableCell className="font-medium">
+                  {item.item_code || item.description || "—"}
+                </TableCell>
                 <TableCell className="text-right tabular-nums">{item.qty}</TableCell>
                 <TableCell className="text-right tabular-nums">{fmt(item.rate)}</TableCell>
                 <TableCell className="text-right tabular-nums">{fmt(item.amount)}</TableCell>

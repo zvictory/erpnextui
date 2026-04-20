@@ -305,8 +305,7 @@ export function useCreateOffset() {
 
       // Create and submit
       const created = await frappe.createDoc<{ name: string }>("Journal Entry", journalEntry);
-      const doc = await frappe.getDoc<Record<string, unknown>>("Journal Entry", created.name);
-      await frappe.submit(doc);
+      await frappe.submitWithRetry("Journal Entry", created.name);
 
       return created;
     },

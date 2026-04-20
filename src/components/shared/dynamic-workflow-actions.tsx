@@ -3,13 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import {
-  Check,
-  XCircle,
-  Send,
-  Play,
-  Loader2,
-} from "lucide-react";
+import { Check, XCircle, Send, Play, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -21,10 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  useWorkflowTransitions,
-  useApplyWorkflow,
-} from "@/hooks/use-document-workflow";
+import { useWorkflowTransitions, useApplyWorkflow } from "@/hooks/use-document-workflow";
 
 interface DynamicWorkflowActionsProps {
   doctype: string;
@@ -56,11 +47,7 @@ export function DynamicWorkflowActions({
   invalidateKeys,
 }: DynamicWorkflowActionsProps) {
   const t = useTranslations("workflow");
-  const { transitions, isLoading } = useWorkflowTransitions(
-    doctype,
-    docname,
-    currentState,
-  );
+  const { transitions, isLoading } = useWorkflowTransitions(doctype, docname, currentState);
   const applyWorkflow = useApplyWorkflow(invalidateKeys);
   const [confirmAction, setConfirmAction] = useState<string | null>(null);
 
@@ -72,8 +59,7 @@ export function DynamicWorkflowActions({
       toast.success(t("actionSuccess", { action }));
       onTransition?.();
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : t("actionFailed", { action });
+      const message = err instanceof Error ? err.message : t("actionFailed", { action });
       toast.error(message);
     }
   }
@@ -111,10 +97,7 @@ export function DynamicWorkflowActions({
         })}
       </div>
 
-      <AlertDialog
-        open={!!confirmAction}
-        onOpenChange={(open) => !open && setConfirmAction(null)}
-      >
+      <AlertDialog open={!!confirmAction} onOpenChange={(open) => !open && setConfirmAction(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
@@ -125,9 +108,7 @@ export function DynamicWorkflowActions({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={applyWorkflow.isPending}>
-              {t("dismiss")}
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={applyWorkflow.isPending}>{t("dismiss")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               disabled={applyWorkflow.isPending}
@@ -136,9 +117,7 @@ export function DynamicWorkflowActions({
                 setConfirmAction(null);
               }}
             >
-              {applyWorkflow.isPending ? (
-                <Loader2 className="mr-1 size-4 animate-spin" />
-              ) : null}
+              {applyWorkflow.isPending ? <Loader2 className="mr-1 size-4 animate-spin" /> : null}
               {confirmAction}
             </AlertDialogAction>
           </AlertDialogFooter>

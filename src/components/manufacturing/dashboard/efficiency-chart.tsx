@@ -1,14 +1,7 @@
 "use client";
 
 import { format, parseISO } from "date-fns";
-import {
-  ComposedChart,
-  Area,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-} from "recharts";
+import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -111,13 +104,7 @@ export function EfficiencyChart({ data }: EfficiencyChartProps) {
               tickFormatter={(value: number) => `${value}%`}
               width={45}
             />
-            <ChartTooltip
-              content={
-                <ChartTooltipContent
-                  formatter={(value) => `${value}%`}
-                />
-              }
-            />
+            <ChartTooltip content={<ChartTooltipContent formatter={(value) => `${value}%`} />} />
             <Area
               yAxisId="left"
               dataKey="productivity"

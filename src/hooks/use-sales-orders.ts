@@ -77,6 +77,7 @@ export function useCreateSalesOrder() {
     mutationFn: (data: SalesOrderFormValues & { company: string }) =>
       frappe.createDoc<SalesOrder>("Sales Order", {
         doctype: "Sales Order",
+        reserve_stock: 1,
         ...data,
         items: data.items.map((item) => ({
           doctype: "Sales Order Item",
@@ -85,6 +86,9 @@ export function useCreateSalesOrder() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["salesOrders"] });
+      qc.invalidateQueries({ queryKey: ["partyBalances"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["bins"] });
     },
   });
 }
@@ -123,6 +127,9 @@ export function useSubmitSalesOrder() {
     onSuccess: (updatedDoc) => {
       qc.setQueryData(queryKeys.salesOrders.detail(updatedDoc.name), updatedDoc);
       qc.invalidateQueries({ queryKey: ["salesOrders"] });
+      qc.invalidateQueries({ queryKey: ["partyBalances"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["bins"] });
     },
   });
 }

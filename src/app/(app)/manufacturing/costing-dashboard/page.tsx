@@ -282,7 +282,9 @@ export default function CostingDashboardPage() {
                     <TableCell className="text-right tabular-nums">
                       {formatNumber(p.produced_qty)}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">{fmt(p.raw_material_cost)}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {fmt(p.raw_material_cost)}
+                    </TableCell>
                     <TableCell className="text-right tabular-nums">{fmt(p.labor_cost)}</TableCell>
                     <TableCell className="text-right tabular-nums">{fmt(p.energy_cost)}</TableCell>
                     <TableCell className="text-right tabular-nums">
@@ -369,7 +371,9 @@ export default function CostingDashboardPage() {
                     <TableCell className="font-medium">{ws.name}</TableCell>
                     <TableCell className="text-right tabular-nums">{ws.power_kw} kW</TableCell>
                     <TableCell className="text-right tabular-nums">{ws.share_pct}%</TableCell>
-                    <TableCell className="text-right tabular-nums">{fmt(ws.energy_amount)}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {fmt(ws.energy_amount)}
+                    </TableCell>
                     <TableCell className="text-right tabular-nums">{fmt(ws.hourly_rate)}</TableCell>
                   </TableRow>
                 ))
@@ -450,8 +454,12 @@ export default function CostingDashboardPage() {
                     {variance.recommendation === "normal"
                       ? t("varianceNormalDesc")
                       : variance.recommendation === "under_absorbed"
-                        ? t("underAbsorbedDesc", { pct: Math.abs(variance.variance_pct).toFixed(1) })
-                        : t("overAbsorbedDesc", { pct: Math.abs(variance.variance_pct).toFixed(1) })}
+                        ? t("underAbsorbedDesc", {
+                            pct: Math.abs(variance.variance_pct).toFixed(1),
+                          })
+                        : t("overAbsorbedDesc", {
+                            pct: Math.abs(variance.variance_pct).toFixed(1),
+                          })}
                   </p>
                 </div>
               </CardContent>

@@ -1,27 +1,14 @@
 "use client";
 
-import {
-  ComposedChart,
-  Bar,
-  Cell,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-} from "recharts";
+import { ComposedChart, Bar, Cell, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { formatNumber } from "@/lib/formatters";
 
 // --- Types ------------------------------------------------------------------
 
@@ -65,15 +52,12 @@ export function DowntimeParetoChart({ data }: DowntimeParetoChartProps) {
       <Card>
         <CardHeader>
           <CardTitle>Downtime Pareto Analysis</CardTitle>
-          <CardDescription>
-            Stop codes ranked by total downtime minutes
-          </CardDescription>
+          <CardDescription>Stop codes ranked by total downtime minutes</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex h-[350px] items-center justify-center rounded-md border border-dashed">
             <p className="text-sm text-muted-foreground">
-              No downtime events recorded yet. Add events to see the Pareto
-              analysis.
+              No downtime events recorded yet. Add events to see the Pareto analysis.
             </p>
           </div>
         </CardContent>
@@ -92,16 +76,11 @@ export function DowntimeParetoChart({ data }: DowntimeParetoChartProps) {
     <Card>
       <CardHeader>
         <CardTitle>Downtime Pareto Analysis</CardTitle>
-        <CardDescription>
-          Stop codes ranked by total downtime minutes
-        </CardDescription>
+        <CardDescription>Stop codes ranked by total downtime minutes</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[350px] w-full">
-          <ComposedChart
-            data={chartData}
-            margin={{ top: 5, right: 10, left: 0, bottom: 0 }}
-          >
+          <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
             <defs>
               {chartData.map((_, i) => {
                 const t = chartData.length > 1 ? i / (chartData.length - 1) : 0;
@@ -148,19 +127,14 @@ export function DowntimeParetoChart({ data }: DowntimeParetoChartProps) {
               content={
                 <ChartTooltipContent
                   formatter={(value, name) => {
-                    if (name === "totalMinutes")
-                      return `${Number(value).toLocaleString()} min`;
+                    if (name === "totalMinutes") return `${formatNumber(Number(value))} min`;
                     if (name === "cumulativePercentage") return `${value}%`;
                     return String(value);
                   }}
                 />
               }
             />
-            <Bar
-              yAxisId="left"
-              dataKey="totalMinutes"
-              radius={[4, 4, 0, 0]}
-            >
+            <Bar yAxisId="left" dataKey="totalMinutes" radius={[4, 4, 0, 0]}>
               {chartData.map((_, i) => (
                 <Cell key={i} fill={`url(#dtParetoGrad${i})`} />
               ))}

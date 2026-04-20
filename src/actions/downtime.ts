@@ -39,12 +39,9 @@ export async function getDowntimeEvents(filters?: DowntimeFilters) {
     }
 
     const allowedLines = ctx.allowedScopes.line;
-    const hasWildcardLine =
-      ctx.isSuperuser || !allowedLines || allowedLines.has(SCOPE_WILDCARD);
+    const hasWildcardLine = ctx.isSuperuser || !allowedLines || allowedLines.has(SCOPE_WILDCARD);
     if (!hasWildcardLine) {
-      const allowedLineIds = [...allowedLines]
-        .map(Number)
-        .filter((n) => !Number.isNaN(n));
+      const allowedLineIds = [...allowedLines].map(Number).filter((n) => !Number.isNaN(n));
       if (allowedLineIds.length === 0) {
         return { success: true as const, data: [] };
       }
@@ -243,12 +240,9 @@ export async function getDowntimeParetoData(filters?: DowntimeFilters) {
     }
 
     const allowedLines = ctx.allowedScopes.line;
-    const hasWildcardLine =
-      ctx.isSuperuser || !allowedLines || allowedLines.has(SCOPE_WILDCARD);
+    const hasWildcardLine = ctx.isSuperuser || !allowedLines || allowedLines.has(SCOPE_WILDCARD);
     if (!hasWildcardLine) {
-      const allowedLineIds = [...allowedLines]
-        .map(Number)
-        .filter((n) => !Number.isNaN(n));
+      const allowedLineIds = [...allowedLines].map(Number).filter((n) => !Number.isNaN(n));
       if (allowedLineIds.length === 0) {
         return { success: true as const, data: [] };
       }

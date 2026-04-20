@@ -36,10 +36,17 @@ yarn-error.log*
 # platform config (contains API keys)
 data/*.json
 
+# one-off migration script outputs (plan/log JSON files)
+scripts/.out/
+
 # OEE SQLite database
 oee.db
 oee.db-wal
 oee.db-shm
+
+# claude code (local/personal — shared settings.json IS committed)
+.claude/settings.local.json
+CLAUDE.local.md
 
 # vercel
 .vercel

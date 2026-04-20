@@ -6,13 +6,7 @@ import {
 } from "@/lib/permissions/capabilities";
 
 const VALID_SCOPE_DIMS = new Set([null, "line", "warehouse", "company"]);
-const VALID_MODULES = new Set([
-  "platform",
-  "manufacturing",
-  "sales",
-  "purchases",
-  "stock",
-]);
+const VALID_MODULES = new Set(["platform", "manufacturing", "sales", "purchases", "stock"]);
 
 describe("BUILTIN_CAPABILITIES catalog", () => {
   it("exposes every entry with a consistent shape", () => {
@@ -33,9 +27,7 @@ describe("BUILTIN_CAPABILITIES catalog", () => {
   });
 
   it("getBuiltinCapability returns the same def as direct lookup", () => {
-    expect(getBuiltinCapability("production.read")).toBe(
-      BUILTIN_CAPABILITIES["production.read"],
-    );
+    expect(getBuiltinCapability("production.read")).toBe(BUILTIN_CAPABILITIES["production.read"]);
     expect(getBuiltinCapability("unknown.capability")).toBeUndefined();
   });
 

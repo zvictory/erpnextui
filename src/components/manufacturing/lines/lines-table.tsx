@@ -2,12 +2,7 @@
 
 import { useState, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+import { ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -52,9 +47,7 @@ interface LinesTableProps {
 export function LinesTable({ data }: LinesTableProps) {
   const router = useRouter();
   const [formOpen, setFormOpen] = useState(false);
-  const [editingLine, setEditingLine] = useState<LineRow | undefined>(
-    undefined
-  );
+  const [editingLine, setEditingLine] = useState<LineRow | undefined>(undefined);
   const [deleteTarget, setDeleteTarget] = useState<LineRow | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -65,20 +58,14 @@ export function LinesTable({ data }: LinesTableProps) {
       {
         accessorKey: "name",
         header: "Name",
-        cell: ({ row }) => (
-          <span className="font-medium">{row.getValue("name")}</span>
-        ),
+        cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
       },
       {
         accessorKey: "description",
         header: "Description",
         cell: ({ row }) => {
           const val = row.getValue("description") as string | null;
-          return val ? (
-            <span>{val}</span>
-          ) : (
-            <span className="text-muted-foreground">-</span>
-          );
+          return val ? <span>{val}</span> : <span className="text-muted-foreground">-</span>;
         },
       },
       {
@@ -111,11 +98,7 @@ export function LinesTable({ data }: LinesTableProps) {
                 <Pencil className="size-3" />
                 <span className="sr-only">Edit</span>
               </Button>
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => setDeleteTarget(line)}
-              >
+              <Button variant="ghost" size="icon-xs" onClick={() => setDeleteTarget(line)}>
                 <Trash2 className="size-3 text-destructive" />
                 <span className="sr-only">Delete</span>
               </Button>
@@ -124,7 +107,7 @@ export function LinesTable({ data }: LinesTableProps) {
         },
       },
     ],
-    []
+    [],
   );
 
   const table = useReactTable({
@@ -182,10 +165,7 @@ export function LinesTable({ data }: LinesTableProps) {
                   <TableHead key={header.id}>
                     {header.isPlaceholder
                       ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                      : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
               </TableRow>
@@ -197,10 +177,7 @@ export function LinesTable({ data }: LinesTableProps) {
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -238,18 +215,13 @@ export function LinesTable({ data }: LinesTableProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete production line?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete line{" "}
-              <strong>{deleteTarget?.name}</strong>. This action cannot be
-              undone.
+              This will permanently delete line <strong>{deleteTarget?.name}</strong>. This action
+              cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isPending}
-            >
+            <AlertDialogAction variant="destructive" onClick={handleDelete} disabled={isPending}>
               {isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>

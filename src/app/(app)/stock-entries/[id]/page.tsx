@@ -75,9 +75,7 @@ export default function StockEntryDetailPage({ params }: { params: Promise<{ id:
           <div className="flex items-center gap-2 mt-1">
             <Badge variant="outline">{entry.stock_entry_type}</Badge>
             <DocstatusBadge docstatus={entry.docstatus} />
-            {hasWorkflow && workflowState && (
-              <Badge variant="secondary">{workflowState}</Badge>
-            )}
+            {hasWorkflow && workflowState && <Badge variant="secondary">{workflowState}</Badge>}
             <span className="text-sm text-muted-foreground">{formatDate(entry.posting_date)}</span>
           </div>
         </div>

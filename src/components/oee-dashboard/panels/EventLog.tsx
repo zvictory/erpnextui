@@ -31,7 +31,11 @@ const EVENT_COLORS: Record<ProductionEvent["type"], string> = {
 };
 
 function formatEventTime(ms: number): string {
-  return new Date(ms).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  return new Date(ms).toLocaleTimeString("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 }
 
 export function EventLog() {
@@ -39,16 +43,16 @@ export function EventLog() {
 
   // Show events up to current playback time, reversed (newest first)
   const visibleEvents = useMemo(
-    () => events.filter((e) => e.timestamp <= currentTime).reverse().slice(0, 50),
+    () =>
+      events
+        .filter((e) => e.timestamp <= currentTime)
+        .reverse()
+        .slice(0, 50),
     [events, currentTime],
   );
 
   if (visibleEvents.length === 0) {
-    return (
-      <div className="text-xs text-white/40 text-center py-4">
-        No events yet
-      </div>
-    );
+    return <div className="text-xs text-white/40 text-center py-4">No events yet</div>;
   }
 
   return (

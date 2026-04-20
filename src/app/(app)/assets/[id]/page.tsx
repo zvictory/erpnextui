@@ -181,9 +181,7 @@ export default function AssetDetailPage() {
                     </>
                   )}
                 </dl>
-                {asset.notes && (
-                  <p className="mt-3 text-sm text-muted-foreground">{asset.notes}</p>
-                )}
+                {asset.notes && <p className="mt-3 text-sm text-muted-foreground">{asset.notes}</p>}
               </CardContent>
             </Card>
 
