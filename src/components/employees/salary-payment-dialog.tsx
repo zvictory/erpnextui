@@ -247,6 +247,12 @@ export function SalaryPaymentDialog({
           <DialogDescription>{employeeName}</DialogDescription>
         </DialogHeader>
 
+        {!salaryPayableAccount && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {tSettings("salary.notConfigured")}
+          </div>
+        )}
+
         <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
           <div className="space-y-2">
             <Label>{t("date")}</Label>
