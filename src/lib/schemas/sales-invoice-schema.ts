@@ -14,17 +14,32 @@ function toISODate(val: string): string {
 const isoDateString = (label: string) =>
   z.string().min(1, `${label} is required`).transform(toISODate);
 
-const invoiceItemSchema = z.object({
-  item_code: z.string().min(1, "Item is required"),
-  item_name: z.string().optional(),
-  qty: z.number().refine((v) => v !== 0, "Qty must not be zero"),
-  rate: z.number().min(0, "Rate must be >= 0"),
-  amount: z.number(),
-  uom: z.string().optional(),
-  conversion_factor: z.number().optional(),
-  discount_percentage: z.number().min(0).max(100).optional(),
-  discount_amount: z.number().min(0).optional(),
-});
+// Sanity ceiling on a single line total (qty × rate). Catches obvious
+// data-entry errors where an ID/balance gets pasted into the rate field.
+const MAX_LINE_TOTAL = 10_000_000_000;
+
+const invoiceItemSchema = z
+  .object({
+    item_code: z.string().min(1, "Item is required"),
+    item_name: z.string().optional(),
+    qty: z.number().refine((v) => v !== 0, "Qty must not be zero"),
+    rate: z.number().min(0, "Rate must be >= 0"),
+    amount: z.number(),
+    uom: z.string().optional(),
+    conversion_factor: z.number().optional(),
+    discount_percentage: z.number().min(0).max(100).optional(),
+    discount_amount: z.number().min(0).optional(),
+  })
+  .refine(
+    (d) => {
+      const lineTotal = Math.abs((d.qty || 0) * (d.rate || 0));
+      return lineTotal <= MAX_LINE_TOTAL;
+    },
+    {
+      message: "Line total exceeds 10 billion — verify rate and qty are correct",
+      path: ["rate"],
+    },
+  );
 
 export const salesInvoiceSchema = z
   .object({
