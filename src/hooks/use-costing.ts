@@ -159,7 +159,7 @@ async function findLaborAccrualJE(
   return results[0] ?? null;
 }
 
-async function accrueLaborForDate(
+export async function accrueLaborForDate(
   workOrder: string,
   date: string,
   company: string,
@@ -253,6 +253,53 @@ async function accrueLaborForDate(
     totalAmount,
     jeName: created.name,
   };
+}
+
+// Backfill: scan every (WO,date) with tabel rows and (re)post the accrual
+// JE. Used to heal existing tabel data that predates this feature — and as
+// a manual "resync" escape hatch from the work orders page.
+export function useBackfillLaborAccruals() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (company: string) => {
+      const rows = await frappe.getList<{ work_order: string; date: string }>(
+        "Work Order Timesheet",
+        {
+          filters: [["work_order", "is", "set"]],
+          fields: ["work_order", "date"],
+          limitPageLength: 0,
+        },
+      );
+      const pairs = new Set<string>();
+      for (const r of rows) {
+        if (r.work_order && r.date) pairs.add(`${r.work_order}::${r.date}`);
+      }
+      const accruals: LaborAccrualResult[] = [];
+      const accrualErrors: SaveWorkOrderTabelResult["accrualErrors"] = [];
+      for (const key of pairs) {
+        const [workOrder, date] = key.split("::");
+        try {
+          const result = await accrueLaborForDate(workOrder, date, company);
+          accruals.push(result);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          accrualErrors.push({
+            date: `${workOrder} ${date}`,
+            message,
+            configError: err instanceof LaborAccrualConfigError,
+          });
+          if (err instanceof LaborAccrualConfigError) break;
+        }
+      }
+      return { accruals, accrualErrors, scanned: pairs.size };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["journalEntries"] });
+      qc.invalidateQueries({ queryKey: ["partyBalances"] });
+      qc.invalidateQueries({ queryKey: ["partyLedger"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
 }
 
 export interface SaveWorkOrderTabelResult {
