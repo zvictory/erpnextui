@@ -17,9 +17,12 @@ export interface PurchaseInvoice {
   posting_date: string;
   due_date: string;
   company: string;
+  currency?: string;
+  conversion_rate?: number;
   items: PurchaseInvoiceItem[];
   total: number;
   grand_total: number;
+  base_grand_total?: number;
   status: string;
   amended_from?: string;
   is_return?: 0 | 1;

@@ -142,6 +142,9 @@ export interface GLReportRow {
   party?: string;
   debit: number;
   credit: number;
+  debit_in_account_currency?: number;
+  credit_in_account_currency?: number;
+  account_currency?: string;
   balance: number;
   voucher_type: string;
   voucher_no: string;

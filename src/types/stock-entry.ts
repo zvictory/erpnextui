@@ -3,11 +3,15 @@ export interface StockEntryDetail {
   item_code: string;
   item_name?: string;
   qty: number;
+  stock_qty?: number;
+  conversion_factor?: number;
   s_warehouse?: string;
   t_warehouse?: string;
   basic_rate: number;
+  basic_amount?: number;
   amount: number;
   uom?: string;
+  stock_uom?: string;
   serial_no?: string;
   is_finished_item?: number;
   [key: string]: unknown;
