@@ -104,6 +104,8 @@ export interface DraftJournalEntry {
   total_debit: number;
   user_remark: string;
   account_currency: string;
+  debit: number;
+  credit: number;
   debit_in_account_currency: number;
   credit_in_account_currency: number;
   exchange_rate: number;
@@ -127,6 +129,8 @@ export function usePartyDraftJEs(partyType: string, party: string, company: stri
           "total_debit",
           "user_remark",
           "`tabJournal Entry Account`.account_currency",
+          "`tabJournal Entry Account`.debit",
+          "`tabJournal Entry Account`.credit",
           "`tabJournal Entry Account`.debit_in_account_currency",
           "`tabJournal Entry Account`.credit_in_account_currency",
           "`tabJournal Entry Account`.exchange_rate",
@@ -139,6 +143,8 @@ export function usePartyDraftJEs(partyType: string, party: string, company: stri
         ...r,
         user_remark: r.user_remark ?? "",
         account_currency: r.account_currency ?? "",
+        debit: r.debit ?? 0,
+        credit: r.credit ?? 0,
         debit_in_account_currency: r.debit_in_account_currency ?? 0,
         credit_in_account_currency: r.credit_in_account_currency ?? 0,
         exchange_rate: r.exchange_rate ?? 1,

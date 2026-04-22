@@ -180,14 +180,8 @@ export function EmployeeDetailPanel({
       name: d.name,
       posting_date: d.posting_date,
       account: "",
-      debit:
-        d.exchange_rate === 1
-          ? d.debit_in_account_currency
-          : Math.round(d.debit_in_account_currency * d.exchange_rate * 100) / 100,
-      credit:
-        d.exchange_rate === 1
-          ? d.credit_in_account_currency
-          : Math.round(d.credit_in_account_currency * d.exchange_rate * 100) / 100,
+      debit: d.debit,
+      credit: d.credit,
       account_currency: d.account_currency,
       debit_in_account_currency: d.debit_in_account_currency,
       credit_in_account_currency: d.credit_in_account_currency,

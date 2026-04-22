@@ -201,9 +201,10 @@ export function useCreatePaymentEntry() {
           targetRate = receivedAmount > 0 ? baseAmount / receivedAmount : 1;
         }
       } else {
-        // Fallback: single amount, fetch rates and derive counter-amount (legacy)
-        // After rounding the derived amount, re-derive rates so
-        // paidAmount × sourceRate === receivedAmount × targetRate exactly.
+        // Single-amount fallback: user gave one sacred amount + fetched rates.
+        // Derive the counter-amount at FULL precision so
+        // paidAmount × sourceRate === receivedAmount × targetRate holds exactly.
+        // Never Math.round before POST — ERPNext's Float column stores the exact quotient.
         if (paidFromCurrency !== companyCurrency) {
           sourceRate =
             (await fetchExchangeRate(paidFromCurrency, companyCurrency, postingDate)) ?? 1;
@@ -213,22 +214,10 @@ export function useCreatePaymentEntry() {
         }
         if (isReceive) {
           receivedAmount = amount;
-          paidAmount = Math.round(((amount * targetRate) / sourceRate) * 100) / 100;
+          paidAmount = (amount * targetRate) / sourceRate;
         } else {
           paidAmount = amount;
-          receivedAmount = Math.round(((amount * sourceRate) / targetRate) * 100) / 100;
-        }
-        // Golden rule: re-derive rates from the now-rounded amounts
-        if (paidFromCurrency === companyCurrency) {
-          sourceRate = 1;
-          targetRate = paidAmount / receivedAmount;
-        } else if (paidToCurrency === companyCurrency) {
-          targetRate = 1;
-          sourceRate = receivedAmount / paidAmount;
-        } else {
-          // Neither is company currency — anchor source rate, adjust target
-          const baseAmount = paidAmount * sourceRate;
-          targetRate = receivedAmount > 0 ? baseAmount / receivedAmount : 1;
+          receivedAmount = (amount * sourceRate) / targetRate;
         }
       }
 

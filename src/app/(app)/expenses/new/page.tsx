@@ -49,22 +49,24 @@ function buildAccounts(data: WriteCheckFormData): JournalEntryAccount[] {
     return accounts;
   }
 
-  // Multi-currency: all accounts share the same foreign currency (payee currency).
-  // convertedTotal is the user-confirmed company-currency equivalent.
+  // Multi-currency — Figure 4 (Golden Rule allocation):
+  //   total (sum of sacred line amounts) and ct (sacred user-confirmed base total) are both inputs.
+  //   R is DERIVED from the two sacred values so debit base = credit base to the cent.
+  //   No Math.round on derived sums — the derived quotient carries full precision.
   const ct = data.convertedTotal;
   const R = total > 0 ? ct / total : data.exchangeRate;
 
   const accounts: JournalEntryAccount[] = data.expenseLines.map((l) => ({
     doctype: "Journal Entry Account",
     account: l.account,
-    debit_in_account_currency: roundTo2(l.amount),
+    debit_in_account_currency: l.amount,
     exchange_rate: R,
     user_remark: l.memo,
   }));
   accounts.push({
     doctype: "Journal Entry Account",
     account: data.paymentFrom,
-    credit_in_account_currency: roundTo2(total),
+    credit_in_account_currency: total,
     exchange_rate: R,
   });
   return accounts;
