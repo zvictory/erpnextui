@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
   let cbuDate = requestedDate ?? "";
   for (const entry of cbuEntries) {
     const nominal = parseInt(entry.Nominal, 10) || 1;
-    rateMap.set(entry.Ccy, parseFloat(entry.Rate) / nominal);
+    rateMap.set(entry.Ccy, Math.round((parseFloat(entry.Rate) / nominal) * 1e6) / 1e6);
     // Parse date from entry only when no requestedDate (today's sync)
     if (!requestedDate && !cbuDate && entry.Date) {
       const [d, m, y] = entry.Date.split(".");

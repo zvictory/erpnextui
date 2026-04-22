@@ -68,6 +68,9 @@ function getToday(): string {
   return `${year}-${month}-${day}`;
 }
 
+/** Round to 6 decimal places and convert to string, eliminating IEEE 754 float noise. */
+const rateStr = (n: number) => String(Math.round(n * 1e6) / 1e6);
+
 /**
  * Determines the "base" and "quote" currencies for display.
  * Always puts the stronger currency first — "1 USD = ? UZS", never "1 UZS = 0.000083 USD".
@@ -181,7 +184,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
   // Derive effective rate: use fetched rate unless user has manually edited or we're in edit mode
   const effectiveRateStr =
     !rateManuallyEdited && !editingName && fetchedRate && fetchedRate > 0
-      ? String(fetchedRate)
+      ? rateStr(fetchedRate)
       : rate;
   const parsedRate = parseFloat(effectiveRateStr) || 1;
 
@@ -225,7 +228,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
     const rounded = roundTo2(rawReceived);
     if (rounded <= 0) return;
     const correctedRate = isDisplayInverted ? parsedAmount / rounded : rounded / parsedAmount;
-    setRate(String(correctedRate));
+    setRate(rateStr(correctedRate));
     setRateManuallyEdited(true);
     setReceivedInput(String(rounded));
   }, [effectiveRateStr, parsedAmount, isDisplayInverted]);
@@ -237,7 +240,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
       const r = parseFloat(value);
       if (r <= 0 || parsedAmount <= 0) return;
       const newRate = isDisplayInverted ? parsedAmount / r : r / parsedAmount;
-      setRate(String(newRate));
+      setRate(rateStr(newRate));
     },
     [parsedAmount, isDisplayInverted],
   );
@@ -298,7 +301,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
           // exchange_rate on the JE row = "company currency per 1 account currency"
           const foreignAcc = loadedFromCurrency === companyCurrency ? debitAcc : creditAcc;
           if (foreignAcc?.exchange_rate && foreignAcc.exchange_rate !== 1) {
-            setRate(String(foreignAcc.exchange_rate));
+            setRate(rateStr(foreignAcc.exchange_rate));
           }
         } else {
           setRate("1");

@@ -51,7 +51,7 @@ async function fetchCBURates(date: string): Promise<Map<string, number> | null> 
     const rates = new Map<string, number>();
     for (const entry of entries) {
       const nominal = parseInt(entry.Nominal, 10) || 1;
-      rates.set(entry.Ccy, parseFloat(entry.Rate) / nominal);
+      rates.set(entry.Ccy, Math.round((parseFloat(entry.Rate) / nominal) * 1e6) / 1e6);
     }
     return rates;
   } catch {

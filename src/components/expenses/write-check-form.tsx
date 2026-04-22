@@ -52,6 +52,9 @@ export interface WriteCheckFormHandle {
   cancelEditMode: () => void;
 }
 
+/** Round to 6 decimal places and convert to string, eliminating IEEE 754 float noise. */
+const rateStr = (n: number) => String(Math.round(n * 1e6) / 1e6);
+
 interface WriteCheckFormProps {
   onSubmit: (data: WriteCheckFormData) => Promise<void>;
   onLoadEntry: (name: string) => Promise<JournalEntry>;
@@ -150,7 +153,7 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
   useEffect(() => {
     if (fetchedRate && fetchedRate > 0 && !rateManuallyEdited && !editingName) {
       // When inverted, show 1/rate so label reads "1 USD = 12,060 UZS" not "1 UZS = 0.000083 USD"
-      setRateInput(String(isRateInverted ? 1 / fetchedRate : fetchedRate));
+      setRateInput(rateStr(isRateInverted ? 1 / fetchedRate : fetchedRate));
     }
   }, [fetchedRate, rateManuallyEdited, editingName, isRateInverted]);
 
@@ -190,7 +193,7 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
     const ct = parseFloat(value);
     if (expenseTotal > 0 && ct > 0) {
       const canonical = ct / expenseTotal;
-      setRateInput(String(isRateInverted ? 1 / canonical : canonical));
+      setRateInput(rateStr(isRateInverted ? 1 / canonical : canonical));
     }
   }
 
@@ -289,7 +292,7 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
             const R = foreignRow.exchange_rate; // canonical: foreign → company
             const isInv =
               STRONG.includes(companyCurrency) && !STRONG.includes(loadedPaymentCurrency);
-            setRateInput(String(isInv ? 1 / R : R));
+            setRateInput(rateStr(isInv ? 1 / R : R));
 
             // Expense amounts are stored in payee currency — no reverse-conversion needed
             const total = debitAccounts.reduce((s, a) => s + (a.debit_in_account_currency || 0), 0);
