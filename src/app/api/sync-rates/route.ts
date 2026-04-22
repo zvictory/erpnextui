@@ -33,10 +33,13 @@ async function proxyFrappe(
   });
 }
 
+const CBU_HISTORICAL_URL = "https://cbu.uz/uz/arkhiv-kursov-valyut/json/all/";
+
 export async function POST(req: NextRequest) {
-  const { siteUrl, currencies } = (await req.json()) as {
+  const { siteUrl, currencies, date: requestedDate } = (await req.json()) as {
     siteUrl: string;
     currencies: string[];
+    date?: string; // YYYY-MM-DD — if provided, fetch historical CBU rates for that date
   };
 
   if (!siteUrl || !currencies?.length) {
@@ -47,10 +50,15 @@ export async function POST(req: NextRequest) {
   const cookie = req.headers.get("cookie") || "";
   const csrfToken = req.headers.get("x-frappe-csrf-token") || "";
 
+  // Use historical endpoint for past dates, current endpoint for today
+  const today = new Date().toISOString().slice(0, 10);
+  const useHistorical = requestedDate && requestedDate !== today;
+  const fetchUrl = useHistorical ? `${CBU_HISTORICAL_URL}${requestedDate}/` : CBU_URL;
+
   // Fetch CBU rates
   let cbuEntries: CBUEntry[];
   try {
-    const resp = await fetch(CBU_URL);
+    const resp = await fetch(fetchUrl);
     if (!resp.ok) {
       return NextResponse.json({ error: "CBU API error" }, { status: 502 });
     }
@@ -60,12 +68,15 @@ export async function POST(req: NextRequest) {
   }
 
   // Build rate map: currency code -> rate per 1 unit
+  // Use requestedDate as the record date (so exact-date ERPNext queries find it).
+  // If CBU returns nothing (holiday/weekend), rateMap stays empty → all currencies skipped.
   const rateMap = new Map<string, number>();
-  let cbuDate = "";
+  let cbuDate = requestedDate ?? "";
   for (const entry of cbuEntries) {
     const nominal = parseInt(entry.Nominal, 10) || 1;
     rateMap.set(entry.Ccy, parseFloat(entry.Rate) / nominal);
-    if (!cbuDate && entry.Date) {
+    // Parse date from entry only when no requestedDate (today's sync)
+    if (!requestedDate && !cbuDate && entry.Date) {
       const [d, m, y] = entry.Date.split(".");
       cbuDate = `${y}-${m}-${d}`;
     }
