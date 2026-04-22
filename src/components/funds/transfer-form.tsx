@@ -70,7 +70,7 @@ function getToday(): string {
 
 /**
  * Determines the "base" and "quote" currencies for display.
- * Always anchors to company currency when one side matches.
+ * Always puts the stronger currency first — "1 USD = ? UZS", never "1 UZS = 0.000083 USD".
  * Returns [baseCurrency, quoteCurrency] where display is "1 base = ? quote".
  */
 function getDisplayPair(
@@ -78,16 +78,14 @@ function getDisplayPair(
   toCurrency: string,
   companyCurrency: string,
 ): [string, string] {
-  // Always show "1 FOREIGN = X COMPANY" — never "1 UZS = 0.000083 USD"
-  if (fromCurrency === companyCurrency) return [toCurrency, companyCurrency];
-  if (toCurrency === companyCurrency) return [fromCurrency, companyCurrency];
-  // Neither is company currency — put the "stronger" currency (smaller unit) first
-  // e.g. "1 USD = 0.92 EUR" rather than "1 EUR = 1.09 USD"
-  const strongCurrencies = ["USD", "EUR", "GBP", "CNY", "RUB"];
-  const fromStrong = strongCurrencies.includes(fromCurrency);
-  const toStrong = strongCurrencies.includes(toCurrency);
+  const STRONG = ["USD", "EUR", "GBP", "CNY", "RUB"];
+  const fromStrong = STRONG.includes(fromCurrency);
+  const toStrong = STRONG.includes(toCurrency);
+  // One side is clearly stronger — put it first regardless of which is company
   if (fromStrong && !toStrong) return [fromCurrency, toCurrency];
   if (toStrong && !fromStrong) return [toCurrency, fromCurrency];
+  // Same strength class — keep company currency as quote
+  if (fromCurrency === companyCurrency) return [toCurrency, fromCurrency];
   return [fromCurrency, toCurrency];
 }
 
@@ -163,6 +161,10 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
     [isExchange, fromCurrency, toCurrency, companyCurrency],
   );
 
+  // When baseCurrency !== fromCurrency the display direction is flipped:
+  // rate input shows "1 base = ? quote" but 'from' is the quote side, so amounts use division.
+  const isDisplayInverted = isExchange && baseCurrency !== fromCurrency;
+
   // Auto-fetch exchange rate for the selected date
   const { data: fetchedRate } = useExchangeRate(baseCurrency, quoteCurrency, postingDate);
 
@@ -183,15 +185,12 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
       : rate;
   const parsedRate = parseFloat(effectiveRateStr) || 1;
 
-  // Derive effective received amount: auto-compute unless user has manually edited
+  // Derive effective received amount: auto-compute unless user has manually edited.
+  // isDisplayInverted: from is the quote side → amount / rate; else from is base → amount * rate.
   const autoReceived =
     isExchange && parsedAmount > 0 && parsedRate > 0
       ? String(
-          roundTo2(
-            fromCurrency === companyCurrency
-              ? parsedAmount / parsedRate
-              : parsedAmount * parsedRate,
-          ),
+          roundTo2(isDisplayInverted ? parsedAmount / parsedRate : parsedAmount * parsedRate),
         )
       : "";
   const effectiveReceivedInput = rateManuallyEdited ? receivedInput : autoReceived;
@@ -213,29 +212,23 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
       setRateManuallyEdited(true);
       const r = parseFloat(value) || 1;
       if (parsedAmount <= 0) return;
-      const newReceived =
-        fromCurrency === companyCurrency
-          ? parsedAmount / r // from=company: sent/rate → foreign received
-          : parsedAmount * r; // from=foreign: sent * rate → company received
+      const newReceived = isDisplayInverted ? parsedAmount / r : parsedAmount * r;
       setReceivedInput(String(roundTo2(newReceived)));
     },
-    [parsedAmount, fromCurrency, companyCurrency],
+    [parsedAmount, isDisplayInverted],
   );
 
   const handleRateBlur = useCallback(() => {
     const r = parseFloat(effectiveRateStr) || 1;
     if (parsedAmount <= 0 || r <= 0) return;
-    const rawReceived = fromCurrency === companyCurrency ? parsedAmount / r : parsedAmount * r;
+    const rawReceived = isDisplayInverted ? parsedAmount / r : parsedAmount * r;
     const rounded = roundTo2(rawReceived);
     if (rounded <= 0) return;
-    const correctedRate =
-      fromCurrency === companyCurrency
-        ? parsedAmount / rounded // rate = sent / rounded-received
-        : rounded / parsedAmount; // rate = rounded-received / sent
+    const correctedRate = isDisplayInverted ? parsedAmount / rounded : rounded / parsedAmount;
     setRate(String(correctedRate));
     setRateManuallyEdited(true);
     setReceivedInput(String(rounded));
-  }, [effectiveRateStr, parsedAmount, fromCurrency, companyCurrency]);
+  }, [effectiveRateStr, parsedAmount, isDisplayInverted]);
 
   const handleReceivedChange = useCallback(
     (value: string) => {
@@ -243,13 +236,10 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
       setRateManuallyEdited(true);
       const r = parseFloat(value);
       if (r <= 0 || parsedAmount <= 0) return;
-      const newRate =
-        fromCurrency === companyCurrency
-          ? parsedAmount / r // rate = sent / received
-          : r / parsedAmount; // rate = received / sent
+      const newRate = isDisplayInverted ? parsedAmount / r : r / parsedAmount;
       setRate(String(newRate));
     },
-    [parsedAmount, fromCurrency, companyCurrency],
+    [parsedAmount, isDisplayInverted],
   );
 
   const resetForm = useCallback(() => {

@@ -86,6 +86,7 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
   const { data: companies } = useCompanies();
 
   const companyCurrency = companies?.find((c) => c.name === company)?.default_currency ?? "";
+  const STRONG = ["USD", "EUR", "GBP", "CNY", "RUB"];
 
   const [postingDate, setPostingDate] = useState(getToday);
   const [payee, setPayee] = useState("");
@@ -111,6 +112,12 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
     paymentCurrency !== "" && companyCurrency !== "" && paymentCurrency !== companyCurrency;
 
   const foreignCurrency = isMultiCurrency ? paymentCurrency : null;
+
+  // When company is the stronger currency (e.g. USD), show "1 USD = ? UZS" not "1 UZS = 0.000083 USD"
+  const isRateInverted =
+    isMultiCurrency &&
+    STRONG.includes(companyCurrency) &&
+    !STRONG.includes(foreignCurrency ?? "");
 
   // Filter expense accounts to match the payee account's currency
   const filteredExpenseAccounts = paymentCurrency
@@ -142,19 +149,22 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
   const [rateManuallyEdited, setRateManuallyEdited] = useState(false);
   useEffect(() => {
     if (fetchedRate && fetchedRate > 0 && !rateManuallyEdited && !editingName) {
-      setRateInput(String(fetchedRate));
+      // When inverted, show 1/rate so label reads "1 USD = 12,060 UZS" not "1 UZS = 0.000083 USD"
+      setRateInput(String(isRateInverted ? 1 / fetchedRate : fetchedRate));
     }
-  }, [fetchedRate, rateManuallyEdited, editingName]);
+  }, [fetchedRate, rateManuallyEdited, editingName, isRateInverted]);
 
   // Reset manual edit flag when currencies or date change
   useEffect(() => {
     setRateManuallyEdited(false);
   }, [foreignCurrency, companyCurrency, postingDate]);
 
+  // canonicalRate = foreign → company (what ERPNext exchange_rate expects).
+  // When isRateInverted, rateInput shows "UZS per 1 USD" so canonical = 1/display.
   const canonicalRate = useMemo(() => {
-    const v = parseFloat(rateInput) || 1;
-    return v;
-  }, [rateInput]);
+    const display = parseFloat(rateInput) || 1;
+    return isRateInverted ? 1 / display : display;
+  }, [rateInput, isRateInverted]);
 
   const expenseTotal = expenseLines.reduce((sum, l) => sum + (parseFloat(l.amount) || 0), 0);
 
@@ -167,9 +177,10 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
   function handleRateInputChange(value: string) {
     setRateInput(value);
     setRateManuallyEdited(true);
-    const v = parseFloat(value) || 1;
+    const display = parseFloat(value) || 1;
+    const canonical = isRateInverted ? 1 / display : display;
     if (expenseTotal > 0) {
-      setConvertedTotal(String(roundTo2(expenseTotal * v)));
+      setConvertedTotal(String(roundTo2(expenseTotal * canonical)));
     }
   }
 
@@ -178,8 +189,8 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
     setRateManuallyEdited(true);
     const ct = parseFloat(value);
     if (expenseTotal > 0 && ct > 0) {
-      const newCanonical = ct / expenseTotal;
-      setRateInput(String(newCanonical));
+      const canonical = ct / expenseTotal;
+      setRateInput(String(isRateInverted ? 1 / canonical : canonical));
     }
   }
 
@@ -275,8 +286,10 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
           // Multi-currency: payee is foreign currency, all rows share the same rate
           const foreignRow = entry.accounts.find((a) => a.exchange_rate && a.exchange_rate !== 1);
           if (foreignRow?.exchange_rate) {
-            const R = foreignRow.exchange_rate;
-            setRateInput(String(R));
+            const R = foreignRow.exchange_rate; // canonical: foreign → company
+            const isInv =
+              STRONG.includes(companyCurrency) && !STRONG.includes(loadedPaymentCurrency);
+            setRateInput(String(isInv ? 1 / R : R));
 
             // Expense amounts are stored in payee currency — no reverse-conversion needed
             const total = debitAccounts.reduce((s, a) => s + (a.debit_in_account_currency || 0), 0);
@@ -497,7 +510,7 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
                   </Label>
                   <div className="flex items-center gap-1">
                     <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
-                      1&nbsp;{foreignCurrency ?? companyCurrency} =
+                      1&nbsp;{isRateInverted ? companyCurrency : (foreignCurrency ?? companyCurrency)} =
                     </span>
                     <Input
                       id="exchangeRate"
@@ -509,7 +522,7 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
                       className="h-8 min-w-0"
                     />
                     <span className="text-xs text-muted-foreground shrink-0">
-                      {companyCurrency}
+                      {isRateInverted ? (foreignCurrency ?? "") : companyCurrency}
                     </span>
                   </div>
                 </div>
