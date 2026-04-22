@@ -78,10 +78,16 @@ function getDisplayPair(
   toCurrency: string,
   companyCurrency: string,
 ): [string, string] {
-  // "1 foreign = ? companyCurrency" — e.g. "1 USD = 12800 UZS" when companyCurrency=UZS
+  // Always show "1 FOREIGN = X COMPANY" — never "1 UZS = 0.000083 USD"
   if (fromCurrency === companyCurrency) return [toCurrency, companyCurrency];
   if (toCurrency === companyCurrency) return [fromCurrency, companyCurrency];
-  // Neither is company currency — fallback to from→to
+  // Neither is company currency — put the "stronger" currency (smaller unit) first
+  // e.g. "1 USD = 0.92 EUR" rather than "1 EUR = 1.09 USD"
+  const strongCurrencies = ["USD", "EUR", "GBP", "CNY", "RUB"];
+  const fromStrong = strongCurrencies.includes(fromCurrency);
+  const toStrong = strongCurrencies.includes(toCurrency);
+  if (fromStrong && !toStrong) return [fromCurrency, toCurrency];
+  if (toStrong && !fromStrong) return [toCurrency, fromCurrency];
   return [fromCurrency, toCurrency];
 }
 

@@ -32,7 +32,13 @@ import { useCustomer } from "@/hooks/use-customers";
 import { useExchangeRate } from "@/hooks/use-exchange-rate";
 import { useCompanyStore } from "@/stores/company-store";
 import { cn, getToday } from "@/lib/utils";
-import { formatNumber, formatDate, formatInvoiceCurrency } from "@/lib/formatters";
+import {
+  formatNumber,
+  formatDate,
+  formatInvoiceCurrency,
+  formatExchangeRate,
+  getExchangeRateDisplay,
+} from "@/lib/formatters";
 import type { PaymentReference } from "@/types/payment-entry";
 
 const selectClassName = cn(
@@ -262,15 +268,19 @@ export default function ReceivePaymentPage() {
   }, [suggestedCounter]);
 
   // Display exchange rate derived from both amounts
-  const displayRate = useMemo(() => {
-    if (!isMultiCurrency || !parsedAmount || !parsedCounterAmount) return "";
-    if (selectedCurrency === companyCurrency) {
-      return formatNumber(parsedAmount / parsedCounterAmount, 2);
-    }
-    if (partyCurrency === companyCurrency) {
-      return formatNumber(parsedCounterAmount / parsedAmount, 2);
-    }
-    return formatNumber(parsedAmount / parsedCounterAmount, 4);
+  // Always show as "1 STRONG = X OTHER" — never the confusing reciprocal
+  const foreignCurrency = isMultiCurrency
+    ? selectedCurrency === companyCurrency
+      ? partyCurrency
+      : selectedCurrency
+    : "";
+  const displayRateInfo = useMemo(() => {
+    if (!isMultiCurrency || !parsedAmount || !parsedCounterAmount || !foreignCurrency) return null;
+    const rawRate =
+      selectedCurrency === companyCurrency
+        ? parsedAmount / parsedCounterAmount
+        : parsedCounterAmount / parsedAmount;
+    return getExchangeRateDisplay(rawRate, foreignCurrency, companyCurrency);
   }, [
     isMultiCurrency,
     parsedAmount,
@@ -278,6 +288,7 @@ export default function ReceivePaymentPage() {
     selectedCurrency,
     partyCurrency,
     companyCurrency,
+    foreignCurrency,
   ]);
 
   // Allocation pool: in multi-currency mode, allocations are in party currency
@@ -492,13 +503,19 @@ export default function ReceivePaymentPage() {
                   placeholder="0"
                 />
               </div>
-              {parsedAmount > 0 && parsedCounterAmount > 0 && displayRate && (
+              {parsedAmount > 0 && parsedCounterAmount > 0 && displayRateInfo && (
                 <p className="text-[11px] text-muted-foreground text-center">
                   {formatNumber(parsedAmount, 0)}&nbsp;{selectedCurrency}
                   <span className="mx-1.5 opacity-40">&rarr;</span>
                   {formatNumber(parsedCounterAmount, 2)}&nbsp;{partyCurrency}
-                  <span className="mx-1.5 opacity-40">@</span>
-                  {displayRate}
+                  {foreignCurrency && displayRateInfo && (
+                    <>
+                      <span className="mx-1.5 opacity-40">&middot;</span>
+                      1&nbsp;{displayRateInfo.baseCcy} ={" "}
+                      {formatExchangeRate(displayRateInfo.displayRate)}&nbsp;
+                      {displayRateInfo.quoteCcy}
+                    </>
+                  )}
                 </p>
               )}
             </div>

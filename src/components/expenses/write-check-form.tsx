@@ -9,7 +9,7 @@ import React, {
   forwardRef,
 } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowRightLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,7 +97,6 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
   // Exchange state
   const [rateInput, setRateInput] = useState("1");
   const [convertedTotal, setConvertedTotal] = useState("");
-  const [rateFlipped, setRateFlipped] = useState(false);
 
   const [status, setStatus] = useState<{
     type: "success" | "error" | "loading" | null;
@@ -144,7 +143,6 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
   useEffect(() => {
     if (fetchedRate && fetchedRate > 0 && !rateManuallyEdited && !editingName) {
       setRateInput(String(fetchedRate));
-      setRateFlipped(false);
     }
   }, [fetchedRate, rateManuallyEdited, editingName]);
 
@@ -155,8 +153,8 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
 
   const canonicalRate = useMemo(() => {
     const v = parseFloat(rateInput) || 1;
-    return rateFlipped ? 1 / v : v;
-  }, [rateInput, rateFlipped]);
+    return v;
+  }, [rateInput]);
 
   const expenseTotal = expenseLines.reduce((sum, l) => sum + (parseFloat(l.amount) || 0), 0);
 
@@ -170,9 +168,8 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
     setRateInput(value);
     setRateManuallyEdited(true);
     const v = parseFloat(value) || 1;
-    const newCanonical = rateFlipped ? 1 / v : v;
     if (expenseTotal > 0) {
-      setConvertedTotal(String(roundTo2(expenseTotal * newCanonical)));
+      setConvertedTotal(String(roundTo2(expenseTotal * v)));
     }
   }
 
@@ -182,13 +179,8 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
     const ct = parseFloat(value);
     if (expenseTotal > 0 && ct > 0) {
       const newCanonical = ct / expenseTotal;
-      setRateInput(String(rateFlipped ? 1 / newCanonical : newCanonical));
+      setRateInput(String(newCanonical));
     }
-  }
-
-  function handleToggleDirection() {
-    setRateInput(String(1 / (parseFloat(rateInput) || 1)));
-    setRateFlipped((prev) => !prev);
   }
 
   // When expense lines change, recompute converted total (rate stays fixed)
@@ -199,13 +191,6 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMultiCurrency, expenseTotal]);
 
-  // Default rateFlipped when multi-currency turns on — always show "1 foreign = ? company"
-  useEffect(() => {
-    if (isMultiCurrency) {
-      setRateFlipped(false);
-    }
-  }, [isMultiCurrency]);
-
   const resetForm = useCallback(() => {
     setPostingDate(getToday());
     setPayee("");
@@ -215,7 +200,6 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
     setEditingDocstatus(null);
     setRateInput("1");
     setConvertedTotal("");
-    setRateFlipped(false);
     setRateManuallyEdited(false);
     setStatus({ type: null, message: "" });
   }, []);
@@ -292,7 +276,6 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
           const foreignRow = entry.accounts.find((a) => a.exchange_rate && a.exchange_rate !== 1);
           if (foreignRow?.exchange_rate) {
             const R = foreignRow.exchange_rate;
-            setRateFlipped(false);
             setRateInput(String(R));
 
             // Expense amounts are stored in payee currency — no reverse-conversion needed
@@ -302,7 +285,6 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
         } else {
           setRateInput("1");
           setConvertedTotal("");
-          setRateFlipped(false);
         }
 
         setEditingName(entry.name);
@@ -515,7 +497,7 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
                   </Label>
                   <div className="flex items-center gap-1">
                     <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
-                      1 {rateFlipped ? companyCurrency : foreignCurrency} =
+                      1&nbsp;{foreignCurrency ?? companyCurrency} =
                     </span>
                     <Input
                       id="exchangeRate"
@@ -527,19 +509,8 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
                       className="h-8 min-w-0"
                     />
                     <span className="text-xs text-muted-foreground shrink-0">
-                      {rateFlipped ? foreignCurrency : companyCurrency}
+                      {companyCurrency}
                     </span>
-                    <button
-                      type="button"
-                      onClick={handleToggleDirection}
-                      aria-label="Toggle rate direction"
-                      className={cn(
-                        "flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors",
-                        "text-muted-foreground hover:bg-muted hover:text-foreground",
-                      )}
-                    >
-                      <ArrowRightLeft className="size-3" />
-                    </button>
                   </div>
                 </div>
 

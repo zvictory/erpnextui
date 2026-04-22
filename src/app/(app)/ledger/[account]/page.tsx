@@ -38,7 +38,12 @@ import {
   type CurrencyInfo,
 } from "@/hooks/use-accounts";
 import { useCompanyStore } from "@/stores/company-store";
-import { formatNumber, formatDate } from "@/lib/formatters";
+import {
+  formatNumber,
+  formatDate,
+  formatExchangeRate,
+  getExchangeRateDisplay,
+} from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import type { LedgerEntry } from "@/types/account";
 
@@ -194,6 +199,11 @@ export default function AccountLedgerPage() {
 
   const baseSymbol = getSymbol(companyCurrency, currencyMap);
 
+  const rateDisplayDir = useMemo(() => {
+    if (!isForeign || !account) return null;
+    return getExchangeRateDisplay(1, account.account_currency, companyCurrency);
+  }, [isForeign, account, companyCurrency]);
+
   function handleApply() {
     setAppliedFrom(fromDate);
     setAppliedTo(toDate);
@@ -292,15 +302,23 @@ export default function AccountLedgerPage() {
             </p>
           </div>
           {/* Exchange Rate (foreign only) */}
-          {isForeign && (
-            <div className="rounded-lg border bg-card p-3">
-              <p className="text-xs text-muted-foreground mb-1">Current Rate</p>
-              <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                <ArrowUpDown className="inline h-3 w-3 mr-1" />1 {account.account_currency} ={" "}
-                {formatNumber(currentRate ?? 0)} {baseSymbol}
-              </p>
-            </div>
-          )}
+          {isForeign &&
+            (() => {
+              const rd = getExchangeRateDisplay(
+                currentRate ?? 0,
+                account.account_currency,
+                companyCurrency,
+              );
+              return (
+                <div className="rounded-lg border bg-card p-3">
+                  <p className="text-xs text-muted-foreground mb-1">Current Rate</p>
+                  <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                    <ArrowUpDown className="inline h-3 w-3 mr-1" />1 {rd.baseCcy} ={" "}
+                    {formatExchangeRate(rd.displayRate)} {getSymbol(rd.quoteCcy, currencyMap)}
+                  </p>
+                </div>
+              );
+            })()}
         </div>
       )}
 
@@ -365,9 +383,9 @@ export default function AccountLedgerPage() {
                 <TableHead className="text-xs uppercase tracking-wider">Remarks</TableHead>
                 <TableHead className="text-xs uppercase tracking-wider">Voucher Type</TableHead>
                 <TableHead className="text-xs uppercase tracking-wider">Voucher No</TableHead>
-                {isForeign && (
+                {isForeign && rateDisplayDir && (
                   <TableHead className="text-xs uppercase tracking-wider text-right">
-                    Rate
+                    1&nbsp;{rateDisplayDir.baseCcy}&nbsp;=&nbsp;?&nbsp;{rateDisplayDir.quoteCcy}
                   </TableHead>
                 )}
                 <TableHead className="text-xs uppercase tracking-wider text-right">
@@ -458,7 +476,13 @@ export default function AccountLedgerPage() {
                     {/* Exchange Rate (foreign only) */}
                     {isForeign && (
                       <TableCell className="text-right tabular-nums text-sm text-muted-foreground whitespace-nowrap">
-                        {entry.exchangeRate ? formatNumber(entry.exchangeRate) : "—"}
+                        {entry.exchangeRate && rateDisplayDir
+                          ? formatExchangeRate(
+                              rateDisplayDir.baseCcy === account?.account_currency
+                                ? entry.exchangeRate
+                                : 1 / entry.exchangeRate,
+                            )
+                          : "—"}
                       </TableCell>
                     )}
 

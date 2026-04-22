@@ -29,8 +29,7 @@ import { useBankAccountsWithCurrency, useAccountCurrency } from "@/hooks/use-acc
 import { useExchangeRate } from "@/hooks/use-exchange-rate";
 import { useCompanies } from "@/hooks/use-companies";
 import { useUISettingsStore } from "@/stores/ui-settings-store";
-import { formatCurrency } from "@/lib/formatters";
-import { formatNumber } from "@/lib/formatters";
+import { formatCurrency, formatNumber, formatExchangeRate } from "@/lib/formatters";
 
 interface SalaryPaymentFormValues {
   posting_date: string;
@@ -54,8 +53,14 @@ interface SalaryPaymentDialogProps {
  * Anchors to company currency so rates are human-readable (e.g. "1 USD = 12 800 UZS").
  */
 function getDisplayPair(fromCcy: string, toCcy: string, companyCcy: string): [string, string] {
+  // Always show "1 FOREIGN = X COMPANY" — never "1 UZS = 0.000083 USD"
   if (fromCcy === companyCcy) return [toCcy, companyCcy];
   if (toCcy === companyCcy) return [fromCcy, companyCcy];
+  const strongCurrencies = ["USD", "EUR", "GBP", "CNY", "RUB"];
+  const fromStrong = strongCurrencies.includes(fromCcy);
+  const toStrong = strongCurrencies.includes(toCcy);
+  if (fromStrong && !toStrong) return [fromCcy, toCcy];
+  if (toStrong && !fromStrong) return [toCcy, fromCcy];
   return [fromCcy, toCcy];
 }
 
@@ -350,7 +355,7 @@ export function SalaryPaymentDialog({
                   <span className="mx-1.5 opacity-40">&rarr;</span>
                   {formatNumber(payableAmount, 2)}&nbsp;{payableCurrency}
                   <span className="mx-1.5 opacity-40">@</span>
-                  {formatNumber(parsedRate, parsedRate < 1 ? 6 : 2)}
+                  {formatExchangeRate(parsedRate)}
                 </p>
               )}
 

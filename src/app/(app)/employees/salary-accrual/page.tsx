@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { format, lastDayOfMonth, parse } from "date-fns";
-import { AlertTriangle, ArrowRightLeft, Search, Settings } from "lucide-react";
+import { AlertTriangle, Search, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FormPageLayout } from "@/components/shared/form-page-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -126,7 +126,6 @@ export default function SalaryAccrualPage() {
 
   // --- Exchange rate state (always foreignCurrency → companyCurrency) ---
   const [rateInput, setRateInput] = useState("1");
-  const [rateFlipped, setRateFlipped] = useState(false);
   const [rateManuallyEdited, setRateManuallyEdited] = useState(false);
 
   const { data: fetchedRate } = useExchangeRate(
@@ -138,7 +137,6 @@ export default function SalaryAccrualPage() {
   useEffect(() => {
     if (fetchedRate && fetchedRate > 0 && !rateManuallyEdited) {
       setRateInput(String(fetchedRate));
-      setRateFlipped(false);
     }
   }, [fetchedRate, rateManuallyEdited]);
 
@@ -149,8 +147,8 @@ export default function SalaryAccrualPage() {
   // canonicalRate: always "1 foreignCurrency = X companyDefaultCurrency"
   const canonicalRate = useMemo(() => {
     const v = parseFloat(rateInput) || 1;
-    return rateFlipped ? 1 / v : v;
-  }, [rateInput, rateFlipped]);
+    return v;
+  }, [rateInput]);
 
   // Symbol helpers for entry currency
   const entryInfo = currencyMap?.get(entryCurrency);
@@ -242,29 +240,21 @@ export default function SalaryAccrualPage() {
     setRateManuallyEdited(true);
   }
 
-  function handleToggleDirection() {
-    setRateInput(String(1 / (parseFloat(rateInput) || 1)));
-    setRateFlipped((prev) => !prev);
-  }
-
   function handleRateBlur() {
     if (!isMultiCurrency || totalAccrual <= 0) return;
     const v = parseFloat(rateInput) || 1;
-    const currentRate = rateFlipped ? 1 / v : v;
-    if (currentRate <= 0) return;
+    if (v <= 0) return;
 
     if (entryCurrency === companyDefaultCurrency) {
-      // Entered in company currency → foreign total is derived
-      const rounded = roundTo2(totalAccrual / currentRate);
+      const rounded = roundTo2(totalAccrual / v);
       if (rounded <= 0) return;
       const corrected = totalAccrual / rounded;
-      setRateInput(String(rateFlipped ? 1 / corrected : corrected));
+      setRateInput(String(corrected));
     } else {
-      // Entered in foreign currency → company total is derived
-      const rounded = roundTo2(totalAccrual * currentRate);
+      const rounded = roundTo2(totalAccrual * v);
       if (rounded <= 0) return;
       const corrected = rounded / totalAccrual;
-      setRateInput(String(rateFlipped ? 1 / corrected : corrected));
+      setRateInput(String(corrected));
     }
   }
 
@@ -454,7 +444,7 @@ export default function SalaryAccrualPage() {
                 </Label>
                 <div className="flex items-center gap-1">
                   <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
-                    1 {rateFlipped ? companyDefaultCurrency : foreignCurrency} =
+                    1&nbsp;{foreignCurrency} =
                   </span>
                   <Input
                     id="salaryExchangeRate"
@@ -467,19 +457,8 @@ export default function SalaryAccrualPage() {
                     className="h-8 w-32"
                   />
                   <span className="text-xs text-muted-foreground shrink-0">
-                    {rateFlipped ? foreignCurrency : companyDefaultCurrency}
+                    {companyDefaultCurrency}
                   </span>
-                  <button
-                    type="button"
-                    onClick={handleToggleDirection}
-                    aria-label="Toggle rate direction"
-                    className={cn(
-                      "flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors",
-                      "text-muted-foreground hover:bg-muted hover:text-foreground",
-                    )}
-                  >
-                    <ArrowRightLeft className="size-3" />
-                  </button>
                 </div>
               </div>
               {totalAccrual > 0 && (

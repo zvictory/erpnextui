@@ -64,6 +64,57 @@ export function formatMultiCurrency(
     .join(" / ");
 }
 
+const STRONG_CURRENCIES = ["USD", "EUR", "GBP", "CNY", "RUB"];
+
+/**
+ * Determine the human-readable display direction for an exchange rate.
+ * Always shows "1 STRONG = X WEAK" — never the confusing reciprocal like
+ * "1 UZS = 0.00008 USD". Inverts the rate when needed.
+ *
+ * @param rawRate  Rate in the direction 1 fromCurrency = rawRate toCurrency
+ * @param fromCurrency  Source currency code
+ * @param toCurrency    Target currency code
+ * @returns Normalised display info with direction-adjusted rate
+ */
+export function getExchangeRateDisplay(
+  rawRate: number,
+  fromCurrency: string,
+  toCurrency: string,
+): { baseCcy: string; quoteCcy: string; displayRate: number } {
+  if (!rawRate || rawRate <= 0) {
+    return { baseCcy: fromCurrency, quoteCcy: toCurrency, displayRate: rawRate };
+  }
+
+  const fromStrong = STRONG_CURRENCIES.includes(fromCurrency);
+  const toStrong = STRONG_CURRENCIES.includes(toCurrency);
+
+  if (fromStrong && !toStrong) {
+    return { baseCcy: fromCurrency, quoteCcy: toCurrency, displayRate: rawRate };
+  }
+
+  if (toStrong && !fromStrong) {
+    return { baseCcy: toCurrency, quoteCcy: fromCurrency, displayRate: 1 / rawRate };
+  }
+
+  if (rawRate < 1) {
+    return { baseCcy: toCurrency, quoteCcy: fromCurrency, displayRate: 1 / rawRate };
+  }
+
+  return { baseCcy: fromCurrency, quoteCcy: toCurrency, displayRate: rawRate };
+}
+
+/**
+ * Format an exchange rate with appropriate decimal precision.
+ * Large rates (≥10): 2 dp, medium rates (1-10): 4 dp, small rates (<1): 6 dp.
+ * After direction normalization the rate should always be ≥ 1.
+ */
+export function formatExchangeRate(rate: number): string {
+  if (!rate || !Number.isFinite(rate)) return "—";
+  if (rate >= 10) return formatNumber(rate, 2);
+  if (rate >= 1) return formatNumber(rate, 4);
+  return formatNumber(rate, 6);
+}
+
 /**
  * Format currency with invoice-specific currency info.
  */
