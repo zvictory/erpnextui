@@ -263,11 +263,15 @@ export default function PayBillsPage() {
     postingDate,
   );
 
-  // Derive suggested counter amount from bank amount + fetched rate
+  // Derive suggested counter amount from bank amount + fetched rate.
+  // Full precision intentional: NumberInput displays 2dp but state holds the exact quotient,
+  // so counterAmount × fetchedRate = parsedAmount exactly. ERPNext's set_exchange_rate() server
+  // hook overrides target_exchange_rate with the same CBU lookup — storing full precision here
+  // ensures base_received_amount stays correct even after that override.
   const suggestedCounter = useMemo(() => {
     if (!isMultiCurrency || !fetchedRate || fetchedRate <= 0 || !parsedAmount) return null;
     // fetchedRate = "1 partyCurrency = X bankCurrency"
-    return Math.round((parsedAmount / fetchedRate) * 100) / 100;
+    return parsedAmount / fetchedRate;
   }, [isMultiCurrency, fetchedRate, parsedAmount]);
 
   // Auto-fill counter amount when bank amount or rate changes
