@@ -250,8 +250,25 @@ export function useCreatePaymentEntry() {
         })),
       };
 
-      // Two-step: save (draft) then submit
+      // Two-step: save (draft) then submit.
+      // ERPNext's validate() hook overrides source_exchange_rate / target_exchange_rate
+      // with its own Currency Exchange lookup — so base_paid ≠ base_received if our
+      // frontend rate differs even slightly. Fix: read back ERPNext's actual rates after
+      // save and recompute the derived counter-amount so both sides balance exactly.
       const saved = await frappe.save<Record<string, unknown>>(doc);
+
+      if (paidFromCurrency !== paidToCurrency) {
+        const erpSourceRate = (saved.source_exchange_rate as number) || sourceRate;
+        const erpTargetRate = (saved.target_exchange_rate as number) || targetRate;
+        if (isReceive) {
+          // received_amount is sacred; recompute paid_amount so base_paid = base_received
+          saved.paid_amount = (receivedAmount * erpTargetRate) / erpSourceRate;
+        } else {
+          // paid_amount is sacred; recompute received_amount so base_received = base_paid
+          saved.received_amount = (paidAmount * erpSourceRate) / erpTargetRate;
+        }
+      }
+
       return frappe.submit<Record<string, unknown>>(saved);
     },
     onSuccess: (_data, variables) => {
