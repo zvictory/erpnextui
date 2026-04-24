@@ -55,6 +55,18 @@ function ThemeToggle() {
   );
 }
 
+function PilotBadge() {
+  if (process.env.NEXT_PUBLIC_PILOT !== "1") return null;
+  return (
+    <span
+      className="ml-1 inline-flex h-5 items-center rounded-full border border-amber-500/40 bg-amber-500/10 px-2 text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400"
+      title="Pilot build — next.erpstable.com"
+    >
+      Beta
+    </span>
+  );
+}
+
 function SearchTrigger() {
   const t = useTranslations("common");
 
@@ -118,6 +130,7 @@ export function AppHeader() {
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="mr-2 h-4" />
       <CompanySwitcher />
+      <PilotBadge />
       <div className="flex-1" />
       <SearchTrigger />
       <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
