@@ -586,25 +586,15 @@ export function parseAgingReport(result: (Record<string, unknown> | unknown[])[]
 }
 
 /**
- * Aggregate item-wise sales register rows by item_code.
- *
- * `basis` selects the amount source:
- * - `"base"` (default): sum `base_amount`/`base_net_amount` (company base
- *   currency). `currencyCode` is `""` — caller renders company base symbol.
- * - `"invoice"`: sum `amount`/`net_amount` (invoice transaction currency) and
- *   return the dominant `currency` across all rows as `currencyCode`.
+ * Aggregate item-wise sales register rows by item_code. Amounts sum the
+ * `base_amount`/`base_net_amount` fields so every row lands in the company
+ * base currency — the page renders a single-symbol total.
  */
 export function parseSalesByItem(
   result: (Record<string, unknown> | unknown[])[],
-  basis: "base" | "invoice" = "base",
-  baseCurrency = "",
-  currencyFilter = "",
 ): SalesByItemData {
-  // Grouping key: itemCode alone in "base" mode, `${itemCode}::${currency}` in
-  // "invoice" mode — partitions so transaction currencies are never mixed.
   const map = new Map<string, SalesByItemRow>();
   const uniqueItems = new Set<string>();
-  const totalsByCurrency: Record<string, number> = {};
   let totalAmount = 0;
   let totalCount = 0;
 
@@ -614,31 +604,22 @@ export function parseSalesByItem(
     const itemCode = row.item_code ? String(row.item_code) : "";
     if (!itemCode) continue;
 
-    const rowCurrency = row.currency ? String(row.currency) : "";
-    const currency = basis === "invoice" ? rowCurrency || baseCurrency : baseCurrency;
-    if (basis === "invoice" && currencyFilter && currency !== currencyFilter) continue;
-
-    const amount =
-      basis === "invoice"
-        ? Number(row.net_amount ?? row.amount ?? 0)
-        : Number(row.base_amount ?? row.base_net_amount ?? row.amount ?? 0);
+    const amount = Number(row.base_amount ?? row.base_net_amount ?? row.amount ?? 0);
     const qty = Number(row.qty ?? 0);
     const stockQty = Number(row.stock_qty ?? 0);
 
-    const key = basis === "invoice" ? `${itemCode}::${currency}` : itemCode;
-    let entry = map.get(key);
+    let entry = map.get(itemCode);
     if (!entry) {
       entry = {
         item_code: itemCode,
         item_name: String(row.item_name ?? itemCode),
         item_group: row.item_group ? String(row.item_group) : undefined,
-        currency,
         qty: 0,
         stock_qty: 0,
         stock_uom: row.stock_uom ? String(row.stock_uom) : undefined,
         amount: 0,
       };
-      map.set(key, entry);
+      map.set(itemCode, entry);
     }
     entry.qty += qty;
     entry.stock_qty += stockQty;
@@ -647,44 +628,29 @@ export function parseSalesByItem(
     uniqueItems.add(itemCode);
     totalAmount += amount;
     totalCount++;
-    totalsByCurrency[currency] = (totalsByCurrency[currency] ?? 0) + amount;
   }
 
-  // Sort: in invoice mode with multiple currencies, primary by currency (alpha)
-  // then amount desc — keeps like with like. Otherwise pure amount desc.
-  const rows = Array.from(map.values()).sort((a, b) => {
-    if (basis === "invoice" && a.currency !== b.currency) {
-      return a.currency.localeCompare(b.currency);
-    }
-    return b.amount - a.amount;
-  });
+  const rows = Array.from(map.values()).sort((a, b) => b.amount - a.amount);
 
-  const currencies = Object.keys(totalsByCurrency).sort();
   return {
     rows,
     totalAmount,
     totalCount,
     uniqueItemCount: uniqueItems.size,
-    currencies,
-    totalsByCurrency,
   };
 }
 
 /**
- * Aggregate item-wise sales register rows by customer. See `parseSalesByItem`
- * for the `basis` parameter semantics. Invoice count is distinct voucher per
- * (customer, currency) pair — a single invoice has exactly one currency, so
- * invoice sets are naturally disjoint across the partition.
+ * Aggregate item-wise sales register rows by customer. Amounts always use
+ * the company base currency. `qty` sums stock-unit quantities across the
+ * customer's invoice items and may span different UOMs — present as a rough
+ * volume indicator, not a typed unit total.
  */
 export function parseSalesByCustomer(
   result: (Record<string, unknown> | unknown[])[],
-  basis: "base" | "invoice" = "base",
-  baseCurrency = "",
-  currencyFilter = "",
 ): SalesByCustomerData {
   const map = new Map<string, SalesByCustomerRow & { _invoices: Set<string> }>();
   const uniqueCustomers = new Set<string>();
-  const totalsByCurrency: Record<string, number> = {};
   let totalAmount = 0;
   let totalCount = 0;
 
@@ -694,37 +660,30 @@ export function parseSalesByCustomer(
     const customer = row.customer ? String(row.customer) : "";
     if (!customer) continue;
 
-    const rowCurrency = row.currency ? String(row.currency) : "";
-    const currency = basis === "invoice" ? rowCurrency || baseCurrency : baseCurrency;
-    if (basis === "invoice" && currencyFilter && currency !== currencyFilter) continue;
-
-    const amount =
-      basis === "invoice"
-        ? Number(row.net_amount ?? row.amount ?? 0)
-        : Number(row.base_amount ?? row.base_net_amount ?? row.amount ?? 0);
+    const amount = Number(row.base_amount ?? row.base_net_amount ?? row.amount ?? 0);
+    const stockQty = Number(row.stock_qty ?? 0);
     const voucher = row.invoice ? String(row.invoice) : String(row.voucher_no ?? "");
 
-    const key = basis === "invoice" ? `${customer}::${currency}` : customer;
-    let entry = map.get(key);
+    let entry = map.get(customer);
     if (!entry) {
       entry = {
         customer,
         customer_name: String(row.customer_name ?? customer),
         customer_group: row.customer_group ? String(row.customer_group) : undefined,
-        currency,
         invoice_count: 0,
+        qty: 0,
         amount: 0,
         _invoices: new Set<string>(),
       };
-      map.set(key, entry);
+      map.set(customer, entry);
     }
     entry.amount += amount;
+    entry.qty += stockQty;
     if (voucher) entry._invoices.add(voucher);
 
     uniqueCustomers.add(customer);
     totalAmount += amount;
     totalCount++;
-    totalsByCurrency[currency] = (totalsByCurrency[currency] ?? 0) + amount;
   }
 
   const rows: SalesByCustomerRow[] = Array.from(map.values())
@@ -732,25 +691,17 @@ export function parseSalesByCustomer(
       customer: e.customer,
       customer_name: e.customer_name,
       customer_group: e.customer_group,
-      currency: e.currency,
       invoice_count: e._invoices.size,
+      qty: e.qty,
       amount: e.amount,
     }))
-    .sort((a, b) => {
-      if (basis === "invoice" && a.currency !== b.currency) {
-        return a.currency.localeCompare(b.currency);
-      }
-      return b.amount - a.amount;
-    });
+    .sort((a, b) => b.amount - a.amount);
 
-  const currencies = Object.keys(totalsByCurrency).sort();
   return {
     rows,
     totalAmount,
     totalCount,
     uniqueCustomerCount: uniqueCustomers.size,
-    currencies,
-    totalsByCurrency,
   };
 }
 

@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/hooks/query-keys";
 import { frappe } from "@/lib/frappe-client";
 import { parseSalesByItem, parseSalesByCustomer } from "@/lib/report-parsers";
-import { useCompanyStore } from "@/stores/company-store";
 import type {
   SalesAnalyticsData,
   SalesAnalyticsDimension,
@@ -284,28 +283,22 @@ async function fetchSalesRegisterRows(f: SalesRegisterFilters): Promise<JoinedRo
 }
 
 export function useSalesByItemReport(f: SalesRegisterFilters) {
-  const basis = f.basis ?? "base";
-  const baseCurrency = useCompanyStore((s) => s.currencyCode);
-  const currencyFilter = f.currency ?? "";
   return useQuery({
     queryKey: queryKeys.reports.salesByItem(f.company, f.from, f.to, filterKey(f)),
     queryFn: () => fetchSalesRegisterRows(f),
     enabled: !!f.company && !!f.from && !!f.to,
     staleTime: 5 * 60 * 1000,
-    select: (rows) => parseSalesByItem(rows, basis, baseCurrency, currencyFilter),
+    select: (rows) => parseSalesByItem(rows),
   });
 }
 
 export function useSalesByCustomerReport(f: SalesRegisterFilters) {
-  const basis = f.basis ?? "base";
-  const baseCurrency = useCompanyStore((s) => s.currencyCode);
-  const currencyFilter = f.currency ?? "";
   return useQuery({
     queryKey: queryKeys.reports.salesByCustomer(f.company, f.from, f.to, filterKey(f)),
     queryFn: () => fetchSalesRegisterRows(f),
     enabled: !!f.company && !!f.from && !!f.to,
     staleTime: 5 * 60 * 1000,
-    select: (rows) => parseSalesByCustomer(rows, basis, baseCurrency, currencyFilter),
+    select: (rows) => parseSalesByCustomer(rows),
   });
 }
 

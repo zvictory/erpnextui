@@ -16,23 +16,13 @@ import {
 import * as XLSX from "xlsx";
 
 import { useCompanyStore } from "@/stores/company-store";
-import {
-  useSalesByCustomerReport,
-  type SalesBasis,
-} from "@/hooks/use-sales-register-report";
-import { useCurrencyMap, useCurrencies } from "@/hooks/use-accounts";
+import { useSalesByCustomerReport } from "@/hooks/use-sales-register-report";
+import { useCurrencyMap } from "@/hooks/use-accounts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LinkField } from "@/components/shared/link-field";
 import { DateRangePicker } from "@/components/reports/date-range-picker";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Collapsible,
   CollapsibleContent,
@@ -46,25 +36,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatCurrency } from "@/lib/formatters";
+import { formatCurrency, formatNumber } from "@/lib/formatters";
 import type { SalesByCustomerRow, DateRange } from "@/types/reports";
 
 export default function SalesByCustomerPage() {
   const t = useTranslations("sbc");
   const {
     company,
+    currencyCode: baseCurrencyCode,
     currencySymbol: baseSymbol,
     symbolOnRight: baseOnRight,
   } = useCompanyStore();
   const { data: currencyMap } = useCurrencyMap();
-  const { data: allCurrencies } = useCurrencies();
 
   const [dateRange, setDateRange] = useState<DateRange>({
     from: startOfMonth(new Date()),
     to: new Date(),
   });
-  const [basis, setBasis] = useState<SalesBasis>("invoice");
-  const [currency, setCurrency] = useState("");
   const [customer, setCustomer] = useState("");
   const [item, setItem] = useState("");
   const [itemGroup, setItemGroup] = useState("");
@@ -85,7 +73,6 @@ export default function SalesByCustomerPage() {
     company,
     from,
     to,
-    basis,
     customer,
     item,
     itemGroup,
@@ -96,32 +83,24 @@ export default function SalesByCustomerPage() {
     project,
     costCenter,
     brand,
-    currency,
   });
 
   const rows = data?.rows ?? [];
   const totalAmount = data?.totalAmount ?? 0;
   const uniqueCustomerCount = data?.uniqueCustomerCount ?? 0;
-  const totalsByCurrency = data?.totalsByCurrency ?? {};
-  const dataCurrencies = data?.currencies ?? [];
   const totalInvoices = useMemo(
     () => rows.reduce((s, r) => s + r.invoice_count, 0),
     [rows],
   );
+  const totalQty = useMemo(() => rows.reduce((s, r) => s + r.qty, 0), [rows]);
 
-  const resolveCurrency = useCallback(
-    (code: string) => {
-      const info = code ? currencyMap?.get(code) : undefined;
-      return {
-        symbol: info?.symbol ?? baseSymbol,
-        onRight: info?.onRight ?? baseOnRight,
-      };
-    },
-    [currencyMap, baseSymbol, baseOnRight],
-  );
-
-  const splitMode = basis === "invoice" && !currency;
-  const multiCurrency = splitMode && dataCurrencies.length > 1;
+  const baseInfo = useMemo(() => {
+    const info = baseCurrencyCode ? currencyMap?.get(baseCurrencyCode) : undefined;
+    return {
+      symbol: info?.symbol ?? baseSymbol,
+      onRight: info?.onRight ?? baseOnRight,
+    };
+  }, [currencyMap, baseCurrencyCode, baseSymbol, baseOnRight]);
 
   const columns = useMemo<ColumnDef<SalesByCustomerRow>[]>(() => {
     const base: ColumnDef<SalesByCustomerRow>[] = [
@@ -163,23 +142,6 @@ export default function SalesByCustomerPage() {
       },
     ];
 
-    if (splitMode) {
-      base.push({
-        accessorKey: "currency",
-        header: t("currency"),
-        cell: ({ row }) => {
-          const info = resolveCurrency(row.original.currency);
-          return (
-            <span className="text-muted-foreground tabular-nums text-xs">
-              {info.symbol}
-            </span>
-          );
-        },
-        meta: { className: "text-right" },
-        size: 60,
-      });
-    }
-
     base.push(
       {
         accessorKey: "invoice_count",
@@ -200,6 +162,24 @@ export default function SalesByCustomerPage() {
         meta: { className: "text-right" },
       },
       {
+        accessorKey: "qty",
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="-ml-3 h-8"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            {t("qty")}
+            <ArrowUpDown className="ml-1 size-3" />
+          </Button>
+        ),
+        cell: ({ row }) => (
+          <span className="tabular-nums">{formatNumber(row.original.qty)}</span>
+        ),
+        meta: { className: "text-right" },
+      },
+      {
         accessorKey: "amount",
         header: ({ column }) => (
           <Button
@@ -212,24 +192,18 @@ export default function SalesByCustomerPage() {
             <ArrowUpDown className="ml-1 size-3" />
           </Button>
         ),
-        cell: ({ row }) => {
-          const info = resolveCurrency(row.original.currency);
-          return (
-            <span className="tabular-nums font-medium">
-              {formatCurrency(row.original.amount, info.symbol, info.onRight)}
-            </span>
-          );
-        },
+        cell: ({ row }) => (
+          <span className="tabular-nums font-medium">
+            {formatCurrency(row.original.amount, baseInfo.symbol, baseInfo.onRight)}
+          </span>
+        ),
         meta: { className: "text-right" },
       },
       {
         id: "pct",
         header: t("pctOfTotal"),
         cell: ({ row }) => {
-          const denom = splitMode
-            ? (totalsByCurrency[row.original.currency] ?? 0)
-            : totalAmount;
-          const pct = denom > 0 ? (row.original.amount / denom) * 100 : 0;
+          const pct = totalAmount > 0 ? (row.original.amount / totalAmount) * 100 : 0;
           return <span className="tabular-nums text-xs">{pct.toFixed(1)}%</span>;
         },
         meta: { className: "text-right" },
@@ -238,7 +212,7 @@ export default function SalesByCustomerPage() {
     );
 
     return base;
-  }, [t, resolveCurrency, splitMode, totalAmount, totalsByCurrency]);
+  }, [t, baseInfo, totalAmount]);
 
   const table = useReactTable({
     data: rows,
@@ -253,114 +227,75 @@ export default function SalesByCustomerPage() {
     if (rows.length === 0) return;
 
     const escapeForNumFmt = (s: string) => s.replace(/"/g, '""');
-    const fmtFor = (code: string) => {
-      const info = resolveCurrency(code);
-      const literal = `"${escapeForNumFmt(info.symbol)}"`;
-      return info.onRight ? `# ##0.00 ${literal}` : `${literal} # ##0.00`;
-    };
+    const literal = `"${escapeForNumFmt(baseInfo.symbol)}"`;
+    const amountFmt = baseInfo.onRight ? `# ##0.00 ${literal}` : `${literal} # ##0.00`;
+    const qtyFmt = "#,##0.###";
 
-    const includeCurrencyCol = splitMode;
-    const headers = includeCurrencyCol
-      ? [
-          t("customerCode"),
-          t("customerName"),
-          t("currency"),
-          t("invoiceCount"),
-          t("amount"),
-        ]
-      : [t("customerCode"), t("customerName"), t("invoiceCount"), t("amount")];
+    const headers = [
+      t("customerCode"),
+      t("customerName"),
+      t("invoiceCount"),
+      t("qty"),
+      t("amount"),
+    ];
 
     const grandInvoices = rows.reduce((s, r) => s + r.invoice_count, 0);
-
-    const rowToAoa = (r: SalesByCustomerRow) =>
-      includeCurrencyCol
-        ? [
-            r.customer,
-            r.customer_name,
-            resolveCurrency(r.currency).symbol,
-            r.invoice_count,
-            r.amount,
-          ]
-        : [r.customer, r.customer_name, r.invoice_count, r.amount];
+    const grandQty = rows.reduce((s, r) => s + r.qty, 0);
 
     const aoa: (string | number | null)[][] = [
       headers,
-      ...rows.map(rowToAoa),
+      ...rows.map((r: SalesByCustomerRow) => [
+        r.customer,
+        r.customer_name,
+        r.invoice_count,
+        r.qty,
+        r.amount,
+      ]),
       [],
+      [t("total"), "", grandInvoices, grandQty, totalAmount],
     ];
 
-    if (splitMode && dataCurrencies.length > 1) {
-      for (const code of dataCurrencies) {
-        const total = totalsByCurrency[code] ?? 0;
-        const sym = resolveCurrency(code).symbol;
-        aoa.push(
-          includeCurrencyCol
-            ? [`${t("total")} (${sym})`, "", sym, "", total]
-            : [`${t("total")} (${sym})`, "", "", total],
-        );
-      }
-    } else {
-      aoa.push(
-        includeCurrencyCol
-          ? [t("total"), "", "", grandInvoices, totalAmount]
-          : [t("total"), "", grandInvoices, totalAmount],
-      );
-    }
-
     const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws["!cols"] = includeCurrencyCol
-      ? [{ wch: 18 }, { wch: 35 }, { wch: 8 }, { wch: 12 }, { wch: 22 }]
-      : [{ wch: 18 }, { wch: 35 }, { wch: 12 }, { wch: 22 }];
+    ws["!cols"] = [
+      { wch: 18 },
+      { wch: 35 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 22 },
+    ];
 
-    const amountColIdx = includeCurrencyCol ? 4 : 3;
+    const qtyColIdx = 3;
+    const amountColIdx = 4;
     for (let i = 0; i < rows.length; i++) {
-      const addr = XLSX.utils.encode_cell({ r: i + 1, c: amountColIdx });
-      const cell = ws[addr];
-      if (cell && typeof cell.v === "number") {
-        cell.t = "n";
-        cell.z = fmtFor(rows[i].currency);
+      const qtyAddr = XLSX.utils.encode_cell({ r: i + 1, c: qtyColIdx });
+      const qtyCell = ws[qtyAddr];
+      if (qtyCell && typeof qtyCell.v === "number") {
+        qtyCell.t = "n";
+        qtyCell.z = qtyFmt;
+      }
+      const amtAddr = XLSX.utils.encode_cell({ r: i + 1, c: amountColIdx });
+      const amtCell = ws[amtAddr];
+      if (amtCell && typeof amtCell.v === "number") {
+        amtCell.t = "n";
+        amtCell.z = amountFmt;
       }
     }
-    const totalRowStart = rows.length + 2;
-    if (splitMode && dataCurrencies.length > 1) {
-      for (let i = 0; i < dataCurrencies.length; i++) {
-        const addr = XLSX.utils.encode_cell({ r: totalRowStart + i, c: amountColIdx });
-        const cell = ws[addr];
-        if (cell && typeof cell.v === "number") {
-          cell.t = "n";
-          cell.z = fmtFor(dataCurrencies[i]);
-        }
-      }
-    } else {
-      const addr = XLSX.utils.encode_cell({ r: totalRowStart, c: amountColIdx });
-      const cell = ws[addr];
-      if (cell && typeof cell.v === "number") {
-        cell.t = "n";
-        cell.z = fmtFor(currency || dataCurrencies[0] || "");
-      }
+    const totalRow = rows.length + 2;
+    const totalQtyCell = ws[XLSX.utils.encode_cell({ r: totalRow, c: qtyColIdx })];
+    if (totalQtyCell && typeof totalQtyCell.v === "number") {
+      totalQtyCell.t = "n";
+      totalQtyCell.z = qtyFmt;
+    }
+    const totalAmtCell = ws[XLSX.utils.encode_cell({ r: totalRow, c: amountColIdx })];
+    if (totalAmtCell && typeof totalAmtCell.v === "number") {
+      totalAmtCell.t = "n";
+      totalAmtCell.z = amountFmt;
     }
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Sales by Customer");
     XLSX.writeFile(wb, `Sales-By-Customer-${from}-to-${to}.xlsx`);
-  }, [
-    rows,
-    totalAmount,
-    totalsByCurrency,
-    dataCurrencies,
-    resolveCurrency,
-    splitMode,
-    currency,
-    from,
-    to,
-    t,
-  ]);
-
-  const currencyOptions = useMemo(() => {
-    const names = allCurrencies?.map((c) => c.name) ?? [];
-    if (currency && !names.includes(currency)) names.push(currency);
-    return names.sort();
-  }, [allCurrencies, currency]);
+  }, [rows, totalAmount, baseInfo, from, to, t]);
 
   return (
     <div className="space-y-6">
@@ -395,43 +330,6 @@ export default function SalesByCustomerPage() {
             </label>
             <DateRangePicker dateRange={dateRange} onDateRangeChange={setDateRange} />
           </div>
-          <div className="space-y-1">
-            <label className="text-muted-foreground text-[10px] font-medium uppercase">
-              {t("currencyBasis")}
-            </label>
-            <Select value={basis} onValueChange={(v) => setBasis(v as SalesBasis)}>
-              <SelectTrigger size="sm" className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="base">{t("basisBase")}</SelectItem>
-                <SelectItem value="invoice">{t("basisInvoice")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {basis === "invoice" && (
-            <div className="space-y-1">
-              <label className="text-muted-foreground text-[10px] font-medium uppercase">
-                {t("currency")}
-              </label>
-              <Select
-                value={currency || "__all__"}
-                onValueChange={(v) => setCurrency(v === "__all__" ? "" : v)}
-              >
-                <SelectTrigger size="sm" className="w-[160px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">{t("allCurrencies")}</SelectItem>
-                  {currencyOptions.map((code) => (
-                    <SelectItem key={code} value={code}>
-                      {code}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
           <div className="space-y-1">
             <label className="text-muted-foreground text-[10px] font-medium uppercase">
               {t("customer")}
@@ -585,30 +483,9 @@ export default function SalesByCustomerPage() {
               <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                 {t("totalSales")}
               </p>
-              {multiCurrency ? (
-                <div className="mt-1 space-y-0.5">
-                  {dataCurrencies.map((code) => {
-                    const info = resolveCurrency(code);
-                    return (
-                      <p key={code} className="text-xl font-bold tabular-nums">
-                        {formatCurrency(
-                          totalsByCurrency[code] ?? 0,
-                          info.symbol,
-                          info.onRight,
-                        )}
-                      </p>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="mt-1 text-2xl font-bold tabular-nums">
-                  {(() => {
-                    const code = currency || dataCurrencies[0] || "";
-                    const info = resolveCurrency(code);
-                    return formatCurrency(totalAmount, info.symbol, info.onRight);
-                  })()}
-                </p>
-              )}
+              <p className="mt-1 text-2xl font-bold tabular-nums">
+                {formatCurrency(totalAmount, baseInfo.symbol, baseInfo.onRight)}
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -679,45 +556,21 @@ export default function SalesByCustomerPage() {
                     })}
                   </TableRow>
                 ))}
-                {multiCurrency ? (
-                  dataCurrencies.map((code) => {
-                    const info = resolveCurrency(code);
-                    const total = totalsByCurrency[code] ?? 0;
-                    return (
-                      <TableRow key={code} className="font-semibold">
-                        <TableCell />
-                        <TableCell>
-                          {t("total")} ({info.symbol})
-                        </TableCell>
-                        <TableCell />
-                        <TableCell className="text-right tabular-nums text-xs text-muted-foreground">
-                          {info.symbol}
-                        </TableCell>
-                        <TableCell />
-                        <TableCell className="text-right tabular-nums">
-                          {formatCurrency(total, info.symbol, info.onRight)}
-                        </TableCell>
-                        <TableCell />
-                      </TableRow>
-                    );
-                  })
-                ) : (
-                  <TableRow className="font-semibold">
-                    <TableCell />
-                    <TableCell>{t("total")}</TableCell>
-                    <TableCell />
-                    {splitMode && <TableCell />}
-                    <TableCell />
-                    <TableCell className="text-right tabular-nums">
-                      {(() => {
-                        const code = currency || dataCurrencies[0] || "";
-                        const info = resolveCurrency(code);
-                        return formatCurrency(totalAmount, info.symbol, info.onRight);
-                      })()}
-                    </TableCell>
-                    <TableCell />
-                  </TableRow>
-                )}
+                <TableRow className="font-semibold">
+                  <TableCell />
+                  <TableCell>{t("total")}</TableCell>
+                  <TableCell />
+                  <TableCell className="text-right tabular-nums">
+                    {totalInvoices}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {formatNumber(totalQty)}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {formatCurrency(totalAmount, baseInfo.symbol, baseInfo.onRight)}
+                  </TableCell>
+                  <TableCell />
+                </TableRow>
               </>
             ) : (
               <TableRow>
