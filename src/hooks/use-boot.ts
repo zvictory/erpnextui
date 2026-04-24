@@ -57,7 +57,7 @@ export function useBoot() {
   // session check did.
   const query = useQuery({
     queryKey: BOOT_QUERY_KEY,
-    queryFn: () => frappe.call<BootPayload>("stable_erp_api.get_boot"),
+    queryFn: () => frappe.call<BootPayload>("frappe.stable_erp_api.get_boot"),
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
