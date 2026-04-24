@@ -171,6 +171,12 @@ export const queryKeys = {
       to: string,
       filters: Record<string, string>,
     ) => ["reports", "salesByCustomer", company, from, to, filters] as const,
+    salesAnalytics: (
+      company: string,
+      from: string,
+      to: string,
+      filters: Record<string, string>,
+    ) => ["reports", "salesAnalytics", company, from, to, filters] as const,
   },
   bankAccounts: {
     list: (company: string, page: number, search: string, sort: string) =>

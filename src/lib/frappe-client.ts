@@ -138,6 +138,10 @@ interface GetListOptions {
   groupBy?: string;
   limitPageLength?: number;
   limitStart?: number;
+  // For child doctypes (istable=1), pass the parent doctype so Frappe evaluates
+  // read permission against the parent instead of the child's own ACL (which
+  // is usually restricted to System Manager).
+  parentDoctype?: string;
 }
 
 export const frappe = {
@@ -161,6 +165,9 @@ export const frappe = {
     params.set("limit_page_length", String(options?.limitPageLength ?? 100));
     if (options?.limitStart) {
       params.set("limit_start", String(options.limitStart));
+    }
+    if (options?.parentDoctype) {
+      params.set("parent", options.parentDoctype);
     }
 
     const result = await frappeCall<FrappeListResponse<T>>(

@@ -201,3 +201,31 @@ export interface SalesByCustomerData {
   currencies: string[];
   totalsByCurrency: Record<string, number>;
 }
+
+// Sales Analytics — quantity-only (no monetary fields). The dimension
+// determines what identifies a row; monthly buckets are keyed "YYYY-MM".
+// stockUom stays blank when grouping rolls up multiple UOMs (e.g. by Customer),
+// in which case `qty` is a stock-unit count and must be displayed with a
+// mixed-UOM hint.
+export type SalesAnalyticsDimension = "item" | "itemGroup" | "customer" | "territory";
+
+export interface SalesAnalyticsRow {
+  key: string;
+  label: string;
+  secondaryLabel?: string;
+  stockUom?: string;
+  mixedUom: boolean;
+  monthlyQty: Record<string, number>;
+  totalQty: number;
+  lineCount: number;
+}
+
+export interface SalesAnalyticsData {
+  rows: SalesAnalyticsRow[];
+  months: string[];
+  totalQty: number;
+  lineCount: number;
+  uniqueCount: number;
+  monthlyTotals: Record<string, number>;
+  anyMixedUom: boolean;
+}

@@ -401,6 +401,24 @@ const adminNav: NavItem[] = [
 const reportNav: NavItem[] = [
   { tKey: "sales", href: "/reports/sales", icon: TrendingUp, navCapability: "nav.sales" },
   {
+    tKey: "salesByItem",
+    href: "/reports/sales-by-item",
+    icon: Package,
+    navCapability: "nav.salesByItem",
+  },
+  {
+    tKey: "salesByCustomer",
+    href: "/reports/sales-by-customer",
+    icon: UserCheck,
+    navCapability: "nav.salesByCustomer",
+  },
+  {
+    tKey: "salesAnalytics",
+    href: "/reports/sales-analytics",
+    icon: Activity,
+    navCapability: "nav.salesAnalytics",
+  },
+  {
     tKey: "profitLoss",
     href: "/reports/profit-loss",
     icon: BarChart3,
