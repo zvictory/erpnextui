@@ -175,6 +175,7 @@ export interface SalesByItemData {
   rows: SalesByItemRow[];
   totalAmount: number;
   totalCount: number;
+  currencyCode: string;
 }
 
 export interface SalesByCustomerRow {
@@ -189,4 +190,5 @@ export interface SalesByCustomerData {
   rows: SalesByCustomerRow[];
   totalAmount: number;
   totalCount: number;
+  currencyCode: string;
 }

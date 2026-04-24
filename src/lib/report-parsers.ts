@@ -586,14 +586,21 @@ export function parseAgingReport(result: (Record<string, unknown> | unknown[])[]
 }
 
 /**
- * Aggregate item-wise sales register rows by item_code. Amounts are summed
- * in company base currency (`base_amount`/`base_net_amount`) so the report
- * always renders in one currency regardless of invoice currency.
+ * Aggregate item-wise sales register rows by item_code.
+ *
+ * `basis` selects the amount source:
+ * - `"base"` (default): sum `base_amount`/`base_net_amount` (company base
+ *   currency). `currencyCode` is `""` — caller renders company base symbol.
+ * - `"invoice"`: sum `amount`/`net_amount` (invoice transaction currency) and
+ *   return the dominant `currency` across all rows as `currencyCode`.
  */
 export function parseSalesByItem(
   result: (Record<string, unknown> | unknown[])[],
+  basis: "base" | "invoice" = "base",
 ): SalesByItemData {
   const map = new Map<string, SalesByItemRow>();
+  const currencyCounts = new Map<string, number>();
+  let firstCurrency = "";
   let totalAmount = 0;
   let totalCount = 0;
 
@@ -603,7 +610,10 @@ export function parseSalesByItem(
     const itemCode = row.item_code ? String(row.item_code) : "";
     if (!itemCode) continue;
 
-    const amount = Number(row.base_amount ?? row.base_net_amount ?? row.amount ?? 0);
+    const amount =
+      basis === "invoice"
+        ? Number(row.net_amount ?? row.amount ?? 0)
+        : Number(row.base_amount ?? row.base_net_amount ?? row.amount ?? 0);
     const qty = Number(row.qty ?? 0);
     const stockQty = Number(row.stock_qty ?? 0);
 
@@ -626,20 +636,46 @@ export function parseSalesByItem(
 
     totalAmount += amount;
     totalCount++;
+
+    if (basis === "invoice") {
+      const currency = row.currency ? String(row.currency) : "";
+      if (currency) {
+        if (!firstCurrency) firstCurrency = currency;
+        currencyCounts.set(currency, (currencyCounts.get(currency) ?? 0) + 1);
+      }
+    }
   }
 
   const rows = Array.from(map.values()).sort((a, b) => b.amount - a.amount);
-  return { rows, totalAmount, totalCount };
+  const currencyCode =
+    basis === "invoice" ? pickDominantCurrency(currencyCounts, firstCurrency) : "";
+  return { rows, totalAmount, totalCount, currencyCode };
+}
+
+function pickDominantCurrency(counts: Map<string, number>, fallback: string): string {
+  let best = "";
+  let bestCount = -1;
+  for (const [code, count] of counts) {
+    if (count > bestCount) {
+      best = code;
+      bestCount = count;
+    }
+  }
+  return best || fallback;
 }
 
 /**
- * Aggregate item-wise sales register rows by customer. Amounts are summed
- * in company base currency. Invoice count is distinct voucher per customer.
+ * Aggregate item-wise sales register rows by customer. See `parseSalesByItem`
+ * for the `basis` parameter semantics. Invoice count is distinct voucher per
+ * customer.
  */
 export function parseSalesByCustomer(
   result: (Record<string, unknown> | unknown[])[],
+  basis: "base" | "invoice" = "base",
 ): SalesByCustomerData {
   const map = new Map<string, SalesByCustomerRow & { _invoices: Set<string> }>();
+  const currencyCounts = new Map<string, number>();
+  let firstCurrency = "";
   let totalAmount = 0;
   let totalCount = 0;
 
@@ -649,7 +685,10 @@ export function parseSalesByCustomer(
     const customer = row.customer ? String(row.customer) : "";
     if (!customer) continue;
 
-    const amount = Number(row.base_amount ?? row.base_net_amount ?? row.amount ?? 0);
+    const amount =
+      basis === "invoice"
+        ? Number(row.net_amount ?? row.amount ?? 0)
+        : Number(row.base_amount ?? row.base_net_amount ?? row.amount ?? 0);
     const voucher = row.invoice ? String(row.invoice) : String(row.voucher_no ?? "");
 
     let entry = map.get(customer);
@@ -669,6 +708,14 @@ export function parseSalesByCustomer(
 
     totalAmount += amount;
     totalCount++;
+
+    if (basis === "invoice") {
+      const currency = row.currency ? String(row.currency) : "";
+      if (currency) {
+        if (!firstCurrency) firstCurrency = currency;
+        currencyCounts.set(currency, (currencyCounts.get(currency) ?? 0) + 1);
+      }
+    }
   }
 
   const rows: SalesByCustomerRow[] = Array.from(map.values())
@@ -681,7 +728,9 @@ export function parseSalesByCustomer(
     }))
     .sort((a, b) => b.amount - a.amount);
 
-  return { rows, totalAmount, totalCount };
+  const currencyCode =
+    basis === "invoice" ? pickDominantCurrency(currencyCounts, firstCurrency) : "";
+  return { rows, totalAmount, totalCount, currencyCode };
 }
 
 export function parseGeneralLedger(result: (Record<string, unknown> | unknown[])[]): GLReportData {

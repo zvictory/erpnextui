@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import { format, startOfMonth } from "date-fns";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { RefreshCw, Download, ArrowUpDown } from "lucide-react";
+import { RefreshCw, Download, ArrowUpDown, ChevronDown } from "lucide-react";
 import {
   type ColumnDef,
   type SortingState,
@@ -16,12 +16,28 @@ import {
 import * as XLSX from "xlsx";
 
 import { useCompanyStore } from "@/stores/company-store";
-import { useSalesByCustomerReport } from "@/hooks/use-sales-register-report";
+import {
+  useSalesByCustomerReport,
+  type SalesBasis,
+} from "@/hooks/use-sales-register-report";
+import { useCurrencyMap } from "@/hooks/use-accounts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LinkField } from "@/components/shared/link-field";
 import { DateRangePicker } from "@/components/reports/date-range-picker";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Table,
   TableBody,
@@ -35,16 +51,29 @@ import type { SalesByCustomerRow, DateRange } from "@/types/reports";
 
 export default function SalesByCustomerPage() {
   const t = useTranslations("sbc");
-  const { company, currencySymbol, symbolOnRight } = useCompanyStore();
+  const {
+    company,
+    currencySymbol: baseSymbol,
+    symbolOnRight: baseOnRight,
+  } = useCompanyStore();
+  const { data: currencyMap } = useCurrencyMap();
 
   const [dateRange, setDateRange] = useState<DateRange>({
     from: startOfMonth(new Date()),
     to: new Date(),
   });
+  const [basis, setBasis] = useState<SalesBasis>("base");
   const [customer, setCustomer] = useState("");
   const [item, setItem] = useState("");
   const [itemGroup, setItemGroup] = useState("");
   const [customerGroup, setCustomerGroup] = useState("");
+  const [warehouse, setWarehouse] = useState("");
+  const [salesPerson, setSalesPerson] = useState("");
+  const [territory, setTerritory] = useState("");
+  const [project, setProject] = useState("");
+  const [costCenter, setCostCenter] = useState("");
+  const [brand, setBrand] = useState("");
+  const [moreOpen, setMoreOpen] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([{ id: "amount", desc: true }]);
 
   const from = format(dateRange.from, "yyyy-MM-dd");
@@ -54,11 +83,23 @@ export default function SalesByCustomerPage() {
     company,
     from,
     to,
+    basis,
     customer,
     item,
     itemGroup,
     customerGroup,
+    warehouse,
+    salesPerson,
+    territory,
+    project,
+    costCenter,
+    brand,
   });
+
+  const invoiceCurrency =
+    basis === "invoice" && data?.currencyCode ? currencyMap?.get(data.currencyCode) : undefined;
+  const currencySymbol = invoiceCurrency?.symbol ?? baseSymbol;
+  const symbolOnRight = invoiceCurrency?.onRight ?? baseOnRight;
 
   const rows = data?.rows ?? [];
   const totalAmount = data?.totalAmount ?? 0;
@@ -232,63 +273,166 @@ export default function SalesByCustomerPage() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-end gap-2">
-        <div className="space-y-1">
-          <label className="text-muted-foreground text-[10px] font-medium uppercase">
-            {t("dateRange")}
-          </label>
-          <DateRangePicker dateRange={dateRange} onDateRangeChange={setDateRange} />
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="space-y-1">
+            <label className="text-muted-foreground text-[10px] font-medium uppercase">
+              {t("dateRange")}
+            </label>
+            <DateRangePicker dateRange={dateRange} onDateRangeChange={setDateRange} />
+          </div>
+          <div className="space-y-1">
+            <label className="text-muted-foreground text-[10px] font-medium uppercase">
+              {t("currencyBasis")}
+            </label>
+            <Select value={basis} onValueChange={(v) => setBasis(v as SalesBasis)}>
+              <SelectTrigger size="sm" className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="base">{t("basisBase")}</SelectItem>
+                <SelectItem value="invoice">{t("basisInvoice")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-muted-foreground text-[10px] font-medium uppercase">
+              {t("customer")}
+            </label>
+            <LinkField
+              doctype="Customer"
+              value={customer}
+              onChange={setCustomer}
+              placeholder={t("allCustomers")}
+              descriptionField="customer_name"
+              className="h-8 w-[220px] text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-muted-foreground text-[10px] font-medium uppercase">
+              {t("item")}
+            </label>
+            <LinkField
+              doctype="Item"
+              value={item}
+              onChange={setItem}
+              placeholder={t("allItems")}
+              descriptionField="item_name"
+              className="h-8 w-[220px] text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-muted-foreground text-[10px] font-medium uppercase">
+              {t("itemGroup")}
+            </label>
+            <LinkField
+              doctype="Item Group"
+              value={itemGroup}
+              onChange={setItemGroup}
+              placeholder={t("allGroups")}
+              className="h-8 w-[180px] text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-muted-foreground text-[10px] font-medium uppercase">
+              {t("customerGroup")}
+            </label>
+            <LinkField
+              doctype="Customer Group"
+              value={customerGroup}
+              onChange={setCustomerGroup}
+              placeholder={t("allGroups")}
+              className="h-8 w-[180px] text-sm"
+            />
+          </div>
         </div>
-        <div className="space-y-1">
-          <label className="text-muted-foreground text-[10px] font-medium uppercase">
-            {t("customer")}
-          </label>
-          <LinkField
-            doctype="Customer"
-            value={customer}
-            onChange={setCustomer}
-            placeholder={t("allCustomers")}
-            descriptionField="customer_name"
-            className="h-8 w-[220px] text-sm"
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="text-muted-foreground text-[10px] font-medium uppercase">
-            {t("item")}
-          </label>
-          <LinkField
-            doctype="Item"
-            value={item}
-            onChange={setItem}
-            placeholder={t("allItems")}
-            descriptionField="item_name"
-            className="h-8 w-[220px] text-sm"
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="text-muted-foreground text-[10px] font-medium uppercase">
-            {t("itemGroup")}
-          </label>
-          <LinkField
-            doctype="Item Group"
-            value={itemGroup}
-            onChange={setItemGroup}
-            placeholder={t("allGroups")}
-            className="h-8 w-[180px] text-sm"
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="text-muted-foreground text-[10px] font-medium uppercase">
-            {t("customerGroup")}
-          </label>
-          <LinkField
-            doctype="Customer Group"
-            value={customerGroup}
-            onChange={setCustomerGroup}
-            placeholder={t("allGroups")}
-            className="h-8 w-[180px] text-sm"
-          />
-        </div>
+
+        <Collapsible open={moreOpen} onOpenChange={setMoreOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="-ml-2 h-7 text-xs">
+              <ChevronDown
+                className={`mr-1 size-3 transition-transform ${moreOpen ? "rotate-180" : ""}`}
+              />
+              {t("moreFilters")}
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-2">
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="space-y-1">
+                <label className="text-muted-foreground text-[10px] font-medium uppercase">
+                  {t("warehouse")}
+                </label>
+                <LinkField
+                  doctype="Warehouse"
+                  value={warehouse}
+                  onChange={setWarehouse}
+                  placeholder={t("allWarehouses")}
+                  className="h-8 w-[200px] text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-muted-foreground text-[10px] font-medium uppercase">
+                  {t("salesPerson")}
+                </label>
+                <LinkField
+                  doctype="Sales Person"
+                  value={salesPerson}
+                  onChange={setSalesPerson}
+                  placeholder={t("allSalesPersons")}
+                  className="h-8 w-[200px] text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-muted-foreground text-[10px] font-medium uppercase">
+                  {t("territory")}
+                </label>
+                <LinkField
+                  doctype="Territory"
+                  value={territory}
+                  onChange={setTerritory}
+                  placeholder={t("allTerritories")}
+                  className="h-8 w-[180px] text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-muted-foreground text-[10px] font-medium uppercase">
+                  {t("project")}
+                </label>
+                <LinkField
+                  doctype="Project"
+                  value={project}
+                  onChange={setProject}
+                  placeholder={t("allProjects")}
+                  className="h-8 w-[180px] text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-muted-foreground text-[10px] font-medium uppercase">
+                  {t("costCenter")}
+                </label>
+                <LinkField
+                  doctype="Cost Center"
+                  value={costCenter}
+                  onChange={setCostCenter}
+                  placeholder={t("allCostCenters")}
+                  className="h-8 w-[200px] text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-muted-foreground text-[10px] font-medium uppercase">
+                  {t("brand")}
+                </label>
+                <LinkField
+                  doctype="Brand"
+                  value={brand}
+                  onChange={setBrand}
+                  placeholder={t("allBrands")}
+                  className="h-8 w-[180px] text-sm"
+                />
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
 
       {isLoading ? (

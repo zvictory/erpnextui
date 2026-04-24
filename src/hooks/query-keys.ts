@@ -163,46 +163,14 @@ export const queryKeys = {
       ["reports", "accountsPayable", company, asOfDate] as const,
     generalLedger: (company: string, from: string, to: string, account?: string, party?: string) =>
       ["reports", "generalLedger", company, from, to, account, party] as const,
-    salesByItem: (
-      company: string,
-      from: string,
-      to: string,
-      customer: string,
-      item: string,
-      itemGroup: string,
-      customerGroup: string,
-    ) =>
-      [
-        "reports",
-        "salesByItem",
-        company,
-        from,
-        to,
-        customer,
-        item,
-        itemGroup,
-        customerGroup,
-      ] as const,
+    salesByItem: (company: string, from: string, to: string, filters: Record<string, string>) =>
+      ["reports", "salesByItem", company, from, to, filters] as const,
     salesByCustomer: (
       company: string,
       from: string,
       to: string,
-      customer: string,
-      item: string,
-      itemGroup: string,
-      customerGroup: string,
-    ) =>
-      [
-        "reports",
-        "salesByCustomer",
-        company,
-        from,
-        to,
-        customer,
-        item,
-        itemGroup,
-        customerGroup,
-      ] as const,
+      filters: Record<string, string>,
+    ) => ["reports", "salesByCustomer", company, from, to, filters] as const,
   },
   bankAccounts: {
     list: (company: string, page: number, search: string, sort: string) =>
