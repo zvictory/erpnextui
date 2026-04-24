@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/hooks/query-keys";
 import { frappe } from "@/lib/frappe-client";
 import { parseSalesByItem, parseSalesByCustomer } from "@/lib/report-parsers";
+import { useCompanyStore } from "@/stores/company-store";
 import type { ReportRunResponse } from "@/types/reports";
 
 export type SalesBasis = "base" | "invoice";
@@ -21,6 +22,7 @@ export interface SalesRegisterFilters {
   project?: string;
   costCenter?: string;
   brand?: string;
+  currency?: string;
 }
 
 function buildFilters(f: SalesRegisterFilters) {
@@ -55,6 +57,7 @@ function filterKey(f: SalesRegisterFilters): Record<string, string> {
     project: f.project ?? "",
     costCenter: f.costCenter ?? "",
     brand: f.brand ?? "",
+    currency: f.currency ?? "",
   };
 }
 
@@ -67,22 +70,26 @@ async function runItemWiseSalesRegister(f: SalesRegisterFilters) {
 
 export function useSalesByItemReport(f: SalesRegisterFilters) {
   const basis = f.basis ?? "base";
+  const baseCurrency = useCompanyStore((s) => s.currencyCode);
+  const currencyFilter = f.currency ?? "";
   return useQuery({
     queryKey: queryKeys.reports.salesByItem(f.company, f.from, f.to, filterKey(f)),
     queryFn: () => runItemWiseSalesRegister(f),
     enabled: !!f.company && !!f.from && !!f.to,
     staleTime: 5 * 60 * 1000,
-    select: (data) => parseSalesByItem(data.result, basis),
+    select: (data) => parseSalesByItem(data.result, basis, baseCurrency, currencyFilter),
   });
 }
 
 export function useSalesByCustomerReport(f: SalesRegisterFilters) {
   const basis = f.basis ?? "base";
+  const baseCurrency = useCompanyStore((s) => s.currencyCode);
+  const currencyFilter = f.currency ?? "";
   return useQuery({
     queryKey: queryKeys.reports.salesByCustomer(f.company, f.from, f.to, filterKey(f)),
     queryFn: () => runItemWiseSalesRegister(f),
     enabled: !!f.company && !!f.from && !!f.to,
     staleTime: 5 * 60 * 1000,
-    select: (data) => parseSalesByCustomer(data.result, basis),
+    select: (data) => parseSalesByCustomer(data.result, basis, baseCurrency, currencyFilter),
   });
 }

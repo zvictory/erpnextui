@@ -17,7 +17,7 @@ import * as XLSX from "xlsx";
 
 import { useCompanyStore } from "@/stores/company-store";
 import { useSalesByItemReport, type SalesBasis } from "@/hooks/use-sales-register-report";
-import { useCurrencyMap } from "@/hooks/use-accounts";
+import { useCurrencyMap, useCurrencies } from "@/hooks/use-accounts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -54,12 +54,14 @@ export default function SalesByItemPage() {
     symbolOnRight: baseOnRight,
   } = useCompanyStore();
   const { data: currencyMap } = useCurrencyMap();
+  const { data: allCurrencies } = useCurrencies();
 
   const [dateRange, setDateRange] = useState<DateRange>({
     from: startOfMonth(new Date()),
     to: new Date(),
   });
-  const [basis, setBasis] = useState<SalesBasis>("base");
+  const [basis, setBasis] = useState<SalesBasis>("invoice");
+  const [currency, setCurrency] = useState("");
   const [customer, setCustomer] = useState("");
   const [item, setItem] = useState("");
   const [itemGroup, setItemGroup] = useState("");
@@ -71,7 +73,7 @@ export default function SalesByItemPage() {
   const [costCenter, setCostCenter] = useState("");
   const [brand, setBrand] = useState("");
   const [moreOpen, setMoreOpen] = useState(false);
-  const [sorting, setSorting] = useState<SortingState>([{ id: "amount", desc: true }]);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const from = format(dateRange.from, "yyyy-MM-dd");
   const to = format(dateRange.to, "yyyy-MM-dd");
@@ -91,19 +93,35 @@ export default function SalesByItemPage() {
     project,
     costCenter,
     brand,
+    currency,
   });
-
-  const invoiceCurrency =
-    basis === "invoice" && data?.currencyCode ? currencyMap?.get(data.currencyCode) : undefined;
-  const currencySymbol = invoiceCurrency?.symbol ?? baseSymbol;
-  const symbolOnRight = invoiceCurrency?.onRight ?? baseOnRight;
 
   const rows = data?.rows ?? [];
   const totalAmount = data?.totalAmount ?? 0;
   const totalCount = data?.totalCount ?? 0;
+  const uniqueItemCount = data?.uniqueItemCount ?? 0;
+  const totalsByCurrency = data?.totalsByCurrency ?? {};
+  const dataCurrencies = data?.currencies ?? [];
 
-  const columns = useMemo<ColumnDef<SalesByItemRow>[]>(
-    () => [
+  const resolveCurrency = useCallback(
+    (code: string) => {
+      const info = code ? currencyMap?.get(code) : undefined;
+      return {
+        symbol: info?.symbol ?? baseSymbol,
+        onRight: info?.onRight ?? baseOnRight,
+      };
+    },
+    [currencyMap, baseSymbol, baseOnRight],
+  );
+
+  // Split mode = invoice basis with no single-currency filter AND multiple
+  // currencies present. This is what makes the Currency column, per-row symbol
+  // rendering, and multi-line totals kick in.
+  const splitMode = basis === "invoice" && !currency;
+  const multiCurrency = splitMode && dataCurrencies.length > 1;
+
+  const columns = useMemo<ColumnDef<SalesByItemRow>[]>(() => {
+    const base: ColumnDef<SalesByItemRow>[] = [
       {
         id: "index",
         header: "#",
@@ -140,6 +158,26 @@ export default function SalesByItemPage() {
         header: t("itemName"),
         cell: ({ row }) => <span>{row.original.item_name}</span>,
       },
+    ];
+
+    if (splitMode) {
+      base.push({
+        accessorKey: "currency",
+        header: t("currency"),
+        cell: ({ row }) => {
+          const info = resolveCurrency(row.original.currency);
+          return (
+            <span className="text-muted-foreground tabular-nums text-xs">
+              {info.symbol}
+            </span>
+          );
+        },
+        meta: { className: "text-right" },
+        size: 60,
+      });
+    }
+
+    base.push(
       {
         accessorKey: "qty",
         header: ({ column }) => (
@@ -171,26 +209,36 @@ export default function SalesByItemPage() {
             <ArrowUpDown className="ml-1 size-3" />
           </Button>
         ),
-        cell: ({ row }) => (
-          <span className="tabular-nums font-medium">
-            {formatCurrency(row.original.amount, currencySymbol, symbolOnRight)}
-          </span>
-        ),
+        cell: ({ row }) => {
+          const info = resolveCurrency(row.original.currency);
+          return (
+            <span className="tabular-nums font-medium">
+              {formatCurrency(row.original.amount, info.symbol, info.onRight)}
+            </span>
+          );
+        },
         meta: { className: "text-right" },
       },
       {
         id: "pct",
         header: t("pctOfTotal"),
         cell: ({ row }) => {
-          const pct = totalAmount > 0 ? (row.original.amount / totalAmount) * 100 : 0;
+          // In split mode, percent-of-total is computed within the row's
+          // currency bucket — mixing currencies in a single denominator would
+          // be nonsense.
+          const denom = splitMode
+            ? (totalsByCurrency[row.original.currency] ?? 0)
+            : totalAmount;
+          const pct = denom > 0 ? (row.original.amount / denom) * 100 : 0;
           return <span className="tabular-nums text-xs">{pct.toFixed(1)}%</span>;
         },
         meta: { className: "text-right" },
         enableSorting: false,
       },
-    ],
-    [t, currencySymbol, symbolOnRight, totalAmount],
-  );
+    );
+
+    return base;
+  }, [t, resolveCurrency, splitMode, totalAmount, totalsByCurrency]);
 
   const table = useReactTable({
     data: rows,
@@ -205,37 +253,112 @@ export default function SalesByItemPage() {
     if (rows.length === 0) return;
 
     const escapeForNumFmt = (s: string) => s.replace(/"/g, '""');
-    const literal = `"${escapeForNumFmt(currencySymbol)}"`;
-    const amountFmt = symbolOnRight ? `# ##0.00 ${literal}` : `${literal} # ##0.00`;
+    const fmtFor = (code: string) => {
+      const info = resolveCurrency(code);
+      const literal = `"${escapeForNumFmt(info.symbol)}"`;
+      return info.onRight ? `# ##0.00 ${literal}` : `${literal} # ##0.00`;
+    };
 
-    const headers = [t("itemCode"), t("itemName"), t("qty"), t("amount")];
+    const includeCurrencyCol = splitMode;
+    const headers = includeCurrencyCol
+      ? [t("itemCode"), t("itemName"), t("currency"), t("qty"), t("amount")]
+      : [t("itemCode"), t("itemName"), t("qty"), t("amount")];
+
     const grandQty = rows.reduce((s, r) => s + r.qty, 0);
+
+    const rowToAoa = (r: SalesByItemRow) =>
+      includeCurrencyCol
+        ? [r.item_code, r.item_name, resolveCurrency(r.currency).symbol, r.qty, r.amount]
+        : [r.item_code, r.item_name, r.qty, r.amount];
 
     const aoa: (string | number | null)[][] = [
       headers,
-      ...rows.map((r) => [r.item_code, r.item_name, r.qty, r.amount]),
+      ...rows.map(rowToAoa),
       [],
-      [t("total"), "", grandQty, totalAmount],
     ];
 
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws["!cols"] = [{ wch: 20 }, { wch: 35 }, { wch: 12 }, { wch: 22 }];
+    if (splitMode && dataCurrencies.length > 1) {
+      // One total row per currency so each sum stays in its own unit.
+      for (const code of dataCurrencies) {
+        const total = totalsByCurrency[code] ?? 0;
+        aoa.push(
+          includeCurrencyCol
+            ? [
+                `${t("total")} (${resolveCurrency(code).symbol})`,
+                "",
+                resolveCurrency(code).symbol,
+                "",
+                total,
+              ]
+            : [`${t("total")} (${resolveCurrency(code).symbol})`, "", "", total],
+        );
+      }
+    } else {
+      aoa.push(
+        includeCurrencyCol
+          ? [t("total"), "", "", grandQty, totalAmount]
+          : [t("total"), "", grandQty, totalAmount],
+      );
+    }
 
-    const amountColIdx = 3;
-    for (let i = 1; i < aoa.length; i++) {
-      if (aoa[i].length === 0) continue;
-      const addr = XLSX.utils.encode_cell({ r: i, c: amountColIdx });
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = includeCurrencyCol
+      ? [{ wch: 20 }, { wch: 35 }, { wch: 8 }, { wch: 12 }, { wch: 22 }]
+      : [{ wch: 20 }, { wch: 35 }, { wch: 12 }, { wch: 22 }];
+
+    const amountColIdx = includeCurrencyCol ? 4 : 3;
+    // Data rows: apply per-row format so each amount carries its own symbol.
+    for (let i = 0; i < rows.length; i++) {
+      const addr = XLSX.utils.encode_cell({ r: i + 1, c: amountColIdx });
       const cell = ws[addr];
       if (cell && typeof cell.v === "number") {
         cell.t = "n";
-        cell.z = amountFmt;
+        cell.z = fmtFor(rows[i].currency);
+      }
+    }
+    // Total rows (start after the blank separator row).
+    const totalRowStart = rows.length + 2;
+    if (splitMode && dataCurrencies.length > 1) {
+      for (let i = 0; i < dataCurrencies.length; i++) {
+        const addr = XLSX.utils.encode_cell({ r: totalRowStart + i, c: amountColIdx });
+        const cell = ws[addr];
+        if (cell && typeof cell.v === "number") {
+          cell.t = "n";
+          cell.z = fmtFor(dataCurrencies[i]);
+        }
+      }
+    } else {
+      const addr = XLSX.utils.encode_cell({ r: totalRowStart, c: amountColIdx });
+      const cell = ws[addr];
+      if (cell && typeof cell.v === "number") {
+        cell.t = "n";
+        cell.z = fmtFor(currency || dataCurrencies[0] || "");
       }
     }
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Sales by Item");
     XLSX.writeFile(wb, `Sales-By-Item-${from}-to-${to}.xlsx`);
-  }, [rows, totalAmount, currencySymbol, symbolOnRight, from, to, t]);
+  }, [
+    rows,
+    totalAmount,
+    totalsByCurrency,
+    dataCurrencies,
+    resolveCurrency,
+    splitMode,
+    currency,
+    from,
+    to,
+    t,
+  ]);
+
+  const currencyOptions = useMemo(() => {
+    const names = allCurrencies?.map((c) => c.name) ?? [];
+    // Ensure the currently selected filter is present even if the list hasn't
+    // loaded yet — prevents the Select from flashing empty state.
+    if (currency && !names.includes(currency)) names.push(currency);
+    return names.sort();
+  }, [allCurrencies, currency]);
 
   return (
     <div className="space-y-6">
@@ -285,6 +408,29 @@ export default function SalesByItemPage() {
               </SelectContent>
             </Select>
           </div>
+          {basis === "invoice" && (
+            <div className="space-y-1">
+              <label className="text-muted-foreground text-[10px] font-medium uppercase">
+                {t("currency")}
+              </label>
+              <Select
+                value={currency || "__all__"}
+                onValueChange={(v) => setCurrency(v === "__all__" ? "" : v)}
+              >
+                <SelectTrigger size="sm" className="w-[160px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">{t("allCurrencies")}</SelectItem>
+                  {currencyOptions.map((code) => (
+                    <SelectItem key={code} value={code}>
+                      {code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-1">
             <label className="text-muted-foreground text-[10px] font-medium uppercase">
               {t("customer")}
@@ -439,9 +585,30 @@ export default function SalesByItemPage() {
               <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                 {t("totalSales")}
               </p>
-              <p className="mt-1 text-2xl font-bold tabular-nums">
-                {formatCurrency(totalAmount, currencySymbol, symbolOnRight)}
-              </p>
+              {multiCurrency ? (
+                <div className="mt-1 space-y-0.5">
+                  {dataCurrencies.map((code) => {
+                    const info = resolveCurrency(code);
+                    return (
+                      <p key={code} className="text-xl font-bold tabular-nums">
+                        {formatCurrency(
+                          totalsByCurrency[code] ?? 0,
+                          info.symbol,
+                          info.onRight,
+                        )}
+                      </p>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="mt-1 text-2xl font-bold tabular-nums">
+                  {(() => {
+                    const code = currency || dataCurrencies[0] || "";
+                    const info = resolveCurrency(code);
+                    return formatCurrency(totalAmount, info.symbol, info.onRight);
+                  })()}
+                </p>
+              )}
             </CardContent>
           </Card>
           <Card>
@@ -449,7 +616,7 @@ export default function SalesByItemPage() {
               <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                 {t("uniqueItems")}
               </p>
-              <p className="mt-1 text-2xl font-bold tabular-nums">{rows.length}</p>
+              <p className="mt-1 text-2xl font-bold tabular-nums">{uniqueItemCount}</p>
             </CardContent>
           </Card>
           <Card>
@@ -511,16 +678,45 @@ export default function SalesByItemPage() {
                     })}
                   </TableRow>
                 ))}
-                <TableRow className="font-semibold">
-                  <TableCell />
-                  <TableCell>{t("total")}</TableCell>
-                  <TableCell />
-                  <TableCell />
-                  <TableCell className="text-right tabular-nums">
-                    {formatCurrency(totalAmount, currencySymbol, symbolOnRight)}
-                  </TableCell>
-                  <TableCell />
-                </TableRow>
+                {multiCurrency ? (
+                  dataCurrencies.map((code) => {
+                    const info = resolveCurrency(code);
+                    const total = totalsByCurrency[code] ?? 0;
+                    return (
+                      <TableRow key={code} className="font-semibold">
+                        <TableCell />
+                        <TableCell>
+                          {t("total")} ({info.symbol})
+                        </TableCell>
+                        <TableCell />
+                        <TableCell className="text-right tabular-nums text-xs text-muted-foreground">
+                          {info.symbol}
+                        </TableCell>
+                        <TableCell />
+                        <TableCell className="text-right tabular-nums">
+                          {formatCurrency(total, info.symbol, info.onRight)}
+                        </TableCell>
+                        <TableCell />
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow className="font-semibold">
+                    <TableCell />
+                    <TableCell>{t("total")}</TableCell>
+                    <TableCell />
+                    {splitMode && <TableCell />}
+                    <TableCell />
+                    <TableCell className="text-right tabular-nums">
+                      {(() => {
+                        const code = currency || dataCurrencies[0] || "";
+                        const info = resolveCurrency(code);
+                        return formatCurrency(totalAmount, info.symbol, info.onRight);
+                      })()}
+                    </TableCell>
+                    <TableCell />
+                  </TableRow>
+                )}
               </>
             ) : (
               <TableRow>

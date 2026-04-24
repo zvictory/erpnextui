@@ -160,11 +160,15 @@ export interface GLReportData {
   closingBalance: number;
 }
 
-// Sales by Item / Sales by Customer (base currency only)
+// Sales by Item / Sales by Customer.
+// In basis="invoice" mode, `currency` partitions rows so amounts from different
+// transaction currencies are never summed together. In basis="base", currency
+// is the company base currency (single-bucket behavior).
 export interface SalesByItemRow {
   item_code: string;
   item_name: string;
   item_group?: string;
+  currency: string;
   qty: number;
   stock_qty: number;
   stock_uom?: string;
@@ -175,13 +179,16 @@ export interface SalesByItemData {
   rows: SalesByItemRow[];
   totalAmount: number;
   totalCount: number;
-  currencyCode: string;
+  uniqueItemCount: number;
+  currencies: string[];
+  totalsByCurrency: Record<string, number>;
 }
 
 export interface SalesByCustomerRow {
   customer: string;
   customer_name: string;
   customer_group?: string;
+  currency: string;
   invoice_count: number;
   amount: number;
 }
@@ -190,5 +197,7 @@ export interface SalesByCustomerData {
   rows: SalesByCustomerRow[];
   totalAmount: number;
   totalCount: number;
-  currencyCode: string;
+  uniqueCustomerCount: number;
+  currencies: string[];
+  totalsByCurrency: Record<string, number>;
 }
