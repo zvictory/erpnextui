@@ -4,6 +4,7 @@ import { useState } from "react";
 import { startOfYear } from "date-fns";
 import { useCompanyStore } from "@/stores/company-store";
 import { useSalesReport } from "@/hooks/use-sales-report";
+import { useCurrencyMap } from "@/hooks/use-accounts";
 import { ReportShell } from "@/components/reports/report-shell";
 import { ReportKpiCards } from "@/components/reports/report-kpi-cards";
 import { PeriodBarChart } from "@/components/reports/period-bar-chart";
@@ -18,18 +19,23 @@ import {
 import type { DateRange } from "@/types/reports";
 
 export default function SalesReportPage() {
-  const { company, currencySymbol, symbolOnRight } = useCompanyStore();
+  const { company, currencySymbol: baseSymbol, symbolOnRight: baseOnRight } = useCompanyStore();
+  const { data: currencyMap } = useCurrencyMap();
   const [dateRange, setDateRange] = useState<DateRange>({
     from: startOfYear(new Date()),
     to: new Date(),
   });
   const [groupBy, setGroupBy] = useState("Customer");
 
-  const { data, invoiceCount, isLoading, isRefetching, refetch } = useSalesReport(
+  const { data, invoiceCount, currencyCode, isLoading, isRefetching, refetch } = useSalesReport(
     company,
     dateRange,
     groupBy,
   );
+
+  const invoiceCurrency = currencyCode ? currencyMap?.get(currencyCode) : undefined;
+  const currencySymbol = invoiceCurrency?.symbol ?? baseSymbol;
+  const symbolOnRight = invoiceCurrency?.onRight ?? baseOnRight;
 
   const avgInvoiceValue = data && invoiceCount > 0 ? data.totalSales / invoiceCount : 0;
 
@@ -58,7 +64,12 @@ export default function SalesReportPage() {
         </Select>
       }
     >
-      <ReportKpiCards items={kpiItems} isLoading={isLoading} />
+      <ReportKpiCards
+        items={kpiItems}
+        isLoading={isLoading}
+        currencySymbol={currencySymbol}
+        symbolOnRight={symbolOnRight}
+      />
       <PeriodBarChart
         title="Monthly Sales"
         data={data?.chartData}

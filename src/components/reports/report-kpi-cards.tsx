@@ -14,10 +14,19 @@ interface KpiItem {
 interface ReportKpiCardsProps {
   items: KpiItem[];
   isLoading: boolean;
+  currencySymbol?: string;
+  symbolOnRight?: boolean;
 }
 
-export function ReportKpiCards({ items, isLoading }: ReportKpiCardsProps) {
-  const { currencySymbol, symbolOnRight } = useCompanyStore();
+export function ReportKpiCards({
+  items,
+  isLoading,
+  currencySymbol: currencySymbolProp,
+  symbolOnRight: symbolOnRightProp,
+}: ReportKpiCardsProps) {
+  const store = useCompanyStore();
+  const currencySymbol = currencySymbolProp ?? store.currencySymbol;
+  const symbolOnRight = symbolOnRightProp ?? store.symbolOnRight;
 
   if (isLoading) {
     return (

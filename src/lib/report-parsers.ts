@@ -211,6 +211,92 @@ export function parseBalanceSheet(
   };
 }
 
+/**
+ * Aggregate Sales Register rows by Customer or Item in the invoice's
+ * transaction currency (`net_amount`), not base currency. Builds per-month
+ * period columns so the existing SalesTable can render them unchanged.
+ * `currencyCode` is the dominant invoice currency across rows.
+ */
+export function parseSalesRegisterRollup(
+  result: (Record<string, unknown> | unknown[])[],
+  groupBy: "Customer" | "Item",
+): SalesReportData & { currencyCode: string } {
+  const entityMap = new Map<string, SalesRow & Record<string, number | string>>();
+  const periodMap = new Map<string, { key: string; label: string; order: number }>();
+  const currencyCounts = new Map<string, number>();
+  let firstCurrency = "";
+
+  for (const raw of result) {
+    if (Array.isArray(raw)) continue;
+    const row = raw as Record<string, unknown>;
+
+    const entity =
+      groupBy === "Customer"
+        ? row.customer
+          ? String(row.customer)
+          : ""
+        : row.item_code
+          ? String(row.item_code)
+          : "";
+    if (!entity) continue;
+
+    const entityName =
+      groupBy === "Customer"
+        ? String(row.customer_name ?? entity)
+        : String(row.item_name ?? entity);
+
+    const amount = Number(row.net_amount ?? row.amount ?? 0);
+    const posting = row.posting_date ? String(row.posting_date) : "";
+    if (!posting) continue;
+
+    // Month key: "2026-04", label: "Apr 2026"
+    const [y, m] = posting.split("-");
+    const monthKey = `${y}-${m}`;
+    if (!periodMap.has(monthKey)) {
+      const d = new Date(Number(y), Number(m) - 1, 1);
+      const label = d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+      periodMap.set(monthKey, { key: monthKey, label, order: Number(y) * 12 + Number(m) });
+    }
+
+    let entry = entityMap.get(entity);
+    if (!entry) {
+      entry = { entity, entity_name: entityName, total: 0 };
+      entityMap.set(entity, entry);
+    }
+    entry.total = Number(entry.total ?? 0) + amount;
+    entry[monthKey] = Number(entry[monthKey] ?? 0) + amount;
+
+    const currency = row.currency ? String(row.currency) : "";
+    if (currency) {
+      if (!firstCurrency) firstCurrency = currency;
+      currencyCounts.set(currency, (currencyCounts.get(currency) ?? 0) + 1);
+    }
+  }
+
+  const periods: PeriodKey[] = Array.from(periodMap.values())
+    .sort((a, b) => a.order - b.order)
+    .map(({ key, label }) => ({ key, label }));
+
+  const rows = Array.from(entityMap.values()).sort((a, b) => b.total - a.total);
+  const totalSales = rows.reduce((sum, r) => sum + r.total, 0);
+
+  const chartData = periods.map((p) => ({
+    period: p.label,
+    amount: rows.reduce((sum, r) => sum + Number(r[p.key] ?? 0), 0),
+  }));
+
+  let currencyCode = firstCurrency;
+  let maxCount = 0;
+  for (const [code, count] of currencyCounts) {
+    if (count > maxCount) {
+      maxCount = count;
+      currencyCode = code;
+    }
+  }
+
+  return { rows, periods, totalSales, chartData, currencyCode };
+}
+
 export function parseSalesAnalytics(
   result: (Record<string, unknown> | unknown[])[],
   columns: ReportColumn[],

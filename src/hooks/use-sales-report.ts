@@ -1,32 +1,30 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/hooks/query-keys";
 import { frappe } from "@/lib/frappe-client";
-import { parseSalesAnalytics } from "@/lib/report-parsers";
+import { parseSalesRegisterRollup } from "@/lib/report-parsers";
 import type { DateRange, ReportRunResponse } from "@/types/reports";
 import { format } from "date-fns";
 
 export function useSalesReport(company: string, dateRange: DateRange, groupBy: string) {
   const from = format(dateRange.from, "yyyy-MM-dd");
   const to = format(dateRange.to, "yyyy-MM-dd");
+  const rollup: "Customer" | "Item" = groupBy === "Item" ? "Item" : "Customer";
 
   const reportQuery = useQuery({
     queryKey: queryKeys.reports.sales(company, from, to, groupBy),
     queryFn: () =>
       frappe.call<ReportRunResponse>("frappe.desk.query_report.run", {
-        report_name: "Sales Analytics",
+        report_name: "Sales Register",
         filters: {
-          tree_type: groupBy,
-          doc_type: "Sales Invoice",
-          value_quantity: "Value",
+          company,
           from_date: from,
           to_date: to,
-          company,
-          range: "Monthly",
+          include_payments: 0,
         },
       }),
     enabled: !!company,
     staleTime: 5 * 60 * 1000,
-    select: (data) => parseSalesAnalytics(data.result, data.columns),
+    select: (data) => parseSalesRegisterRollup(data.result, rollup),
   });
 
   const countQuery = useQuery({
@@ -45,6 +43,7 @@ export function useSalesReport(company: string, dateRange: DateRange, groupBy: s
   return {
     data: reportQuery.data,
     invoiceCount: countQuery.data ?? 0,
+    currencyCode: reportQuery.data?.currencyCode ?? "",
     isLoading: reportQuery.isLoading,
     isRefetching: reportQuery.isRefetching || countQuery.isRefetching,
     refetch: () => {
