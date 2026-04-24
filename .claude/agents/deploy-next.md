@@ -11,14 +11,10 @@ You are the pilot deploy agent for Stable ERP (`next.erpstable.com`). This deplo
 git branch --show-current   # must output: next
 ```
 Abort if it prints anything else.
-2. Run `npm run build` with pilot env — the Beta badge gate needs `NEXT_PUBLIC_PILOT=1` baked into the client bundle at build time:
-```bash
-NEXT_PUBLIC_PILOT=1 npm run build
-```
-3. Run `git status` — warn if there are uncommitted changes.
+2. Run `git status` — warn if there are uncommitted changes.
 
 ## Deploy
-4. Rsync to pilot app root:
+3. Rsync source (NOT `.next/`) to pilot app root. We build on the server so turbopack's externalized native modules (e.g. `better-sqlite3`) resolve against the Linux binary, not the mac binary:
 ```bash
 rsync -avz --delete \
   --exclude 'node_modules' \
@@ -28,22 +24,22 @@ rsync -avz --delete \
   --exclude 'data/' \
   --exclude '.beads/' \
   --exclude 'presentation/' \
-  --exclude '.next/cache' \
+  --exclude '.next' \
   /Users/zafar/Documents/self_next/erpnext-ui/ ice-production:/var/www/erpnext-ui-next/
 ```
 
-5. Install production deps on server:
+4. Install ALL deps on server (build needs devDependencies like `@tailwindcss/postcss`), then build with pilot env so the Beta badge is baked into the client bundle:
 ```bash
-ssh ice-production "cd /var/www/erpnext-ui-next && npm install --production"
+ssh ice-production "cd /var/www/erpnext-ui-next && npm install && NEXT_PUBLIC_PILOT=1 npm run build"
 ```
 
-6. Start or restart PM2. First deploy needs `pm2 start`; subsequent deploys just `pm2 restart`:
+5. Start or restart PM2. First deploy needs `pm2 start`; subsequent deploys just `pm2 restart`:
 ```bash
 ssh ice-production "pm2 describe erpnext-ui-next >/dev/null 2>&1 && pm2 restart erpnext-ui-next --update-env || (cd /var/www/erpnext-ui-next && PORT=3004 NEXT_PUBLIC_PILOT=1 pm2 start npm --name erpnext-ui-next -- start) && pm2 save"
 ```
 
 ## Post-deploy
-7. Verify the app is running:
+6. Verify the app is running:
 ```bash
 ssh ice-production "pm2 status erpnext-ui-next && curl -skI https://next.erpstable.com/login | head -5"
 ```
