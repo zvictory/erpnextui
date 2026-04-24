@@ -1,4 +1,5 @@
 import { PERSIST_KEY, queryClient } from "@/components/providers/query-provider";
+import { disconnectRealtime } from "@/lib/frappe-realtime";
 import { useCompanyStore } from "@/stores/company-store";
 import { useReceiptSettingsStore } from "@/stores/receipt-settings-store";
 
@@ -30,6 +31,7 @@ export function clearTenantState() {
     footerText: "Thank you for your business!",
   });
 
+  disconnectRealtime();
   queryClient.clear();
 
   if (typeof window !== "undefined") {
