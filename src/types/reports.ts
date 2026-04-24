@@ -159,3 +159,36 @@ export interface GLReportData {
   openingBalance: number;
   closingBalance: number;
 }
+
+// Sales by Item / Sales by Customer
+export interface SalesByItemRow {
+  item_code: string;
+  item_name: string;
+  item_group?: string;
+  qty: number;
+  stock_qty: number;
+  stock_uom?: string;
+  amount: number;
+  currency: string;
+}
+
+export interface SalesByItemData {
+  rows: SalesByItemRow[];
+  totalAmount: number;
+  currencyBreakdown: Record<string, { total: number; count: number }>;
+}
+
+export interface SalesByCustomerRow {
+  customer: string;
+  customer_name: string;
+  customer_group?: string;
+  invoice_count: number;
+  amount: number;
+  currency: string;
+}
+
+export interface SalesByCustomerData {
+  rows: SalesByCustomerRow[];
+  totalAmount: number;
+  currencyBreakdown: Record<string, { total: number; count: number }>;
+}
