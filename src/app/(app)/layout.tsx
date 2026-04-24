@@ -14,6 +14,7 @@ import { GlobalSearch } from "@/components/shared/global-search";
 import { KeyboardShortcutsDialog } from "@/components/shared/keyboard-shortcuts-dialog";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useRateSync } from "@/hooks/use-exchange-rates";
+import { RealtimeProvider } from "@/components/providers/realtime-provider";
 
 function ModuleGuard({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -51,7 +52,8 @@ function ShortcutsProvider({ children }: { children: ReactNode }) {
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <AuthGuard>
-      <SidebarProvider>
+      <RealtimeProvider>
+        <SidebarProvider>
         <ShortcutsProvider>
           <AppSidebar />
           <SidebarAutoCollapse />
@@ -65,6 +67,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <GlobalSearch />
         </ShortcutsProvider>
       </SidebarProvider>
+      </RealtimeProvider>
     </AuthGuard>
   );
 }
