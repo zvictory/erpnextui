@@ -91,12 +91,18 @@ export default function AccountsReceivablePage() {
       byCurrency.set(cur, list);
     }
 
+    const escapeForNumFmt = (s: string) => s.replace(/"/g, '""');
+
     for (const [cur, rows] of byCurrency) {
       const info = currencyMap?.get(cur);
       const symbol = info?.symbol ?? cur;
+      const onRight = info?.onRight ?? true;
+      const literal = `"${escapeForNumFmt(symbol)}"`;
+      const amountFmt = onRight ? `# ##0.00 ${literal}` : `${literal} # ##0.00`;
 
       const headers = [
         t("customer"),
+        t("currency"),
         t("notDue"),
         "1-30",
         "31-60",
@@ -105,31 +111,35 @@ export default function AccountsReceivablePage() {
         t("outstanding"),
       ];
 
-      const dataRows = rows.map((r) => [
-        r.party_name,
-        r.current || "",
-        r["1-30"] || "",
-        r["31-60"] || "",
-        r["61-90"] || "",
-        r["90+"] || "",
-        r.total_outstanding,
-      ]);
+      const aoa: (string | number | null)[][] = [
+        headers,
+        ...rows.map((r) => [
+          r.party_name,
+          cur,
+          r.current || 0,
+          r["1-30"] || 0,
+          r["31-60"] || 0,
+          r["61-90"] || 0,
+          r["90+"] || 0,
+          r.total_outstanding,
+        ]),
+        [],
+        [
+          t("total"),
+          cur,
+          rows.reduce((s, r) => s + r.current, 0),
+          rows.reduce((s, r) => s + r["1-30"], 0),
+          rows.reduce((s, r) => s + r["31-60"], 0),
+          rows.reduce((s, r) => s + r["61-90"], 0),
+          rows.reduce((s, r) => s + r["90+"], 0),
+          rows.reduce((s, r) => s + r.total_outstanding, 0),
+        ],
+      ];
 
-      const grandTotal = rows.reduce((s, r) => s + r.total_outstanding, 0);
-      dataRows.push([]);
-      dataRows.push([
-        t("total"),
-        rows.reduce((s, r) => s + r.current, 0) || "",
-        rows.reduce((s, r) => s + r["1-30"], 0) || "",
-        rows.reduce((s, r) => s + r["31-60"], 0) || "",
-        rows.reduce((s, r) => s + r["61-90"], 0) || "",
-        rows.reduce((s, r) => s + r["90+"], 0) || "",
-        grandTotal,
-      ]);
-
-      const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
       ws["!cols"] = [
         { wch: 30 },
+        { wch: 10 },
         { wch: 15 },
         { wch: 15 },
         { wch: 15 },
@@ -137,7 +147,23 @@ export default function AccountsReceivablePage() {
         { wch: 15 },
         { wch: 18 },
       ];
-      XLSX.utils.book_append_sheet(wb, ws, `${cur} (${symbol})`);
+
+      // Apply currency numFmt to amount columns (C..H = indices 2..7).
+      for (let i = 1; i < aoa.length; i++) {
+        if (aoa[i].length === 0) continue;
+        for (let c = 2; c <= 7; c++) {
+          const addr = XLSX.utils.encode_cell({ r: i, c });
+          const cell = ws[addr];
+          if (cell && typeof cell.v === "number") {
+            cell.t = "n";
+            cell.z = amountFmt;
+          }
+        }
+      }
+
+      const rawName = `${cur} (${symbol})`;
+      const safeName = rawName.replace(/[:\\/?*[\]]/g, "").slice(0, 31);
+      XLSX.utils.book_append_sheet(wb, ws, safeName);
     }
 
     XLSX.writeFile(wb, `AR-Summary-${asOfDate}.xlsx`);

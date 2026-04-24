@@ -182,7 +182,9 @@ export default function CustomerBalanceSummaryPage() {
     getSortedRowModel: getSortedRowModel(),
   });
 
-  // Excel export
+  // Excel export — preserves the report's currency exactly (sheet per currency,
+  // per-row Currency column, and numFmt with the currency symbol so cells render
+  // like "1 234 567,00 сўм" instead of a bare number that looks like USD).
   const exportExcel = useCallback(() => {
     if (filteredRows.length === 0) return;
 
@@ -190,25 +192,54 @@ export default function CustomerBalanceSummaryPage() {
 
     const byCurrency = new Map<string, BalanceRow[]>();
     for (const row of filteredRows) {
-      const list = byCurrency.get(row.currency) ?? [];
+      const key = row.currency || "Unknown";
+      const list = byCurrency.get(key) ?? [];
       list.push(row);
-      byCurrency.set(row.currency, list);
+      byCurrency.set(key, list);
     }
+
+    // Escape a symbol for embedding inside an Excel numFmt literal string.
+    const escapeForNumFmt = (s: string) => s.replace(/"/g, '""');
 
     for (const [cur, rows] of byCurrency) {
       const info = currencyMap?.get(cur);
       const symbol = info?.symbol ?? cur;
+      const onRight = info?.onRight ?? true;
+      const literal = `"${escapeForNumFmt(symbol)}"`;
+      // Russian-style: space thousands, comma decimal.
+      const amountFmt = onRight ? `# ##0.00 ${literal}` : `${literal} # ##0.00`;
 
-      const headers = [t("customer"), t("balance")];
-      const dataRows = rows.map((r) => [r.party_name, r.total_outstanding]);
-
+      const headers = [t("customer"), t("currency"), t("balance")];
       const grandTotal = rows.reduce((s, r) => s + r.total_outstanding, 0);
-      dataRows.push([]);
-      dataRows.push([t("total"), grandTotal]);
 
-      const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
-      ws["!cols"] = [{ wch: 35 }, { wch: 20 }];
-      XLSX.utils.book_append_sheet(wb, ws, `${cur} (${symbol})`);
+      const aoa: (string | number | null)[][] = [
+        headers,
+        ...rows.map((r) => [r.party_name, cur, r.total_outstanding]),
+        [],
+        [t("total"), cur, grandTotal],
+      ];
+
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws["!cols"] = [{ wch: 35 }, { wch: 10 }, { wch: 22 }];
+
+      // Apply currency numFmt to every amount cell (column C) — header row is
+      // row 0, data rows follow, skip the blank separator.
+      const amountColIdx = 2;
+      for (let i = 1; i < aoa.length; i++) {
+        const rowData = aoa[i];
+        if (rowData.length === 0) continue;
+        const cellAddr = XLSX.utils.encode_cell({ r: i, c: amountColIdx });
+        const cell = ws[cellAddr];
+        if (cell && typeof cell.v === "number") {
+          cell.t = "n";
+          cell.z = amountFmt;
+        }
+      }
+
+      // Excel sheet names: max 31 chars, no : \ / ? * [ ]
+      const rawName = `${cur} (${symbol})`;
+      const safeName = rawName.replace(/[:\\/?*[\]]/g, "").slice(0, 31);
+      XLSX.utils.book_append_sheet(wb, ws, safeName);
     }
 
     XLSX.writeFile(wb, `Customer-Balance-Summary-${asOfDate}.xlsx`);
