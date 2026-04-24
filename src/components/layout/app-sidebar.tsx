@@ -66,6 +66,9 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { useTranslations } from "next-intl";
+import { useQueryClient } from "@tanstack/react-query";
+import { prefetchRoute } from "@/lib/route-prefetch";
+import { useCompanyStore } from "@/stores/company-store";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useMyPermissions } from "@/hooks/use-my-permissions";
 import { useEnabledModules } from "@/hooks/use-enabled-modules";
@@ -485,6 +488,10 @@ function NavGroup({ labelKey, items }: { labelKey: string; items: NavItem[] }) {
   const pathname = usePathname();
   const { isLoading, canRead } = usePermissions();
   const { data: myPerms, isLoading: grantsLoading } = useMyPermissions();
+  const qc = useQueryClient();
+  const { company } = useCompanyStore();
+
+  const handlePrefetch = (href: string) => prefetchRoute(qc, href, company);
 
   // Bootstrap detection: if the user has zero nav.* grants, fall back to old logic
   // so unmigrated users don't lose access.
@@ -541,7 +548,11 @@ function NavGroup({ labelKey, items }: { labelKey: string; items: NavItem[] }) {
                   asChild
                   isActive={item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)}
                 >
-                  <Link href={item.href}>
+                  <Link
+                    href={item.href}
+                    onMouseEnter={() => handlePrefetch(item.href)}
+                    onFocus={() => handlePrefetch(item.href)}
+                  >
                     <item.icon />
                     <span>{t(item.tKey)}</span>
                   </Link>
