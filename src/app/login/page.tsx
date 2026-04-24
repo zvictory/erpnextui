@@ -63,7 +63,12 @@ export default function LoginPage() {
 
       {/* Right Form Panel */}
       <div className="relative flex w-full items-center justify-center bg-background p-8 lg:w-1/2">
-        <div className="absolute top-4 right-4">
+        <div className="absolute top-4 right-4 flex items-center gap-2">
+          {process.env.NEXT_PUBLIC_PILOT === "1" && (
+            <span className="inline-flex h-5 items-center rounded-full border border-amber-500/40 bg-amber-500/10 px-2 text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+              Beta
+            </span>
+          )}
           <LanguageSwitcher variant="outline" />
         </div>
         <div className="w-full max-w-sm">

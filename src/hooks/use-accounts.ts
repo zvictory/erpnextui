@@ -35,7 +35,7 @@ async function fetchBalancesBatch(
 
   try {
     const result = await frappe.call<Record<string, { balance: number; base_balance: number }>>(
-      "stable_erp_api.get_balances_batch",
+      "frappe.stable_erp_api.get_balances_batch",
       {
         accounts: JSON.stringify(accountNames),
         date,

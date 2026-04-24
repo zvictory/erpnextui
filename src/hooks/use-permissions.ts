@@ -26,7 +26,7 @@ const STALE_TIME = 30 * 60 * 1000; // 30 minutes — permissions rarely change m
 async function fetchAllPermissions(): Promise<Record<string, DoctypePermissions>> {
   try {
     return await frappe.call<Record<string, DoctypePermissions>>(
-      "stable_erp_api.get_bulk_permissions",
+      "frappe.stable_erp_api.get_bulk_permissions",
       { doctypes: JSON.stringify(MANAGED_DOCTYPES) },
     );
   } catch {
