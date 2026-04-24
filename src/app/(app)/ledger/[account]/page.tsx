@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -31,7 +31,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DateInput } from "@/components/shared/date-input";
 import {
   useAccountWithBalance,
-  useLedgerEntries,
+  useLedgerEntriesInfinite,
   useLedgerEntryCount,
   useCurrentExchangeRate,
   useCurrencyMap,
@@ -46,8 +46,6 @@ import {
 } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import type { LedgerEntry } from "@/types/account";
-
-const PAGE_SIZE = 50;
 
 const ROOT_TYPE_CONFIG: Record<string, { icon: typeof Building2; color: string; bg: string }> = {
   Asset: {
@@ -116,7 +114,6 @@ export default function AccountLedgerPage() {
   const accountName = decodeURIComponent(params.account as string);
   const { currencyCode: companyCurrency } = useCompanyStore();
 
-  const [page, setPage] = useState(1);
   const [sort, setSort] = useState("posting_date desc");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -128,13 +125,19 @@ export default function AccountLedgerPage() {
     accountName,
     companyCurrency,
   );
-  const { data: entries = [], isLoading: entriesLoading } = useLedgerEntries(
+  const {
+    data: entriesData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: entriesLoading,
+  } = useLedgerEntriesInfinite(
     accountName,
-    page,
     sort,
     appliedFrom || undefined,
     appliedTo || undefined,
   );
+  const entries = useMemo(() => entriesData?.pages.flat() ?? [], [entriesData]);
   const { data: totalCount = 0 } = useLedgerEntryCount(
     accountName,
     appliedFrom || undefined,
@@ -153,11 +156,6 @@ export default function AccountLedgerPage() {
   const enrichedEntries = useMemo(() => {
     const raw = entries as LedgerEntry[];
     if (raw.length === 0) return raw;
-
-    // Running balance only on page 1
-    if (page !== 1) {
-      return raw.map((e) => ({ ...e, exchangeRate: deriveExchangeRate(e) ?? undefined }));
-    }
 
     if (sort.includes("desc")) {
       // DESC: start from current balance, subtract going down
@@ -189,13 +187,7 @@ export default function AccountLedgerPage() {
         };
       });
     }
-  }, [entries, page, sort, account?.balance, account?.baseBalance]);
-
-  const hasNext = page * PAGE_SIZE < totalCount;
-  const hasPrev = page > 1;
-  const start = (page - 1) * PAGE_SIZE + 1;
-  const end = Math.min(page * PAGE_SIZE, totalCount);
-  const showRunning = page === 1;
+  }, [entries, sort, account?.balance, account?.baseBalance]);
 
   const baseSymbol = getSymbol(companyCurrency, currencyMap);
 
@@ -207,8 +199,23 @@ export default function AccountLedgerPage() {
   function handleApply() {
     setAppliedFrom(fromDate);
     setAppliedTo(toDate);
-    setPage(1);
   }
+
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   function handleExport() {
     if (!enrichedEntries.length) return;
@@ -369,7 +376,6 @@ export default function AccountLedgerPage() {
                       setSort(
                         sort === "posting_date desc" ? "posting_date asc" : "posting_date desc",
                       );
-                      setPage(1);
                     }}
                   >
                     Date
@@ -526,12 +532,10 @@ export default function AccountLedgerPage() {
                     <TableCell
                       className={cn(
                         "text-right tabular-nums text-sm font-medium whitespace-nowrap",
-                        showRunning &&
-                          (entry.runningBalance ?? 0) < 0 &&
-                          "text-red-600 dark:text-red-400",
+                        (entry.runningBalance ?? 0) < 0 && "text-red-600 dark:text-red-400",
                       )}
                     >
-                      {showRunning ? formatNumber(entry.runningBalance ?? 0, 2) : "—"}
+                      {formatNumber(entry.runningBalance ?? 0, 2)}
                     </TableCell>
 
                     {/* Running Balance (base currency, foreign only) */}
@@ -539,14 +543,11 @@ export default function AccountLedgerPage() {
                       <TableCell
                         className={cn(
                           "text-right tabular-nums text-sm whitespace-nowrap",
-                          showRunning &&
-                            (entry.runningBalanceBase ?? 0) < 0 &&
+                          (entry.runningBalanceBase ?? 0) < 0 &&
                             "text-red-600 dark:text-red-400",
                         )}
                       >
-                        {showRunning
-                          ? `${formatNumber(entry.runningBalanceBase ?? 0, 2)} ${baseSymbol}`
-                          : "—"}
+                        {`${formatNumber(entry.runningBalanceBase ?? 0, 2)} ${baseSymbol}`}
                       </TableCell>
                     )}
                   </TableRow>
@@ -555,36 +556,16 @@ export default function AccountLedgerPage() {
             </TableBody>
           </Table>
         </div>
+        <div ref={sentinelRef} aria-hidden className="h-1" />
+        {isFetchingNextPage && (
+          <div className="py-3 text-center text-xs text-muted-foreground">Loading more…</div>
+        )}
       </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>
-          {totalCount > 0
-            ? `Showing ${start}–${end} of ${formatNumber(totalCount)}`
-            : "No transactions"}
-          {!showRunning && totalCount > 0 && (
-            <span className="ml-2 text-xs">(running balance shown on page 1 only)</span>
-          )}
-        </span>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={!hasPrev}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => p + 1)}
-            disabled={!hasNext}
-          >
-            Next
-          </Button>
-        </div>
+      <div className="text-sm text-muted-foreground">
+        {totalCount > 0
+          ? `Showing ${formatNumber(entries.length)} of ${formatNumber(totalCount)}`
+          : "No transactions"}
       </div>
     </div>
   );

@@ -1,7 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useInfiniteQuery,
+} from "@tanstack/react-query";
 import { frappe } from "@/lib/frappe-client";
 import { queryKeys } from "@/hooks/query-keys";
 import { getToday } from "@/lib/utils";
@@ -503,16 +508,16 @@ export function useAccountWithBalance(name: string, companyCurrency: string) {
   });
 }
 
-export function useLedgerEntries(
+export function useLedgerEntriesInfinite(
   account: string,
-  page: number,
   sort: string,
   fromDate?: string,
   toDate?: string,
 ) {
-  return useQuery({
-    queryKey: queryKeys.ledger.entries(account, page, sort, fromDate, toDate),
-    queryFn: () => {
+  return useInfiniteQuery({
+    queryKey: queryKeys.ledger.entriesInfinite(account, sort, fromDate, toDate),
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => {
       const filters: unknown[] = [["account", "=", account]];
       if (fromDate) filters.push(["posting_date", ">=", fromDate]);
       if (toDate) filters.push(["posting_date", "<=", toDate]);
@@ -534,9 +539,11 @@ export function useLedgerEntries(
         ],
         orderBy: sort || "posting_date desc",
         limitPageLength: LEDGER_PAGE_SIZE,
-        limitStart: (page - 1) * LEDGER_PAGE_SIZE,
+        limitStart: pageParam,
       });
     },
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.length < LEDGER_PAGE_SIZE ? undefined : allPages.length * LEDGER_PAGE_SIZE,
     enabled: !!account,
   });
 }

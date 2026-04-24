@@ -201,8 +201,8 @@ export const queryKeys = {
     count: (account: string) => ["glEntries", "count", account] as const,
   },
   ledger: {
-    entries: (account: string, page: number, sort: string, fromDate?: string, toDate?: string) =>
-      ["ledger", "entries", account, page, sort, fromDate, toDate] as const,
+    entriesInfinite: (account: string, sort: string, fromDate?: string, toDate?: string) =>
+      ["ledger", "entriesInfinite", account, sort, fromDate, toDate] as const,
     count: (account: string, fromDate?: string, toDate?: string) =>
       ["ledger", "count", account, fromDate, toDate] as const,
     accountDetail: (name: string) => ["ledger", "accountDetail", name] as const,
