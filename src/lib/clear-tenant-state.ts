@@ -1,13 +1,13 @@
-import { queryClient } from "@/components/providers/query-provider";
+import { PERSIST_KEY, queryClient } from "@/components/providers/query-provider";
 import { useCompanyStore } from "@/stores/company-store";
 import { useReceiptSettingsStore } from "@/stores/receipt-settings-store";
 
 /**
- * Clears all tenant-specific state: Zustand persisted stores and React Query cache.
- * Call on logout and when switching to a different tenant (siteUrl change).
+ * Clears all tenant-specific state: Zustand persisted stores and React Query
+ * cache (in-memory + localStorage). Call on logout and when switching to a
+ * different tenant (siteUrl change).
  */
 export function clearTenantState() {
-  // Reset company store to defaults (in-memory + persisted localStorage)
   useCompanyStore.setState({
     company: "",
     currencySymbol: "$",
@@ -15,7 +15,6 @@ export function clearTenantState() {
     currencyCode: "",
   });
 
-  // Reset receipt settings to defaults
   useReceiptSettingsStore.setState({
     headerLine1: "",
     headerLine2: "",
@@ -31,6 +30,13 @@ export function clearTenantState() {
     footerText: "Thank you for your business!",
   });
 
-  // Wipe all React Query cache (removes every query from memory)
   queryClient.clear();
+
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.removeItem(PERSIST_KEY);
+    } catch {
+      // localStorage can throw in privacy modes — non-fatal.
+    }
+  }
 }
