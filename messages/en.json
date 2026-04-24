@@ -1344,6 +1344,7 @@
   },
   "sbi": {
     "title": "Sales by Item",
+    "dateRange": "Date range",
     "fromDate": "From date",
     "toDate": "To date",
     "customer": "Customer",
@@ -1372,6 +1373,7 @@
   },
   "sbc": {
     "title": "Sales by Customer",
+    "dateRange": "Date range",
     "fromDate": "From date",
     "toDate": "To date",
     "customer": "Customer",

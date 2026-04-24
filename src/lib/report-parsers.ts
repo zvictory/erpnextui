@@ -500,16 +500,16 @@ export function parseAgingReport(result: (Record<string, unknown> | unknown[])[]
 }
 
 /**
- * Aggregate item-wise sales register rows by item_code + currency.
- * Each invoice-line from ERPNext becomes a group key `${item_code}::${currency}`
- * so multi-currency invoices don't collapse into a single bogus total.
+ * Aggregate item-wise sales register rows by item_code. Amounts are summed
+ * in company base currency (`base_amount`/`base_net_amount`) so the report
+ * always renders in one currency regardless of invoice currency.
  */
 export function parseSalesByItem(
   result: (Record<string, unknown> | unknown[])[],
 ): SalesByItemData {
   const map = new Map<string, SalesByItemRow>();
-  const currencyBreakdown: Record<string, { total: number; count: number }> = {};
   let totalAmount = 0;
+  let totalCount = 0;
 
   for (const raw of result) {
     if (Array.isArray(raw)) continue;
@@ -517,13 +517,11 @@ export function parseSalesByItem(
     const itemCode = row.item_code ? String(row.item_code) : "";
     if (!itemCode) continue;
 
-    const currency = row.currency ? String(row.currency) : "";
-    const amount = Number(row.amount ?? row.base_net_amount ?? 0);
+    const amount = Number(row.base_amount ?? row.base_net_amount ?? row.amount ?? 0);
     const qty = Number(row.qty ?? 0);
     const stockQty = Number(row.stock_qty ?? 0);
-    const key = `${itemCode}::${currency}`;
 
-    let entry = map.get(key);
+    let entry = map.get(itemCode);
     if (!entry) {
       entry = {
         item_code: itemCode,
@@ -533,40 +531,31 @@ export function parseSalesByItem(
         stock_qty: 0,
         stock_uom: row.stock_uom ? String(row.stock_uom) : undefined,
         amount: 0,
-        currency,
       };
-      map.set(key, entry);
+      map.set(itemCode, entry);
     }
     entry.qty += qty;
     entry.stock_qty += stockQty;
     entry.amount += amount;
 
     totalAmount += amount;
-    if (currency) {
-      const cb = currencyBreakdown[currency] ?? { total: 0, count: 0 };
-      cb.total += amount;
-      cb.count++;
-      currencyBreakdown[currency] = cb;
-    }
+    totalCount++;
   }
 
   const rows = Array.from(map.values()).sort((a, b) => b.amount - a.amount);
-  return { rows, totalAmount, currencyBreakdown };
+  return { rows, totalAmount, totalCount };
 }
 
 /**
- * Aggregate item-wise sales register rows by customer + currency.
- * Invoice count is distinct voucher_no per customer+currency pair.
+ * Aggregate item-wise sales register rows by customer. Amounts are summed
+ * in company base currency. Invoice count is distinct voucher per customer.
  */
 export function parseSalesByCustomer(
   result: (Record<string, unknown> | unknown[])[],
 ): SalesByCustomerData {
-  const map = new Map<
-    string,
-    SalesByCustomerRow & { _invoices: Set<string> }
-  >();
-  const currencyBreakdown: Record<string, { total: number; count: number }> = {};
+  const map = new Map<string, SalesByCustomerRow & { _invoices: Set<string> }>();
   let totalAmount = 0;
+  let totalCount = 0;
 
   for (const raw of result) {
     if (Array.isArray(raw)) continue;
@@ -574,12 +563,10 @@ export function parseSalesByCustomer(
     const customer = row.customer ? String(row.customer) : "";
     if (!customer) continue;
 
-    const currency = row.currency ? String(row.currency) : "";
-    const amount = Number(row.amount ?? row.base_net_amount ?? 0);
+    const amount = Number(row.base_amount ?? row.base_net_amount ?? row.amount ?? 0);
     const voucher = row.invoice ? String(row.invoice) : String(row.voucher_no ?? "");
-    const key = `${customer}::${currency}`;
 
-    let entry = map.get(key);
+    let entry = map.get(customer);
     if (!entry) {
       entry = {
         customer,
@@ -587,21 +574,15 @@ export function parseSalesByCustomer(
         customer_group: row.customer_group ? String(row.customer_group) : undefined,
         invoice_count: 0,
         amount: 0,
-        currency,
         _invoices: new Set<string>(),
       };
-      map.set(key, entry);
+      map.set(customer, entry);
     }
     entry.amount += amount;
     if (voucher) entry._invoices.add(voucher);
 
     totalAmount += amount;
-    if (currency) {
-      const cb = currencyBreakdown[currency] ?? { total: 0, count: 0 };
-      cb.total += amount;
-      cb.count++;
-      currencyBreakdown[currency] = cb;
-    }
+    totalCount++;
   }
 
   const rows: SalesByCustomerRow[] = Array.from(map.values())
@@ -611,11 +592,10 @@ export function parseSalesByCustomer(
       customer_group: e.customer_group,
       invoice_count: e._invoices.size,
       amount: e.amount,
-      currency: e.currency,
     }))
     .sort((a, b) => b.amount - a.amount);
 
-  return { rows, totalAmount, currencyBreakdown };
+  return { rows, totalAmount, totalCount };
 }
 
 export function parseGeneralLedger(result: (Record<string, unknown> | unknown[])[]): GLReportData {

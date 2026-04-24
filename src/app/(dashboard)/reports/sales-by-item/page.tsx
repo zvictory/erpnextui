@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import { format, startOfMonth } from "date-fns";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { RefreshCw, Download, CalendarIcon, ArrowUpDown } from "lucide-react";
+import { RefreshCw, Download, ArrowUpDown } from "lucide-react";
 import {
   type ColumnDef,
   type SortingState,
@@ -16,13 +16,12 @@ import {
 import * as XLSX from "xlsx";
 
 import { useCompanyStore } from "@/stores/company-store";
-import { useCurrencyMap } from "@/hooks/use-accounts";
 import { useSalesByItemReport } from "@/hooks/use-sales-register-report";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LinkField } from "@/components/shared/link-field";
+import { DateRangePicker } from "@/components/reports/date-range-picker";
 import {
   Table,
   TableBody,
@@ -32,20 +31,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency, formatNumber } from "@/lib/formatters";
-import type { SalesByItemRow } from "@/types/reports";
+import type { SalesByItemRow, DateRange } from "@/types/reports";
 
 export default function SalesByItemPage() {
   const t = useTranslations("sbi");
-  const { company } = useCompanyStore();
-  const { data: currencyMap } = useCurrencyMap();
+  const { company, currencySymbol, symbolOnRight } = useCompanyStore();
 
-  const [from, setFrom] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
-  const [to, setTo] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: startOfMonth(new Date()),
+    to: new Date(),
+  });
   const [customer, setCustomer] = useState("");
   const [item, setItem] = useState("");
   const [itemGroup, setItemGroup] = useState("");
   const [customerGroup, setCustomerGroup] = useState("");
   const [sorting, setSorting] = useState<SortingState>([{ id: "amount", desc: true }]);
+
+  const from = format(dateRange.from, "yyyy-MM-dd");
+  const to = format(dateRange.to, "yyyy-MM-dd");
 
   const { data, isLoading, isRefetching, refetch } = useSalesByItemReport({
     company,
@@ -58,12 +61,8 @@ export default function SalesByItemPage() {
   });
 
   const rows = data?.rows ?? [];
-  const breakdown = data?.currencyBreakdown ?? {};
-
-  const uniqueItems = useMemo(
-    () => new Set(rows.map((r) => r.item_code)).size,
-    [rows],
-  );
+  const totalAmount = data?.totalAmount ?? 0;
+  const totalCount = data?.totalCount ?? 0;
 
   const columns = useMemo<ColumnDef<SalesByItemRow>[]>(
     () => [
@@ -122,14 +121,6 @@ export default function SalesByItemPage() {
         meta: { className: "text-right" },
       },
       {
-        accessorKey: "currency",
-        header: t("currency"),
-        cell: ({ row }) => (
-          <span className="text-muted-foreground text-xs">{row.original.currency}</span>
-        ),
-        size: 80,
-      },
-      {
         accessorKey: "amount",
         header: ({ column }) => (
           <Button
@@ -142,30 +133,25 @@ export default function SalesByItemPage() {
             <ArrowUpDown className="ml-1 size-3" />
           </Button>
         ),
-        cell: ({ row }) => {
-          const cur = row.original.currency;
-          const info = currencyMap?.get(cur);
-          return (
-            <span className="tabular-nums font-medium">
-              {formatCurrency(row.original.amount, info?.symbol ?? cur, info?.onRight)}
-            </span>
-          );
-        },
+        cell: ({ row }) => (
+          <span className="tabular-nums font-medium">
+            {formatCurrency(row.original.amount, currencySymbol, symbolOnRight)}
+          </span>
+        ),
         meta: { className: "text-right" },
       },
       {
         id: "pct",
         header: t("pctOfTotal"),
         cell: ({ row }) => {
-          const cb = breakdown[row.original.currency];
-          const pct = cb && cb.total > 0 ? (row.original.amount / cb.total) * 100 : 0;
+          const pct = totalAmount > 0 ? (row.original.amount / totalAmount) * 100 : 0;
           return <span className="tabular-nums text-xs">{pct.toFixed(1)}%</span>;
         },
         meta: { className: "text-right" },
         enableSorting: false,
       },
     ],
-    [t, currencyMap, breakdown],
+    [t, currencySymbol, symbolOnRight, totalAmount],
   );
 
   const table = useReactTable({
@@ -180,62 +166,38 @@ export default function SalesByItemPage() {
   const exportExcel = useCallback(() => {
     if (rows.length === 0) return;
 
-    const wb = XLSX.utils.book_new();
-    const byCurrency = new Map<string, SalesByItemRow[]>();
-    for (const r of rows) {
-      const key = r.currency || "Unknown";
-      const list = byCurrency.get(key) ?? [];
-      list.push(r);
-      byCurrency.set(key, list);
-    }
-
     const escapeForNumFmt = (s: string) => s.replace(/"/g, '""');
+    const literal = `"${escapeForNumFmt(currencySymbol)}"`;
+    const amountFmt = symbolOnRight ? `# ##0.00 ${literal}` : `${literal} # ##0.00`;
 
-    for (const [cur, list] of byCurrency) {
-      const info = currencyMap?.get(cur);
-      const symbol = info?.symbol ?? cur;
-      const onRight = info?.onRight ?? true;
-      const literal = `"${escapeForNumFmt(symbol)}"`;
-      const amountFmt = onRight ? `# ##0.00 ${literal}` : `${literal} # ##0.00`;
+    const headers = [t("itemCode"), t("itemName"), t("qty"), t("amount")];
+    const grandQty = rows.reduce((s, r) => s + r.qty, 0);
 
-      const headers = [
-        t("itemCode"),
-        t("itemName"),
-        t("qty"),
-        t("currency"),
-        t("amount"),
-      ];
-      const grandTotal = list.reduce((s, r) => s + r.amount, 0);
-      const grandQty = list.reduce((s, r) => s + r.qty, 0);
+    const aoa: (string | number | null)[][] = [
+      headers,
+      ...rows.map((r) => [r.item_code, r.item_name, r.qty, r.amount]),
+      [],
+      [t("total"), "", grandQty, totalAmount],
+    ];
 
-      const aoa: (string | number | null)[][] = [
-        headers,
-        ...list.map((r) => [r.item_code, r.item_name, r.qty, cur, r.amount]),
-        [],
-        [t("total"), "", grandQty, cur, grandTotal],
-      ];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = [{ wch: 20 }, { wch: 35 }, { wch: 12 }, { wch: 22 }];
 
-      const ws = XLSX.utils.aoa_to_sheet(aoa);
-      ws["!cols"] = [{ wch: 20 }, { wch: 35 }, { wch: 12 }, { wch: 10 }, { wch: 20 }];
-
-      const amountColIdx = 4;
-      for (let i = 1; i < aoa.length; i++) {
-        if (aoa[i].length === 0) continue;
-        const addr = XLSX.utils.encode_cell({ r: i, c: amountColIdx });
-        const cell = ws[addr];
-        if (cell && typeof cell.v === "number") {
-          cell.t = "n";
-          cell.z = amountFmt;
-        }
+    const amountColIdx = 3;
+    for (let i = 1; i < aoa.length; i++) {
+      if (aoa[i].length === 0) continue;
+      const addr = XLSX.utils.encode_cell({ r: i, c: amountColIdx });
+      const cell = ws[addr];
+      if (cell && typeof cell.v === "number") {
+        cell.t = "n";
+        cell.z = amountFmt;
       }
-
-      const rawName = `${cur} (${symbol})`;
-      const safeName = rawName.replace(/[:\\/?*[\]]/g, "").slice(0, 31);
-      XLSX.utils.book_append_sheet(wb, ws, safeName);
     }
 
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Sales by Item");
     XLSX.writeFile(wb, `Sales-By-Item-${from}-to-${to}.xlsx`);
-  }, [rows, currencyMap, from, to, t]);
+  }, [rows, totalAmount, currencySymbol, symbolOnRight, from, to, t]);
 
   return (
     <div className="space-y-6">
@@ -266,31 +228,9 @@ export default function SalesByItemPage() {
       <div className="flex flex-wrap items-end gap-2">
         <div className="space-y-1">
           <label className="text-muted-foreground text-[10px] font-medium uppercase">
-            {t("fromDate")}
+            {t("dateRange")}
           </label>
-          <div className="relative">
-            <CalendarIcon className="text-muted-foreground pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2" />
-            <Input
-              type="date"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              className="h-8 w-[160px] pl-8 text-sm"
-            />
-          </div>
-        </div>
-        <div className="space-y-1">
-          <label className="text-muted-foreground text-[10px] font-medium uppercase">
-            {t("toDate")}
-          </label>
-          <div className="relative">
-            <CalendarIcon className="text-muted-foreground pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2" />
-            <Input
-              type="date"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className="h-8 w-[160px] pl-8 text-sm"
-            />
-          </div>
+          <DateRangePicker dateRange={dateRange} onDateRangeChange={setDateRange} />
         </div>
         <div className="space-y-1">
           <label className="text-muted-foreground text-[10px] font-medium uppercase">
@@ -346,37 +286,37 @@ export default function SalesByItemPage() {
 
       {/* KPI Cards */}
       {isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-24" />
           ))}
         </div>
-      ) : Object.keys(breakdown).length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Object.entries(breakdown).map(([cur, { total, count }]) => {
-            const info = currencyMap?.get(cur);
-            return (
-              <Card key={cur}>
-                <CardContent className="pt-4 pb-4">
-                  <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-                    {cur} {t("totalSales")}
-                  </p>
-                  <p className="mt-1 text-2xl font-bold tabular-nums">
-                    {formatCurrency(total, info?.symbol ?? cur, info?.onRight)}
-                  </p>
-                  <p className="text-muted-foreground mt-1 text-xs">
-                    {count} {t("lineItems")}
-                  </p>
-                </CardContent>
-              </Card>
-            );
-          })}
+      ) : rows.length > 0 ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Card>
+            <CardContent className="pt-4 pb-4">
+              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                {t("totalSales")}
+              </p>
+              <p className="mt-1 text-2xl font-bold tabular-nums">
+                {formatCurrency(totalAmount, currencySymbol, symbolOnRight)}
+              </p>
+            </CardContent>
+          </Card>
           <Card>
             <CardContent className="pt-4 pb-4">
               <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                 {t("uniqueItems")}
               </p>
-              <p className="mt-1 text-2xl font-bold tabular-nums">{uniqueItems}</p>
+              <p className="mt-1 text-2xl font-bold tabular-nums">{rows.length}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-4">
+              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                {t("lineItems")}
+              </p>
+              <p className="mt-1 text-2xl font-bold tabular-nums">{totalCount}</p>
             </CardContent>
           </Card>
         </div>
@@ -430,24 +370,16 @@ export default function SalesByItemPage() {
                     })}
                   </TableRow>
                 ))}
-                {Object.entries(breakdown).map(([cur, { total }]) => {
-                  const info = currencyMap?.get(cur);
-                  return (
-                    <TableRow key={`total-${cur}`} className="font-semibold">
-                      <TableCell />
-                      <TableCell>
-                        {t("total")} ({cur})
-                      </TableCell>
-                      <TableCell />
-                      <TableCell />
-                      <TableCell />
-                      <TableCell className="text-right tabular-nums">
-                        {formatCurrency(total, info?.symbol ?? cur, info?.onRight)}
-                      </TableCell>
-                      <TableCell />
-                    </TableRow>
-                  );
-                })}
+                <TableRow className="font-semibold">
+                  <TableCell />
+                  <TableCell>{t("total")}</TableCell>
+                  <TableCell />
+                  <TableCell />
+                  <TableCell className="text-right tabular-nums">
+                    {formatCurrency(totalAmount, currencySymbol, symbolOnRight)}
+                  </TableCell>
+                  <TableCell />
+                </TableRow>
               </>
             ) : (
               <TableRow>

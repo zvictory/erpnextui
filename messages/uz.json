@@ -1282,6 +1282,7 @@
   },
   "sbi": {
     "title": "Mahsulot bo'yicha sotuv",
+    "dateRange": "Davr",
     "fromDate": "Sanadan",
     "toDate": "Sanagacha",
     "customer": "Mijoz",
@@ -1310,6 +1311,7 @@
   },
   "sbc": {
     "title": "Mijoz bo'yicha sotuv",
+    "dateRange": "Davr",
     "fromDate": "Sanadan",
     "toDate": "Sanagacha",
     "customer": "Mijoz",
