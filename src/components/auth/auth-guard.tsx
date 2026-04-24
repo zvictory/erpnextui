@@ -2,8 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { fetchCsrfToken } from "@/hooks/use-auth";
-import { useBoot } from "@/hooks/use-boot";
+import { useSessionCheck, useFullName, fetchCsrfToken } from "@/hooks/use-auth";
 import { useAuthStore } from "@/stores/auth-store";
 import { FrappeAPIError } from "@/lib/frappe-types";
 
@@ -13,7 +12,8 @@ interface AuthGuardProps {
 
 export function AuthGuard({ children }: AuthGuardProps) {
   const router = useRouter();
-  const { data: boot, isLoading, isError, error } = useBoot();
+  const { data: user, isLoading, isError, error } = useSessionCheck();
+  const storedUser = useAuthStore((s) => s.user);
   const csrfToken = useAuthStore((s) => s.csrfToken);
   const [csrfReady, setCsrfReady] = useState(!!csrfToken);
 
@@ -21,6 +21,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
     if (isError) {
       const is401 = error instanceof FrappeAPIError && error.status === 401;
       const isForbidden = error instanceof FrappeAPIError && error.status === 403;
+
       if (is401 || isForbidden || isError) {
         useAuthStore.getState().setUser(null);
         router.replace("/login");
@@ -28,15 +29,29 @@ export function AuthGuard({ children }: AuthGuardProps) {
     }
   }, [isError, error, router]);
 
+  const { data: fullName } = useFullName(user ?? null);
+
   useEffect(() => {
-    if (boot && !csrfReady) {
+    if (user && !storedUser) {
+      useAuthStore.getState().setUser(user);
+    }
+  }, [user, storedUser]);
+
+  useEffect(() => {
+    if (fullName) {
+      useAuthStore.getState().setFullName(fullName);
+    }
+  }, [fullName]);
+
+  useEffect(() => {
+    if (user && !csrfReady) {
       fetchCsrfToken()
         .catch(() => {})
         .finally(() => setCsrfReady(true));
     }
-  }, [boot, csrfReady]);
+  }, [user, csrfReady]);
 
-  if (isLoading || (boot && !csrfReady)) {
+  if (isLoading || (user && !csrfReady)) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -47,7 +62,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
     );
   }
 
-  if (isError || !boot) {
+  if (isError || !user) {
     return null;
   }
 
