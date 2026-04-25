@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LinkField } from "@/components/shared/link-field";
+import { MultiLinkField } from "@/components/shared/multi-link-field";
 import { DateRangePicker } from "@/components/reports/date-range-picker";
 import {
   Collapsible,
@@ -53,8 +54,8 @@ export default function SalesByCustomerPage() {
     from: startOfMonth(new Date()),
     to: new Date(),
   });
-  const [customer, setCustomer] = useState("");
-  const [item, setItem] = useState("");
+  const [customers, setCustomers] = useState<string[]>([]);
+  const [items, setItems] = useState<string[]>([]);
   const [itemGroup, setItemGroup] = useState("");
   const [customerGroup, setCustomerGroup] = useState("");
   const [warehouse, setWarehouse] = useState("");
@@ -73,8 +74,8 @@ export default function SalesByCustomerPage() {
     company,
     from,
     to,
-    customer,
-    item,
+    customers,
+    items,
     itemGroup,
     customerGroup,
     warehouse,
@@ -334,10 +335,10 @@ export default function SalesByCustomerPage() {
             <label className="text-muted-foreground text-[10px] font-medium uppercase">
               {t("customer")}
             </label>
-            <LinkField
+            <MultiLinkField
               doctype="Customer"
-              value={customer}
-              onChange={setCustomer}
+              value={customers}
+              onChange={setCustomers}
               placeholder={t("allCustomers")}
               descriptionField="customer_name"
               className="h-8 w-[220px] text-sm"
@@ -347,10 +348,10 @@ export default function SalesByCustomerPage() {
             <label className="text-muted-foreground text-[10px] font-medium uppercase">
               {t("item")}
             </label>
-            <LinkField
+            <MultiLinkField
               doctype="Item"
-              value={item}
-              onChange={setItem}
+              value={items}
+              onChange={setItems}
               placeholder={t("allItems")}
               descriptionField="item_name"
               className="h-8 w-[220px] text-sm"

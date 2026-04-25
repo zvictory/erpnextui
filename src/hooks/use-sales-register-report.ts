@@ -16,7 +16,9 @@ export interface SalesRegisterFilters {
   to: string;
   basis?: SalesBasis;
   customer?: string;
+  customers?: string[];
   item?: string;
+  items?: string[];
   itemGroup?: string;
   customerGroup?: string;
   warehouse?: string;
@@ -28,11 +30,25 @@ export interface SalesRegisterFilters {
   currency?: string;
 }
 
+function resolveCustomers(f: SalesRegisterFilters): string[] {
+  if (f.customers && f.customers.length > 0) return f.customers;
+  if (f.customer) return [f.customer];
+  return [];
+}
+
+function resolveItems(f: SalesRegisterFilters): string[] {
+  if (f.items && f.items.length > 0) return f.items;
+  if (f.item) return [f.item];
+  return [];
+}
+
 function filterKey(f: SalesRegisterFilters): Record<string, string> {
+  const customers = resolveCustomers(f);
+  const items = resolveItems(f);
   return {
     basis: f.basis ?? "base",
-    customer: f.customer ?? "",
-    item: f.item ?? "",
+    customers: customers.length > 0 ? JSON.stringify([...customers].sort()) : "",
+    items: items.length > 0 ? JSON.stringify([...items].sort()) : "",
     itemGroup: f.itemGroup ?? "",
     customerGroup: f.customerGroup ?? "",
     warehouse: f.warehouse ?? "",
@@ -203,7 +219,12 @@ async function fetchSalesRegisterRows(f: SalesRegisterFilters): Promise<JoinedRo
     ["posting_date", "<=", f.to],
     ["docstatus", "=", 1],
   ];
-  if (f.customer) invoiceFilters.push(["customer", "=", f.customer]);
+  const customerList = resolveCustomers(f);
+  if (customerList.length === 1) {
+    invoiceFilters.push(["customer", "=", customerList[0]]);
+  } else if (customerList.length > 1) {
+    invoiceFilters.push(["customer", "in", customerList]);
+  }
   if (f.territory) invoiceFilters.push(["territory", "=", f.territory]);
   if (f.project) invoiceFilters.push(["project", "=", f.project]);
   if (f.currency) invoiceFilters.push(["currency", "=", f.currency]);
@@ -241,7 +262,12 @@ async function fetchSalesRegisterRows(f: SalesRegisterFilters): Promise<JoinedRo
   //    keep URL length under the proxy limit), plus any item-scoped filters.
   const invoiceNames = invoices.map((i) => i.name);
   const extraItemFilters: unknown[] = [];
-  if (f.item) extraItemFilters.push(["item_code", "=", f.item]);
+  const itemList = resolveItems(f);
+  if (itemList.length === 1) {
+    extraItemFilters.push(["item_code", "=", itemList[0]]);
+  } else if (itemList.length > 1) {
+    extraItemFilters.push(["item_code", "in", itemList]);
+  }
   if (f.itemGroup) extraItemFilters.push(["item_group", "=", f.itemGroup]);
   if (f.warehouse) extraItemFilters.push(["warehouse", "=", f.warehouse]);
   if (f.costCenter) extraItemFilters.push(["cost_center", "=", f.costCenter]);

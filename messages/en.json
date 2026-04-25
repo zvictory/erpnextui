@@ -333,6 +333,8 @@
     "taxAmount": "Tax Amount",
     "taxTotal": "Tax Total",
     "createReturn": "Create Return",
+    "staleTotalsTitle": "Totals don't match the line items?",
+    "staleTotalsHint": "Edits to a submitted invoice don't recompute totals or accounting entries. To fix, Cancel this invoice, then Amend (a new draft is created), Save, and Submit. Any payments allocated to it will need to be re-allocated to the amended invoice.",
     "creditNote": "Credit Note",
     "debitNote": "Debit Note",
     "returnAgainst": "Return Against",

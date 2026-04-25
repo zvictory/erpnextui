@@ -51,6 +51,32 @@ import { useCancelSalesInvoice } from "@/hooks/use-sales-invoices";
 import { useCancelPurchaseInvoice } from "@/hooks/use-purchase-invoices";
 import { useCancelPaymentEntry } from "@/hooks/use-payment-entries";
 import { useCancelJournalEntry } from "@/hooks/use-journal-entries";
+
+// Chunk size for ["name", "in", [...]] filters — keeps the proxied URL well under
+// nginx's ~8KB header buffer even with long ACC-XXX-2026-NNNNN identifiers.
+const IN_FILTER_CHUNK = 50;
+
+async function fetchByNames<T>(
+  doctype: string,
+  names: string[],
+  fields: string[],
+): Promise<T[]> {
+  if (names.length === 0) return [];
+  const chunks: string[][] = [];
+  for (let i = 0; i < names.length; i += IN_FILTER_CHUNK) {
+    chunks.push(names.slice(i, i + IN_FILTER_CHUNK));
+  }
+  const results = await Promise.all(
+    chunks.map((chunk) =>
+      frappe.getList<T>(doctype, {
+        filters: [["name", "in", chunk]],
+        fields,
+        limitPageLength: chunk.length,
+      }),
+    ),
+  );
+  return results.flat();
+}
 import type { CurrencyBalance } from "@/types/party-report";
 import { useTranslations } from "next-intl";
 
@@ -253,25 +279,19 @@ export function PartyDetailPanel({
   const { data: peAmounts } = useQuery({
     queryKey: ["peAmounts", ...peVouchers],
     queryFn: () =>
-      peVouchers.length > 0
-        ? frappe.getList<{
-            name: string;
-            paid_amount: number;
-            received_amount: number;
-            paid_from_account_currency: string;
-            paid_to_account_currency: string;
-          }>("Payment Entry", {
-            filters: [["name", "in", peVouchers]],
-            fields: [
-              "name",
-              "paid_amount",
-              "received_amount",
-              "paid_from_account_currency",
-              "paid_to_account_currency",
-            ],
-            limitPageLength: peVouchers.length,
-          })
-        : Promise.resolve([]),
+      fetchByNames<{
+        name: string;
+        paid_amount: number;
+        received_amount: number;
+        paid_from_account_currency: string;
+        paid_to_account_currency: string;
+      }>("Payment Entry", peVouchers, [
+        "name",
+        "paid_amount",
+        "received_amount",
+        "paid_from_account_currency",
+        "paid_to_account_currency",
+      ]),
     enabled: peVouchers.length > 0,
     staleTime: 10 * 60 * 1000,
   });
@@ -297,13 +317,12 @@ export function PartyDetailPanel({
   const { data: invoiceCurrencyData } = useQuery({
     queryKey: ["invoiceCurrency", partyType, ...invoiceVouchers],
     queryFn: () => {
-      if (!invoiceVouchers.length) return Promise.resolve([]);
       const doctype = partyType === "Supplier" ? "Purchase Invoice" : "Sales Invoice";
-      return frappe.getList<InvoiceCurrencyInfo>(doctype, {
-        filters: [["name", "in", invoiceVouchers]],
-        fields: ["name", "currency", "grand_total"],
-        limitPageLength: invoiceVouchers.length,
-      });
+      return fetchByNames<InvoiceCurrencyInfo>(doctype, invoiceVouchers, [
+        "name",
+        "currency",
+        "grand_total",
+      ]);
     },
     enabled: invoiceVouchers.length > 0,
     staleTime: 10 * 60 * 1000,

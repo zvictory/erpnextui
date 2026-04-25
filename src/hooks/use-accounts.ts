@@ -453,7 +453,11 @@ export function useCurrencies() {
 export type CurrencyInfo = { symbol: string; onRight: boolean };
 
 export function useCurrencyMap() {
-  return useQuery({
+  // queryFn returns the raw array (JSON-safe for the localStorage persister);
+  // we rebuild the Map at the consumer boundary via useMemo. Using `select` to
+  // produce a Map works for in-memory cache hits but rehydrating a Map from
+  // persisted localStorage gives `{}` (Maps don't survive JSON.stringify).
+  const query = useQuery({
     queryKey: queryKeys.currencies,
     queryFn: () =>
       frappe.getList<Currency>("Currency", {
@@ -462,12 +466,16 @@ export function useCurrencyMap() {
         orderBy: "name asc",
         limitPageLength: 500,
       }),
-    select: (data) =>
-      new Map<string, CurrencyInfo>(
-        data.map((c) => [c.name, { symbol: c.symbol, onRight: !!c.symbol_on_right }]),
-      ),
     staleTime: Infinity,
   });
+  const currencyMap = useMemo(
+    () =>
+      new Map<string, CurrencyInfo>(
+        (query.data ?? []).map((c) => [c.name, { symbol: c.symbol, onRight: !!c.symbol_on_right }]),
+      ),
+    [query.data],
+  );
+  return { ...query, data: currencyMap };
 }
 
 export function useAccountDetail(name: string | undefined) {

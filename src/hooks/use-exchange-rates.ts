@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryKeys } from "@/hooks/query-keys";
 import { frappe } from "@/lib/frappe-client";
@@ -21,16 +21,23 @@ interface SyncResponse {
 }
 
 export function useCBURates() {
-  return useQuery({
+  // queryFn returns the raw response (JSON-safe for the localStorage
+  // persister); Map is rebuilt at the consumer boundary. `select`-produced
+  // Maps look fine on first load but rehydrate as `{}` from persisted cache.
+  const query = useQuery({
     queryKey: queryKeys.cbuRates,
     queryFn: async () => {
       const resp = await fetch("/api/cbu-rates");
       if (!resp.ok) throw new Error("Failed to fetch CBU rates");
       return resp.json() as Promise<CBURatesResponse>;
     },
-    select: (data) => new Map<string, number>(Object.entries(data.rates)),
     staleTime: 60 * 60 * 1000, // 1 hour
   });
+  const ratesMap = useMemo(
+    () => new Map<string, number>(Object.entries(query.data?.rates ?? {})),
+    [query.data],
+  );
+  return { ...query, data: ratesMap };
 }
 
 const SYNC_KEY = "cbu-last-sync-date";

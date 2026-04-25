@@ -328,6 +328,8 @@
     "taxAmount": "Soliq summasi",
     "taxTotal": "Jami soliq",
     "createReturn": "Qaytarish yaratish",
+    "staleTotalsTitle": "Jami summalar qatorlarga mos kelmayaptimi?",
+    "staleTotalsHint": "Tasdiqlangan hisob-fakturadagi o'zgarishlar jami summalarni va buxgalteriya yozuvlarini qayta hisoblamaydi. Tuzatish uchun: hisob-fakturani bekor qiling, so'ng Amend (tuzatish) qiling — yangi qoralama yaratiladi, saqlang va tasdiqlang. Bu hisob-fakturaga bog'langan to'lovlarni tuzatilganiga qayta bog'lash kerak bo'ladi.",
     "creditNote": "Kredit-nota",
     "debitNote": "Debet-nota",
     "returnAgainst": "Qaytarish bo'yicha",

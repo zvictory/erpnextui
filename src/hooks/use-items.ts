@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { frappe } from "@/lib/frappe-client";
 import { queryKeys } from "@/hooks/query-keys";
@@ -28,10 +29,13 @@ export function useWarehouseItemCodes(warehouse: string) {
 
 /** Batch-fetch total stock qty per item for a list of item codes. */
 export function useItemStockTotals(itemCodes: string[]) {
-  return useQuery({
+  // queryFn must return a JSON-serializable shape — the persisted React Query
+  // cache (localStorage) round-trips through JSON.stringify, which silently
+  // drops Map entries. We rebuild the Map at the consumer boundary via useMemo.
+  const query = useQuery({
     queryKey: ["itemStockTotals", ...itemCodes],
     queryFn: async () => {
-      if (!itemCodes.length) return new Map<string, number>();
+      if (!itemCodes.length) return {} as Record<string, number>;
       const bins = await frappe.getList<{
         item_code: string;
         total_qty: number;
@@ -41,11 +45,18 @@ export function useItemStockTotals(itemCodes: string[]) {
         groupBy: "item_code",
         limitPageLength: 0,
       });
-      return new Map(bins.map((b) => [b.item_code, b.total_qty ?? 0]));
+      const out: Record<string, number> = {};
+      for (const b of bins) out[b.item_code] = b.total_qty ?? 0;
+      return out;
     },
     enabled: itemCodes.length > 0,
     staleTime: 30_000,
   });
+  const stockMap = useMemo(
+    () => new Map<string, number>(Object.entries(query.data ?? {})),
+    [query.data],
+  );
+  return { ...query, data: stockMap };
 }
 
 export function useItemList(page: number, search: string, sort: string) {

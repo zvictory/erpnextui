@@ -1,12 +1,17 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { frappe } from "@/lib/frappe-client";
 import { queryKeys } from "@/hooks/query-keys";
 import type { PartyBalances, CurrencyBalance } from "@/types/party-report";
 
+// Persisted shape: plain Record so JSON round-trip through localStorage keeps
+// .get/.has callable downstream (Map serializes to {} and breaks consumers).
+type EmployeeBalancesByName = Record<string, PartyBalances>;
+
 export function useEmployeeGLBalances(company: string) {
   const query = useQuery({
     queryKey: queryKeys.partyBalances.employee(company),
-    queryFn: async () => {
+    queryFn: async (): Promise<EmployeeBalancesByName> => {
       const rows = await frappe.getList<{
         party: string;
         account_currency: string;
@@ -40,21 +45,26 @@ export function useEmployeeGLBalances(company: string) {
         p.baseTotal += (r.total_debit ?? 0) - (r.total_credit ?? 0);
       }
 
-      const map = new Map<string, PartyBalances>();
+      const out: EmployeeBalancesByName = {};
       for (const [party, data] of perParty) {
         const balances: CurrencyBalance[] = Array.from(data.byCurrency.entries())
           .map(([currency, amount]) => ({ currency, amount }))
           .filter((b) => Math.abs(b.amount) > 0.005);
-        map.set(party, { balances, totalInBaseCurrency: data.baseTotal });
+        out[party] = { balances, totalInBaseCurrency: data.baseTotal };
       }
-      return map;
+      return out;
     },
     enabled: !!company,
     staleTime: 5 * 60 * 1000,
   });
 
+  const balanceMap = useMemo(
+    () => new Map<string, PartyBalances>(Object.entries(query.data ?? {})),
+    [query.data],
+  );
+
   return {
-    balanceMap: query.data ?? new Map<string, PartyBalances>(),
+    balanceMap,
     isLoading: query.isLoading,
   };
 }

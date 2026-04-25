@@ -18,6 +18,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import type { PurchaseInvoiceFormValues } from "@/lib/schemas/purchase-invoice-schema";
 import { RelatedDocuments } from "@/components/shared/related-documents";
 import { useTranslations } from "next-intl";
+import { AlertTriangle } from "lucide-react";
 
 export default function EditPurchaseInvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -104,6 +105,15 @@ export default function EditPurchaseInvoicePage({ params }: { params: Promise<{ 
           returnLabel={t("createReturn")}
           onPay={invoice.docstatus === 1 && !invoice.is_return ? () => setPayOpen(true) : undefined}
         />
+        {invoice.docstatus === 1 && (
+          <div className="mt-4 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <div className="font-medium">{t("staleTotalsTitle")}</div>
+              <div className="mt-1">{t("staleTotalsHint")}</div>
+            </div>
+          </div>
+        )}
         <RelatedDocuments doctype="Purchase Invoice" name={name} />
         {invoice.supplier && (
           <PaymentDialog

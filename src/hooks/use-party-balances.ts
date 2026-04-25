@@ -1,8 +1,19 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { frappe } from "@/lib/frappe-client";
 import { queryKeys } from "@/hooks/query-keys";
 import type { GLEntry } from "@/types/gl-entry";
 import type { PartyBalances, CurrencyBalance } from "@/types/party-report";
+
+// Persisted shape: plain Record so JSON round-trip through localStorage keeps
+// .get/.has callable downstream (Map serializes to {} and breaks consumers).
+type PartyBalancesByName = Record<string, PartyBalances>;
+
+function toBalanceMap(data: PartyBalancesByName | undefined): Map<string, PartyBalances> {
+  if (!data) return new Map();
+  if (data instanceof Map) return data as unknown as Map<string, PartyBalances>;
+  return new Map(Object.entries(data));
+}
 
 /**
  * Fetch balances using the AR/AP Summary report in company currency.
@@ -11,7 +22,7 @@ import type { PartyBalances, CurrencyBalance } from "@/types/party-report";
 async function fetchBalancesFromReport(
   partyType: "Customer" | "Supplier",
   company: string,
-): Promise<Map<string, PartyBalances>> {
+): Promise<PartyBalancesByName> {
   const reportName =
     partyType === "Customer" ? "Accounts Receivable Summary" : "Accounts Payable Summary";
 
@@ -54,7 +65,7 @@ async function fetchBalancesFromReport(
     currMap.set(currency, (currMap.get(currency) ?? 0) + outstanding);
   }
 
-  const map = new Map<string, PartyBalances>();
+  const out: PartyBalancesByName = {};
   for (const [party, currMap] of perParty) {
     const balances: CurrencyBalance[] = Array.from(currMap.entries())
       .map(([currency, amount]) => ({
@@ -64,10 +75,10 @@ async function fetchBalancesFromReport(
       .filter((b) => Math.abs(b.amount) > 0.005);
 
     const totalInBaseCurrency = balances.reduce((sum, b) => sum + b.amount, 0);
-    map.set(party, { balances, totalInBaseCurrency });
+    out[party] = { balances, totalInBaseCurrency };
   }
 
-  return map;
+  return out;
 }
 
 export function useReceivableBalances(company: string) {
@@ -78,10 +89,8 @@ export function useReceivableBalances(company: string) {
     staleTime: 2 * 60 * 1000,
   });
 
-  return {
-    ...query,
-    balanceMap: query.data ?? new Map<string, PartyBalances>(),
-  };
+  const balanceMap = useMemo(() => toBalanceMap(query.data), [query.data]);
+  return { ...query, balanceMap };
 }
 
 export function usePayableBalances(company: string) {
@@ -92,10 +101,8 @@ export function usePayableBalances(company: string) {
     staleTime: 2 * 60 * 1000,
   });
 
-  return {
-    ...query,
-    balanceMap: query.data ?? new Map<string, PartyBalances>(),
-  };
+  const balanceMap = useMemo(() => toBalanceMap(query.data), [query.data]);
+  return { ...query, balanceMap };
 }
 
 export interface DraftJournalEntry {
