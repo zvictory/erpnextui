@@ -1429,7 +1429,14 @@
     "uniqueItems": "Ноёб маҳсулотлар",
     "uniqueLanes": "Ноёб йўналишлар",
     "noData": "Танланган филтрлар бўйича ўтказмалар йўқ.",
-    "total": "Жами"
+    "total": "Жами",
+    "totalQty": "Жами миқдор",
+    "transfers": "Ўтказмалар",
+    "firstDate": "Биринчи",
+    "lastDate": "Охирги",
+    "pctOfTotal": "% жамидан",
+    "expandAll": "Ҳаммасини очиш",
+    "collapseAll": "Ҳаммасини йопиш"
   },
   "permissions": {
     "title": "Рухсатлар",

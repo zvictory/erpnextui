@@ -1426,7 +1426,14 @@
     "uniqueItems": "Noyob mahsulotlar",
     "uniqueLanes": "Noyob yo'nalishlar",
     "noData": "Tanlangan filtrlar bo'yicha o'tkazmalar yo'q.",
-    "total": "Jami"
+    "total": "Jami",
+    "totalQty": "Jami miqdor",
+    "transfers": "O'tkazmalar",
+    "firstDate": "Birinchi",
+    "lastDate": "Oxirgi",
+    "pctOfTotal": "% jamidan",
+    "expandAll": "Hammasini ochish",
+    "collapseAll": "Hammasini yopish"
   },
   "permissions": {
     "title": "Ruxsatlar",

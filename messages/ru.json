@@ -1441,7 +1441,14 @@
     "uniqueItems": "Уникальных товаров",
     "uniqueLanes": "Уникальных маршрутов",
     "noData": "Нет перемещений по выбранным фильтрам.",
-    "total": "Итого"
+    "total": "Итого",
+    "totalQty": "Всего, кол-во",
+    "transfers": "Перемещений",
+    "firstDate": "Первое",
+    "lastDate": "Последнее",
+    "pctOfTotal": "% от итога",
+    "expandAll": "Развернуть всё",
+    "collapseAll": "Свернуть всё"
   },
   "permissions": {
     "title": "Права доступа",

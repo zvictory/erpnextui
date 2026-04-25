@@ -1488,7 +1488,14 @@
     "uniqueItems": "Unique items",
     "uniqueLanes": "Unique lanes",
     "noData": "No transfers for the selected filters.",
-    "total": "Total"
+    "total": "Total",
+    "totalQty": "Total Qty",
+    "transfers": "Transfers",
+    "firstDate": "First",
+    "lastDate": "Last",
+    "pctOfTotal": "% of Total",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all"
   },
   "permissions": {
     "title": "Permissions",
