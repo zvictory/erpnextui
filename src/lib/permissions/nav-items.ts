@@ -115,6 +115,7 @@ export const NAV_GROUPS: NavGroupDef[] = [
       { tKey: "sales", navCapability: "nav.sales" },
       { tKey: "salesByItem", navCapability: "nav.salesByItem" },
       { tKey: "salesByCustomer", navCapability: "nav.salesByCustomer" },
+      { tKey: "warehouseTransfers", navCapability: "nav.warehouseTransfers" },
       { tKey: "salesAnalytics", navCapability: "nav.salesAnalytics" },
       { tKey: "profitLoss", navCapability: "nav.profitLoss" },
       { tKey: "balanceSheet", navCapability: "nav.balanceSheet" },

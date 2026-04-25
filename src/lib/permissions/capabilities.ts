@@ -188,6 +188,7 @@ export const BUILTIN_CAPABILITIES = {
   "nav.sales": { module: "nav", labelKey: "nav.sales", scopeDim: null },
   "nav.salesByItem": { module: "nav", labelKey: "nav.salesByItem", scopeDim: null },
   "nav.salesByCustomer": { module: "nav", labelKey: "nav.salesByCustomer", scopeDim: null },
+  "nav.warehouseTransfers": { module: "nav", labelKey: "nav.warehouseTransfers", scopeDim: null },
   "nav.salesAnalytics": { module: "nav", labelKey: "nav.salesAnalytics", scopeDim: null },
   "nav.profitLoss": { module: "nav", labelKey: "nav.profitLoss", scopeDim: null },
   "nav.balanceSheet": { module: "nav", labelKey: "nav.balanceSheet", scopeDim: null },

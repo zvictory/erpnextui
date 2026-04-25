@@ -416,6 +416,12 @@ const reportNav: NavItem[] = [
     navCapability: "nav.salesByCustomer",
   },
   {
+    tKey: "warehouseTransfers",
+    href: "/reports/warehouse-transfers",
+    icon: ArrowLeftRight,
+    navCapability: "nav.warehouseTransfers",
+  },
+  {
     tKey: "salesAnalytics",
     href: "/reports/sales-analytics",
     icon: Activity,
