@@ -24,11 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LinkField } from "@/components/shared/link-field";
 import { MultiLinkField } from "@/components/shared/multi-link-field";
 import { DateRangePicker } from "@/components/reports/date-range-picker";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Table,
   TableBody,
@@ -87,7 +83,7 @@ export default function SalesByItemPage() {
   });
 
   const rows = data?.rows ?? [];
-  const totalAmount = data?.totalAmount ?? 0;
+  const totalsByCurrency = data?.totalsByCurrency ?? {};
   const totalCount = data?.totalCount ?? 0;
   const uniqueItemCount = data?.uniqueItemCount ?? 0;
 
@@ -98,6 +94,22 @@ export default function SalesByItemPage() {
       onRight: info?.onRight ?? baseOnRight,
     };
   }, [currencyMap, baseCurrencyCode, baseSymbol, baseOnRight]);
+
+  const getCurrencyInfo = useCallback(
+    (code: string) => {
+      const info = code ? currencyMap?.get(code) : undefined;
+      return {
+        symbol: info?.symbol ?? code ?? baseInfo.symbol,
+        onRight: info?.onRight ?? baseInfo.onRight,
+      };
+    },
+    [currencyMap, baseInfo],
+  );
+
+  const currencyEntries = useMemo(
+    () => Object.entries(totalsByCurrency).sort(([, a], [, b]) => b - a) as [string, number][],
+    [totalsByCurrency],
+  );
 
   const columns = useMemo<ColumnDef<SalesByItemRow>[]>(() => {
     const base: ColumnDef<SalesByItemRow>[] = [
@@ -153,10 +165,15 @@ export default function SalesByItemPage() {
             <ArrowUpDown className="ml-1 size-3" />
           </Button>
         ),
-        cell: ({ row }) => (
-          <span className="tabular-nums">{formatNumber(row.original.qty)}</span>
-        ),
+        cell: ({ row }) => <span className="tabular-nums">{formatNumber(row.original.qty)}</span>,
         meta: { className: "text-right" },
+      },
+      {
+        accessorKey: "currency",
+        header: t("currency"),
+        cell: ({ row }) => (
+          <span className="text-muted-foreground text-xs">{row.original.currency}</span>
+        ),
       },
       {
         accessorKey: "amount",
@@ -171,18 +188,22 @@ export default function SalesByItemPage() {
             <ArrowUpDown className="ml-1 size-3" />
           </Button>
         ),
-        cell: ({ row }) => (
-          <span className="tabular-nums font-medium">
-            {formatCurrency(row.original.amount, baseInfo.symbol, baseInfo.onRight)}
-          </span>
-        ),
+        cell: ({ row }) => {
+          const info = getCurrencyInfo(row.original.currency);
+          return (
+            <span className="tabular-nums font-medium">
+              {formatCurrency(row.original.amount, info.symbol, info.onRight)}
+            </span>
+          );
+        },
         meta: { className: "text-right" },
       },
       {
         id: "pct",
         header: t("pctOfTotal"),
         cell: ({ row }) => {
-          const pct = totalAmount > 0 ? (row.original.amount / totalAmount) * 100 : 0;
+          const denom = totalsByCurrency[row.original.currency] ?? 0;
+          const pct = denom > 0 ? (row.original.amount / denom) * 100 : 0;
           return <span className="tabular-nums text-xs">{pct.toFixed(1)}%</span>;
         },
         meta: { className: "text-right" },
@@ -191,7 +212,7 @@ export default function SalesByItemPage() {
     );
 
     return base;
-  }, [t, baseInfo, totalAmount]);
+  }, [t, getCurrencyInfo, totalsByCurrency]);
 
   const table = useReactTable({
     data: rows,
@@ -206,54 +227,63 @@ export default function SalesByItemPage() {
     if (rows.length === 0) return;
 
     const escapeForNumFmt = (s: string) => s.replace(/"/g, '""');
-    const literal = `"${escapeForNumFmt(baseInfo.symbol)}"`;
-    const amountFmt = baseInfo.onRight ? `# ##0.00 ${literal}` : `${literal} # ##0.00`;
+    const fmtFor = (code: string) => {
+      const info = getCurrencyInfo(code);
+      const literal = `"${escapeForNumFmt(info.symbol)}"`;
+      return info.onRight ? `# ##0.00 ${literal}` : `${literal} # ##0.00`;
+    };
 
-    const headers = [t("itemCode"), t("itemName"), t("qty"), t("amount")];
+    const headers = [t("itemCode"), t("itemName"), t("currency"), t("qty"), t("amount")];
     const grandQty = rows.reduce((s, r) => s + r.qty, 0);
+
+    const totalRows: (string | number | null)[][] = currencyEntries.map(([code, total], idx) => [
+      idx === 0 ? t("total") : "",
+      "",
+      code,
+      idx === 0 ? grandQty : "",
+      total,
+    ]);
 
     const aoa: (string | number | null)[][] = [
       headers,
-      ...rows.map((r) => [r.item_code, r.item_name, r.qty, r.amount]),
+      ...rows.map((r) => [r.item_code, r.item_name, r.currency, r.qty, r.amount]),
       [],
-      [t("total"), "", grandQty, totalAmount],
+      ...totalRows,
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws["!cols"] = [{ wch: 20 }, { wch: 35 }, { wch: 12 }, { wch: 22 }];
+    ws["!cols"] = [{ wch: 20 }, { wch: 35 }, { wch: 8 }, { wch: 12 }, { wch: 22 }];
 
-    const amountColIdx = 3;
+    const amountColIdx = 4;
     for (let i = 0; i < rows.length; i++) {
       const addr = XLSX.utils.encode_cell({ r: i + 1, c: amountColIdx });
       const cell = ws[addr];
       if (cell && typeof cell.v === "number") {
         cell.t = "n";
-        cell.z = amountFmt;
+        cell.z = fmtFor(rows[i].currency);
       }
     }
-    const totalAddr = XLSX.utils.encode_cell({ r: rows.length + 2, c: amountColIdx });
-    const totalCell = ws[totalAddr];
-    if (totalCell && typeof totalCell.v === "number") {
-      totalCell.t = "n";
-      totalCell.z = amountFmt;
-    }
+    const totalsStart = rows.length + 2;
+    currencyEntries.forEach(([code], idx) => {
+      const addr = XLSX.utils.encode_cell({ r: totalsStart + idx, c: amountColIdx });
+      const cell = ws[addr];
+      if (cell && typeof cell.v === "number") {
+        cell.t = "n";
+        cell.z = fmtFor(code);
+      }
+    });
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Sales by Item");
     XLSX.writeFile(wb, `Sales-By-Item-${from}-to-${to}.xlsx`);
-  }, [rows, totalAmount, baseInfo, from, to, t]);
+  }, [rows, currencyEntries, getCurrencyInfo, from, to, t]);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={exportExcel}
-            disabled={rows.length === 0}
-          >
+          <Button variant="outline" size="sm" onClick={exportExcel} disabled={rows.length === 0}>
             <Download className="mr-1 size-4" />
             Excel
           </Button>
@@ -431,9 +461,22 @@ export default function SalesByItemPage() {
               <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                 {t("totalSales")}
               </p>
-              <p className="mt-1 text-2xl font-bold tabular-nums">
-                {formatCurrency(totalAmount, baseInfo.symbol, baseInfo.onRight)}
-              </p>
+              <div className="mt-1 space-y-0.5">
+                {currencyEntries.length > 0 ? (
+                  currencyEntries.map(([code, total]) => {
+                    const info = getCurrencyInfo(code);
+                    return (
+                      <p key={code} className="text-2xl font-bold tabular-nums leading-tight">
+                        {formatCurrency(total, info.symbol, info.onRight)}
+                      </p>
+                    );
+                  })
+                ) : (
+                  <p className="text-2xl font-bold tabular-nums">
+                    {formatCurrency(0, baseInfo.symbol, baseInfo.onRight)}
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -462,9 +505,7 @@ export default function SalesByItemPage() {
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
-                  const meta = header.column.columnDef.meta as
-                    | { className?: string }
-                    | undefined;
+                  const meta = header.column.columnDef.meta as { className?: string } | undefined;
                   return (
                     <TableHead key={header.id} className={meta?.className}>
                       {header.isPlaceholder
@@ -492,9 +533,7 @@ export default function SalesByItemPage() {
                 {table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id}>
                     {row.getVisibleCells().map((cell) => {
-                      const meta = cell.column.columnDef.meta as
-                        | { className?: string }
-                        | undefined;
+                      const meta = cell.column.columnDef.meta as { className?: string } | undefined;
                       return (
                         <TableCell key={cell.id} className={meta?.className}>
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -508,8 +547,18 @@ export default function SalesByItemPage() {
                   <TableCell>{t("total")}</TableCell>
                   <TableCell />
                   <TableCell />
+                  <TableCell />
                   <TableCell className="text-right tabular-nums">
-                    {formatCurrency(totalAmount, baseInfo.symbol, baseInfo.onRight)}
+                    <div className="space-y-0.5">
+                      {currencyEntries.map(([code, total]) => {
+                        const info = getCurrencyInfo(code);
+                        return (
+                          <div key={code} className="leading-tight">
+                            {formatCurrency(total, info.symbol, info.onRight)}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </TableCell>
                   <TableCell />
                 </TableRow>

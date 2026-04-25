@@ -590,12 +590,10 @@ export function parseAgingReport(result: (Record<string, unknown> | unknown[])[]
  * `base_amount`/`base_net_amount` fields so every row lands in the company
  * base currency — the page renders a single-symbol total.
  */
-export function parseSalesByItem(
-  result: (Record<string, unknown> | unknown[])[],
-): SalesByItemData {
+export function parseSalesByItem(result: (Record<string, unknown> | unknown[])[]): SalesByItemData {
   const map = new Map<string, SalesByItemRow>();
   const uniqueItems = new Set<string>();
-  let totalAmount = 0;
+  const totalsByCurrency: Record<string, number> = {};
   let totalCount = 0;
 
   for (const raw of result) {
@@ -604,29 +602,34 @@ export function parseSalesByItem(
     const itemCode = row.item_code ? String(row.item_code) : "";
     if (!itemCode) continue;
 
-    const amount = Number(row.base_amount ?? row.base_net_amount ?? row.amount ?? 0);
+    const currency = row.currency ? String(row.currency) : "";
+    if (!currency) continue;
+
+    const amount = Number(row.net_amount ?? row.amount ?? 0);
     const qty = Number(row.qty ?? 0);
     const stockQty = Number(row.stock_qty ?? 0);
 
-    let entry = map.get(itemCode);
+    const key = `${itemCode}|${currency}`;
+    let entry = map.get(key);
     if (!entry) {
       entry = {
         item_code: itemCode,
         item_name: String(row.item_name ?? itemCode),
         item_group: row.item_group ? String(row.item_group) : undefined,
+        currency,
         qty: 0,
         stock_qty: 0,
         stock_uom: row.stock_uom ? String(row.stock_uom) : undefined,
         amount: 0,
       };
-      map.set(itemCode, entry);
+      map.set(key, entry);
     }
     entry.qty += qty;
     entry.stock_qty += stockQty;
     entry.amount += amount;
 
     uniqueItems.add(itemCode);
-    totalAmount += amount;
+    totalsByCurrency[currency] = (totalsByCurrency[currency] ?? 0) + amount;
     totalCount++;
   }
 
@@ -634,7 +637,7 @@ export function parseSalesByItem(
 
   return {
     rows,
-    totalAmount,
+    totalsByCurrency,
     totalCount,
     uniqueItemCount: uniqueItems.size,
   };
@@ -651,7 +654,7 @@ export function parseSalesByCustomer(
 ): SalesByCustomerData {
   const map = new Map<string, SalesByCustomerRow & { _invoices: Set<string> }>();
   const uniqueCustomers = new Set<string>();
-  let totalAmount = 0;
+  const totalsByCurrency: Record<string, number> = {};
   let totalCount = 0;
 
   for (const raw of result) {
@@ -660,29 +663,34 @@ export function parseSalesByCustomer(
     const customer = row.customer ? String(row.customer) : "";
     if (!customer) continue;
 
-    const amount = Number(row.base_amount ?? row.base_net_amount ?? row.amount ?? 0);
+    const currency = row.currency ? String(row.currency) : "";
+    if (!currency) continue;
+
+    const amount = Number(row.net_amount ?? row.amount ?? 0);
     const stockQty = Number(row.stock_qty ?? 0);
     const voucher = row.invoice ? String(row.invoice) : String(row.voucher_no ?? "");
 
-    let entry = map.get(customer);
+    const key = `${customer}|${currency}`;
+    let entry = map.get(key);
     if (!entry) {
       entry = {
         customer,
         customer_name: String(row.customer_name ?? customer),
         customer_group: row.customer_group ? String(row.customer_group) : undefined,
+        currency,
         invoice_count: 0,
         qty: 0,
         amount: 0,
         _invoices: new Set<string>(),
       };
-      map.set(customer, entry);
+      map.set(key, entry);
     }
     entry.amount += amount;
     entry.qty += stockQty;
     if (voucher) entry._invoices.add(voucher);
 
     uniqueCustomers.add(customer);
-    totalAmount += amount;
+    totalsByCurrency[currency] = (totalsByCurrency[currency] ?? 0) + amount;
     totalCount++;
   }
 
@@ -691,6 +699,7 @@ export function parseSalesByCustomer(
       customer: e.customer,
       customer_name: e.customer_name,
       customer_group: e.customer_group,
+      currency: e.currency,
       invoice_count: e._invoices.size,
       qty: e.qty,
       amount: e.amount,
@@ -699,7 +708,7 @@ export function parseSalesByCustomer(
 
   return {
     rows,
-    totalAmount,
+    totalsByCurrency,
     totalCount,
     uniqueCustomerCount: uniqueCustomers.size,
   };
@@ -741,8 +750,10 @@ export function parseGeneralLedger(result: (Record<string, unknown> | unknown[])
       party: row.party ? String(row.party) : undefined,
       debit: Number(row.debit ?? 0),
       credit: Number(row.credit ?? 0),
-      debit_in_account_currency: row.debit_in_account_currency != null ? Number(row.debit_in_account_currency) : undefined,
-      credit_in_account_currency: row.credit_in_account_currency != null ? Number(row.credit_in_account_currency) : undefined,
+      debit_in_account_currency:
+        row.debit_in_account_currency != null ? Number(row.debit_in_account_currency) : undefined,
+      credit_in_account_currency:
+        row.credit_in_account_currency != null ? Number(row.credit_in_account_currency) : undefined,
       account_currency: row.account_currency ? String(row.account_currency) : undefined,
       balance: Number(row.balance ?? 0),
       voucher_type: String(row.voucher_type ?? ""),

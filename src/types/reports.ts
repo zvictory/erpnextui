@@ -168,6 +168,7 @@ export interface SalesByItemRow {
   item_code: string;
   item_name: string;
   item_group?: string;
+  currency: string;
   qty: number;
   stock_qty: number;
   stock_uom?: string;
@@ -176,7 +177,7 @@ export interface SalesByItemRow {
 
 export interface SalesByItemData {
   rows: SalesByItemRow[];
-  totalAmount: number;
+  totalsByCurrency: Record<string, number>;
   totalCount: number;
   uniqueItemCount: number;
 }
@@ -185,6 +186,7 @@ export interface SalesByCustomerRow {
   customer: string;
   customer_name: string;
   customer_group?: string;
+  currency: string;
   invoice_count: number;
   qty: number;
   amount: number;
@@ -192,7 +194,7 @@ export interface SalesByCustomerRow {
 
 export interface SalesByCustomerData {
   rows: SalesByCustomerRow[];
-  totalAmount: number;
+  totalsByCurrency: Record<string, number>;
   totalCount: number;
   uniqueCustomerCount: number;
 }
