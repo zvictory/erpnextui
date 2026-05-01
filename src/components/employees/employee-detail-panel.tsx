@@ -31,7 +31,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { EmployeeAttendancePane } from "@/components/attendance/views/employee-attendance-pane";
+import { EmployeePayrollPane } from "@/components/attendance/views/employee-payroll-pane";
 import { getInitials, getVoucherIcon } from "@/components/shared/party-detail-panel";
 import { usePartyLedger, usePartyDraftJEs } from "@/hooks/use-party-balances";
 import { useSubmitJournalEntry, useDeleteJournalEntry } from "@/hooks/use-journal-entries";
@@ -352,6 +355,14 @@ export function EmployeeDetailPanel({
 
         <Separator />
 
+        <Tabs defaultValue="overview" className="flex-1 flex flex-col min-h-0">
+          <TabsList className="mx-4 mt-2 self-start">
+            <TabsTrigger value="overview">{t("tab.overview")}</TabsTrigger>
+            <TabsTrigger value="attendance">{t("tab.attendance")}</TabsTrigger>
+            <TabsTrigger value="payroll">{t("tab.payroll")}</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="flex-1 min-h-0">
         <ScrollArea className="flex-1 px-4 pb-4">
           <Table>
             <TableHeader>
@@ -526,6 +537,16 @@ export function EmployeeDetailPanel({
             </TableBody>
           </Table>
         </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="attendance" className="flex-1 min-h-0 overflow-auto px-4 pb-4">
+            <EmployeeAttendancePane employeeName={employeeDisplayName} />
+          </TabsContent>
+
+          <TabsContent value="payroll" className="flex-1 min-h-0 overflow-auto px-4 pb-4">
+            <EmployeePayrollPane employeeName={employeeDisplayName} />
+          </TabsContent>
+        </Tabs>
       </div>
 
       <EmployeeAdvanceDialog

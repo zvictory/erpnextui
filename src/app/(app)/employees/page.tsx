@@ -3,11 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { CalendarCheck } from "lucide-react";
+import { CalendarCheck, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmployeeListPanel } from "@/components/employees/employee-list-panel";
 import { EmployeeDetailPanel } from "@/components/employees/employee-detail-panel";
 import { EmployeeTransactionsPane } from "@/components/employees/employee-transactions-pane";
+import { EmployeesTabelView } from "@/components/attendance/views/employees-tabel-view";
+import { EmployeesDashboardView } from "@/components/attendance/views/employees-dashboard-view";
 import { useEmployeeList, useEmployeeCount } from "@/hooks/use-employees";
 import { useEmployeeGLBalances } from "@/hooks/use-employee-balances";
 import { useListState } from "@/hooks/use-list-state";
@@ -27,6 +30,7 @@ function useIsMobile() {
 }
 
 export type EmployeeSortBy = "name" | "balance";
+type EmployeesView = "list" | "tabel" | "dashboard";
 
 export default function EmployeesPage() {
   const t = useTranslations("employees");
@@ -43,6 +47,7 @@ export default function EmployeesPage() {
   const { balanceMap, isLoading: balancesLoading } = useEmployeeGLBalances(company);
 
   const [sortBy, setSortBy] = useState<EmployeeSortBy>("name");
+  const [view, setView] = useState<EmployeesView>("list");
 
   const employeesWithBalance = useMemo<EmployeeWithBalance[]>(() => {
     const list = employees.map((e) => {
@@ -85,7 +90,33 @@ export default function EmployeesPage() {
 
   return (
     <>
-      <div className="flex overflow-hidden -m-4 md:-m-6 h-[calc(100svh-3.5rem)]">
+      <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b">
+        <Tabs value={view} onValueChange={(v) => setView(v as EmployeesView)}>
+          <TabsList>
+            <TabsTrigger value="list">{t("view.list")}</TabsTrigger>
+            <TabsTrigger value="tabel">{t("view.tabel")}</TabsTrigger>
+            <TabsTrigger value="dashboard">{t("view.dashboard")}</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <Button variant="ghost" size="icon" asChild title={t("attendanceSettings")}>
+          <Link href="/employees/attendance-settings">
+            <Settings className="h-4 w-4" />
+          </Link>
+        </Button>
+      </div>
+
+      {view === "tabel" && (
+        <div className="p-4 md:p-6">
+          <EmployeesTabelView />
+        </div>
+      )}
+      {view === "dashboard" && (
+        <div className="p-4 md:p-6">
+          <EmployeesDashboardView />
+        </div>
+      )}
+      {view === "list" && (
+      <div className="flex overflow-hidden -m-4 md:-m-6 h-[calc(100svh-7rem)]">
         <div className="w-full md:w-[380px] flex-shrink-0 flex flex-col border-r overflow-hidden">
           <div className="flex items-center justify-between px-4 pt-3 pb-1">
             <h2 className="text-sm font-semibold">{t("title")}</h2>
@@ -135,8 +166,9 @@ export default function EmployeesPage() {
           )}
         </div>
       </div>
+      )}
 
-      {effectiveSelectedEmployee && (
+      {effectiveSelectedEmployee && view === "list" && (
         <EmployeeTransactionsPane
           open={mobileSheetOpen}
           onOpenChange={setMobileSheetOpen}

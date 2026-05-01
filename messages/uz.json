@@ -884,7 +884,18 @@
     "defaultExpenseAccount": "Standart xarajat hisobi",
     "expenseAccount": "Xarajat hisobi",
     "selectExpenseAccount": "Xarajat hisobini tanlang...",
-    "missingExpenseAccount": "Barcha tanlangan xodimlarda xarajat hisobi ko'rsatilishi kerak"
+    "missingExpenseAccount": "Barcha tanlangan xodimlarda xarajat hisobi ko'rsatilishi kerak",
+    "view": {
+      "list": "Ro'yxat",
+      "tabel": "Tabel",
+      "dashboard": "Dashboard"
+    },
+    "tab": {
+      "overview": "Umumiy",
+      "attendance": "Davomat",
+      "payroll": "Hisob"
+    },
+    "attendanceSettings": "Davomat sozlamalari"
   },
   "receipt": {
     "invoice": "Hisob-faktura",
@@ -1323,7 +1334,18 @@
     "allTerritories": "Barcha hududlar",
     "allProjects": "Barcha loyihalar",
     "allCostCenters": "Barcha xarajat markazlari",
-    "allBrands": "Barcha brendlar"
+    "allBrands": "Barcha brendlar",
+    "summaryMode": "Umumiy",
+    "detailMode": "Tafsilot",
+    "expandAll": "Hammasini ochish",
+    "collapseAll": "Hammasini yopish",
+    "noLines": "Qatorlar yo'q",
+    "date": "Sana",
+    "invoice": "Hisob-faktura",
+    "rate": "Narx",
+    "uom": "O'l.b.",
+    "lines": "qator",
+    "invoices": "hisob-fakturalar"
   },
   "sa": {
     "title": "Sotuv tahlili",
@@ -1402,7 +1424,18 @@
     "allTerritories": "Barcha hududlar",
     "allProjects": "Barcha loyihalar",
     "allCostCenters": "Barcha xarajat markazlari",
-    "allBrands": "Barcha brendlar"
+    "allBrands": "Barcha brendlar",
+    "summaryMode": "Umumiy",
+    "detailMode": "Tafsilot",
+    "expandAll": "Hammasini ochish",
+    "collapseAll": "Hammasini yopish",
+    "noLines": "Qatorlar yo'q",
+    "date": "Sana",
+    "invoice": "Hisob-faktura",
+    "rate": "Narx",
+    "uom": "O'l.b.",
+    "lines": "qator",
+    "invoices": "hisob-fakturalar"
   },
   "wht": {
     "title": "Ombor o'tkazmalari",
@@ -1842,5 +1875,319 @@
     "status": "Holat",
     "lowStock": "Kam qoldi",
     "inStock": "Mavjud"
+  },
+  "attendance": {
+    "app": {
+      "title": "Davomat o'yin maydonchasi",
+      "subtitle": "Muzqaymoq fabrikasi · Aprel 2026 · 224 xodim"
+    },
+    "nav": {
+      "dashboard": "Boshqaruv paneli",
+      "employees": "Xodimlar",
+      "tabel": "Tabel",
+      "shifts": "Smenalar",
+      "positions": "Lavozimlar",
+      "policies": "Qoidalar",
+      "payroll": "Ish haqi"
+    },
+    "lang": {
+      "label": "Til"
+    },
+    "theme": {
+      "label": "Mavzu",
+      "toggle": "Mavzuni almashtirish",
+      "light": "Yorug'",
+      "dark": "Qorong'i",
+      "system": "Tizim"
+    },
+    "view": {
+      "grid": "Katak",
+      "calendar": "Kalendar",
+      "table": "Jadval"
+    },
+    "metric": {
+      "label": "Ko'rsatish",
+      "worked": "Ishlangan",
+      "absent": "Kelmagan",
+      "late": "Kechikkan"
+    },
+    "filter": {
+      "label": "Filtr",
+      "all": "Hammasi",
+      "clean": "Toza",
+      "hasFees": "Jarimali",
+      "frequentAbsent": "Tez-tez kelmagan",
+      "frequentLate": "Tez-tez kechikkan",
+      "onTime": "Vaqtida",
+      "lateFlat": "Kechikish · belgilangan",
+      "lateStep": "Kechikish · shkala",
+      "halfDay": "Yarim kun",
+      "absent": "Kelmagan",
+      "incomplete": "Yopilmagan"
+    },
+    "dow": {
+      "sun": "Yak",
+      "mon": "Du",
+      "tue": "Se",
+      "wed": "Cho",
+      "thu": "Pa",
+      "fri": "Ju",
+      "sat": "Sha"
+    },
+    "kpi": {
+      "employees": "Xodimlar",
+      "scheduledDays": "Ish kunlari",
+      "totalHours": "Ishlangan soat",
+      "lateIncidents": "Kechikishlar",
+      "monthlyFees": "Oylik jarima",
+      "absenceDays": "Kelmagan kunlar",
+      "halfDays": "Yarim kunlar",
+      "perfectAttendance": "Toza davomat"
+    },
+    "dashboard": {
+      "topOffenders": "Eng ko'p jarima olganlar",
+      "deptBreakdown": "Bo'limlar bo'yicha",
+      "legend": "Statuslar izohi",
+      "totalWorked": "Jami ishlangan soatlar",
+      "headcount": "Bugun smenada",
+      "hoursMTD": "Oy boshidan soat",
+      "feeBudget": "Jarima byudjeti",
+      "feeBudgetSpent": "{budget} dan {spent} sarflandi",
+      "vsLastWeek": "o'tgan haftaning shu kuniga nisbatan",
+      "today": "bugun",
+      "mtd": "oy boshidan",
+      "absenceHeatmap": "Kelmagan kunlar xaritasi",
+      "absenceHeatmapHint": "Kunni bosing — tabel ochiladi",
+      "arrivalDist": "Kelish vaqtlari taqsimoti",
+      "arrivalDistHint": "Yashil oraliq — imtiyoz oynasi",
+      "statusMix": "Statuslar nisbati",
+      "totalEvents": "voqea",
+      "deptLeaderboard": "Bo'limlar reytingi",
+      "deptLeaderboardHint": "Uzunlik = jarima · rang = o'rtacha kech. daq/xodim",
+      "genderShift": "Jins × smena",
+      "regionTransport": "Hudud bo'yicha yo'l kira",
+      "shiftFilter": "Smena",
+      "men": "Erkaklar",
+      "women": "Ayollar"
+    },
+    "employees": {
+      "viewRows": "Qatorlar",
+      "viewStrip": "Ixcham",
+      "fingerprint": "30 kunlik davomat",
+      "summary": {
+        "headcount": "Tanlovda",
+        "totalFee": "Jami jarima",
+        "avgFee": "O'rtacha jarima",
+        "avgLate": "O'rtacha kechikish",
+        "cleanPct": "Toza / jarimali"
+      }
+    },
+    "status": {
+      "present": "Vaqtida",
+      "late_flat": "Kechikish · 15 000",
+      "late_step": "Kechikish · shkala",
+      "half_day": "Yarim kun",
+      "absent": "Kelmagan",
+      "incomplete": "Kunni yopmagan",
+      "weekend": "Dam olish",
+      "holiday": "Bayram"
+    },
+    "table": {
+      "search": "Ism, lavozim yoki bo'lim bo'yicha qidiruv",
+      "name": "Ism",
+      "position": "Lavozim",
+      "department": "Bo'lim",
+      "shift": "Smena",
+      "worked": "Ishlagan",
+      "late": "Kechikkan (daq)",
+      "fee": "Jarima",
+      "open": "Ochish",
+      "day": "Kun",
+      "dow": "Hf",
+      "status": "Status",
+      "clickHint": "katakni bosing"
+    },
+    "shift": {
+      "day": "Kunduzgi 08–20",
+      "night": "Tungi 20–08",
+      "office": "Ofis 09–18",
+      "light": "Yengil 09–14",
+      "flexible": "Moslashuvchan",
+      "remote": "Masofadan"
+    },
+    "shifts": {
+      "start": "Boshlanish",
+      "end": "Tugash",
+      "anchor": "Yarim kun chegarasi"
+    },
+    "policies": {
+      "title": "Qoidalar va qabul qilingan qarorlar",
+      "intro": "Bu qoidalar status mexanizmiga va ish haqi kalkulyatoriga ulangan. Quyidagi har qanday qiymatni o'zgartiring — dashboard, xodim va ish haqi sahifalari darhol yangilanadi.",
+      "summary": {
+        "grace": "Imtiyoz",
+        "flatFee": "Belgilangan jarima",
+        "dailyCap": "Kunlik chegara",
+        "halfDay": "Yarim kun min.",
+        "feeBudget": "Jarima byudjeti",
+        "minShort": "daq",
+        "hShort": "soat",
+        "yearsShort": "yil"
+      },
+      "lateRules": "Kechikish jarimalari",
+      "lateRulesBody": "Imtiyoz ≤ {grace} daq. {grace}+10 daq ichida → belgilangan {flat}. Undan keyin → {flat} + har 10 daqiqaga {step}, {cap} bilan cheklangan.",
+      "halfDay": "Yarim kun",
+      "halfDayBody": "Smenaning yarim kun chegarasiga/undan keyin kelgan VA kamida belgilangan soatlar ishlangan → yarim kun. Aks holda kun yopilmagan deb hisoblanadi (to'lov yo'q).",
+      "nightShift": "Tungi smena",
+      "nightShiftBody": "Xuddi shu imtiyoz daqiqalari va xuddi shu jarima shkalasi. Butun smenaga +10% qo'shilmaydi; +10% faqat menejer tasdiqlagan ortiqcha soatlarga qo'llanadi.",
+      "staj": "Staj uchun qo'shimcha",
+      "stajBody": "Lavozim oyligiga ustiga qo'shiladigan bosqichli qo'shimcha.",
+      "cap": "Kunlik jarima chegarasi",
+      "capBody": "Har bir xodim uchun kunlik bir qattiq chegara.",
+      "transport": "Hudud bo'yicha yo'l kira",
+      "transportBody": "Ishlangan kunga to'lanadi (to'liq kun = 1, yarim kun = 0,5). Xodimning hududi profilida belgilanadi."
+    },
+    "policy": {
+      "reset": "Standartga qaytarish",
+      "preview": "Ko'rib chiqish",
+      "grace": "Imtiyoz daqiqalari",
+      "flatFee": "Belgilangan jarima",
+      "stepFee": "Har 10 daq uchun jarima",
+      "dailyCap": "Kunlik chegara",
+      "halfDayMin": "Yarim kun uchun min. soat",
+      "feeBudget": "Oylik jarima byudjeti",
+      "shiftDefs": "Smena ta'riflari",
+      "shiftStart": "Boshlanish",
+      "shiftEnd": "Tugash",
+      "length": "Davomiyligi",
+      "anchor": "Yarim kun chegarasi",
+      "addTier": "Bosqich qo'shish",
+      "removeTier": "Bosqichni o'chirish",
+      "bonusPct": "Bonus %",
+      "range": "Oraliq"
+    },
+    "positions": {
+      "title": "Lavozimlar",
+      "subtitle": "Tahrir qilinadigan oylik bilan unikal lavozimlar katalogi.",
+      "summary": {
+        "positions": "Lavozimlar",
+        "headcount": "Xodimlar",
+        "customized": "O'zgartirilgan",
+        "avgSalary": "O'rtacha oylik",
+        "monthlyPayroll": "Oylik FOT",
+        "salaryRange": "Oylik shkalasi"
+      },
+      "catalog": "Katalog",
+      "label": "Lavozim",
+      "employees": "Xodimlar",
+      "salary": "Oylik maosh",
+      "withStaj": "Staj qo'shimchasi bilan",
+      "customized": "O'zgartirilgan",
+      "reset": "Tiklash",
+      "resetAll": "Hammasini tiklash",
+      "defaultHint": "O'z qiymati bo'lmagan lavozimlar standart oylikni ishlatadi: {value}."
+    },
+    "payroll": {
+      "title": "Ish haqi kalkulyatori",
+      "subtitle": "Lavozim oyligi + staj qo'shimchasi + menejer tasdiqlagan ortiqcha soatlar bo'yicha jonli hisob.",
+      "cardTitle": "Oylik ish haqi",
+      "pickEmployee": "Xodimni tanlang",
+      "standalone": "Xodimsiz",
+      "inputs": "Kiritmalar",
+      "breakdown": "Hisob",
+      "basePosition": "Lavozim oyligi",
+      "stajYears": "Staj (yil)",
+      "scheduledDays": "Ish kunlari",
+      "daysWorked": "Ishlangan kunlar",
+      "overtimeMin": "Ortiqcha (daq)",
+      "coefficient": "Ortiqcha koeffitsiyent",
+      "isNightOT": "Tungi ortiqcha",
+      "baseWithStaj": "Oylik + staj",
+      "attendance": "Davomat",
+      "earnedSalary": "Hisoblandi",
+      "overtime": "Ortiqcha",
+      "fees": "Jarima",
+      "transport": "Yo'l kira",
+      "perDayShort": "kun",
+      "gross": "Jami",
+      "net": "Qo'lga"
+    },
+    "region": {
+      "label": "Hudud",
+      "city": "Shahar",
+      "district": "Rayon",
+      "farDistrict": "Uzoq rayon"
+    },
+    "day": {
+      "in": "Kirish",
+      "out": "Chiqish",
+      "worked": "Ishlagan",
+      "late": "Kechikkan",
+      "fee": "Jarima",
+      "explain": "Nega shu status",
+      "exp": {
+        "absent": "Hech qanday belgi yo'q — kelmagan deb hisoblandi.",
+        "incomplete": "Faqat bitta belgi qoldirilgan — kun yopilmagan.",
+        "halfDay": "{anchor} ga/keyin kelgan, {worked} ishlangan → yarim kun.",
+        "present": "Imtiyoz oynasi ichida vaqtida.",
+        "lateFlat": "{min} daq kechikish → belgilangan jarima {fee}.",
+        "lateStep": "{min} daq kechikish → belgilangan + {blocks} × {step} = {fee} ({cap} bilan cheklangan).",
+        "shiftInfo": "Smena {start} da boshlanadi, yarim kun chegarasi {anchor}, davomiyligi {hours}s."
+      }
+    },
+    "edit": {
+      "profile": "Profilni tahrirlash",
+      "punches": "Kunlik belgilar",
+      "extraMin": "Qo'sh. (daq)",
+      "resetDay": "Kunni tiklash",
+      "resetAll": "Barcha o'zgartirishlarni tiklash",
+      "hireDate": "Qabul qilingan sana",
+      "terminationDate": "Ishdan ketgan sana"
+    },
+    "tabel": {
+      "title": "Xodimlarning oy davomida ishlagan ish kunlari hisobi",
+      "subtitle": "Oylik davomat tabeli: K — keldi, Y — yarim kun, D — dam oldi",
+      "month": "Oy",
+      "year": "Yil",
+      "daysInMonth": "Oydagi kunlar soni",
+      "rowNum": "T/r",
+      "fullName": "F.I.SH.",
+      "position": "Lavozimi",
+      "totals": "JAMI",
+      "workDays": "Jami ish kuni",
+      "kCount": "K",
+      "yCount": "Y",
+      "dCount": "D",
+      "legend": "K — keldi · Y — yarim kun · D — kelmagan / dam oldi · ? — kun yopilmagan · + — qabul qilindi · − — ishdan ketdi · / — ishlamagan",
+      "print": "Chop etish",
+      "all": "Hammasi",
+      "men": "Erkaklar",
+      "women": "Ayollar",
+      "sortBy": "Saralash",
+      "sortAsc": "O'sish bo'yicha",
+      "sortDesc": "Kamayish bo'yicha",
+      "sort": {
+        "name": "Ism",
+        "workDays": "Ish kunlari",
+        "kCount": "Keldi (K)",
+        "dCount": "Dam olish (D)",
+        "nCount": "Yopilmagan (?)",
+        "position": "Lavozim",
+        "dept": "Bo'lim"
+      },
+      "summary": {
+        "headcount": "Tanlovda",
+        "totalFee": "Jami jarima",
+        "lateIncidents": "Kechikishlar",
+        "clean": "Toza",
+        "halfDays": "Yarim kunlar"
+      }
+    },
+    "back": "Ortga",
+    "open": "Ochish",
+    "all": "Hammasi",
+    "noShift": "—",
+    "emptyState": {
+      "noDemoData": "Bu xodim uchun demo davomat ma'lumotlari yo'q."
+    }
   }
 }

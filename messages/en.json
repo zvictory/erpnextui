@@ -946,7 +946,18 @@
     "defaultExpenseAccount": "Default Expense Account",
     "expenseAccount": "Expense Account",
     "selectExpenseAccount": "Select expense account...",
-    "missingExpenseAccount": "All selected employees must have an expense account"
+    "missingExpenseAccount": "All selected employees must have an expense account",
+    "view": {
+      "list": "List",
+      "tabel": "Timesheet",
+      "dashboard": "Dashboard"
+    },
+    "tab": {
+      "overview": "Overview",
+      "attendance": "Attendance",
+      "payroll": "Payroll"
+    },
+    "attendanceSettings": "Attendance settings"
   },
   "receipt": {
     "invoice": "Invoice",
@@ -1385,7 +1396,18 @@
     "allTerritories": "All territories",
     "allProjects": "All projects",
     "allCostCenters": "All cost centers",
-    "allBrands": "All brands"
+    "allBrands": "All brands",
+    "summaryMode": "Summary",
+    "detailMode": "Detail",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all",
+    "noLines": "No lines",
+    "date": "Date",
+    "invoice": "Invoice",
+    "rate": "Rate",
+    "uom": "UOM",
+    "lines": "lines",
+    "invoices": "invoices"
   },
   "sa": {
     "title": "Sales Analytics",
@@ -1464,7 +1486,18 @@
     "allTerritories": "All territories",
     "allProjects": "All projects",
     "allCostCenters": "All cost centers",
-    "allBrands": "All brands"
+    "allBrands": "All brands",
+    "summaryMode": "Summary",
+    "detailMode": "Detail",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all",
+    "noLines": "No lines",
+    "date": "Date",
+    "invoice": "Invoice",
+    "rate": "Rate",
+    "uom": "UOM",
+    "lines": "lines",
+    "invoices": "invoices"
   },
   "wht": {
     "title": "Warehouse Transfers",
@@ -1904,5 +1937,319 @@
     "status": "Status",
     "lowStock": "Low Stock",
     "inStock": "In Stock"
+  },
+  "attendance": {
+    "app": {
+      "title": "Attendance Playground",
+      "subtitle": "Ice cream factory · April 2026 · 224 employees"
+    },
+    "nav": {
+      "dashboard": "Dashboard",
+      "employees": "Employees",
+      "tabel": "Timesheet",
+      "shifts": "Shifts",
+      "positions": "Positions",
+      "policies": "Policies",
+      "payroll": "Payroll"
+    },
+    "lang": {
+      "label": "Language"
+    },
+    "theme": {
+      "label": "Theme",
+      "toggle": "Toggle theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "view": {
+      "grid": "Grid",
+      "calendar": "Calendar",
+      "table": "Table"
+    },
+    "metric": {
+      "label": "Show",
+      "worked": "Worked",
+      "absent": "Absent",
+      "late": "Late"
+    },
+    "filter": {
+      "label": "Filter",
+      "all": "All",
+      "clean": "Clean",
+      "hasFees": "Has fees",
+      "frequentAbsent": "Frequent absent",
+      "frequentLate": "Frequent late",
+      "onTime": "On time",
+      "lateFlat": "Late · flat",
+      "lateStep": "Late · stepped",
+      "halfDay": "Half day",
+      "absent": "Absent",
+      "incomplete": "Incomplete"
+    },
+    "dow": {
+      "sun": "Sun",
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat"
+    },
+    "kpi": {
+      "employees": "Employees",
+      "scheduledDays": "Scheduled days",
+      "totalHours": "Total hours worked",
+      "lateIncidents": "Late incidents",
+      "monthlyFees": "Monthly late-fee total",
+      "absenceDays": "Absence days",
+      "halfDays": "Half days",
+      "perfectAttendance": "Perfect attendance"
+    },
+    "dashboard": {
+      "topOffenders": "Top late-fee offenders",
+      "deptBreakdown": "Department breakdown",
+      "legend": "Status legend",
+      "totalWorked": "Total worked hours",
+      "headcount": "Headcount on shift",
+      "hoursMTD": "Hours worked MTD",
+      "feeBudget": "Fee-budget pacing",
+      "feeBudgetSpent": "{spent} of {budget} used",
+      "vsLastWeek": "vs same day last week",
+      "today": "today",
+      "mtd": "month-to-date",
+      "absenceHeatmap": "Absence by day of month",
+      "absenceHeatmapHint": "Click a day to drill into the timesheet",
+      "arrivalDist": "Arrival distribution",
+      "arrivalDistHint": "Emerald band = grace window",
+      "statusMix": "Status mix",
+      "totalEvents": "events",
+      "deptLeaderboard": "Department leaderboard",
+      "deptLeaderboardHint": "Width = total fee · color = avg late min/employee",
+      "genderShift": "Gender × shift",
+      "regionTransport": "Transport by region",
+      "shiftFilter": "Shift",
+      "men": "Men",
+      "women": "Women"
+    },
+    "employees": {
+      "viewRows": "Rows",
+      "viewStrip": "Compact",
+      "fingerprint": "30-day attendance",
+      "summary": {
+        "headcount": "Filtered",
+        "totalFee": "Total fees",
+        "avgFee": "Avg fee",
+        "avgLate": "Avg late",
+        "cleanPct": "Clean / with fees"
+      }
+    },
+    "status": {
+      "present": "On time",
+      "late_flat": "Late · 15 000",
+      "late_step": "Late · stepped",
+      "half_day": "Half day",
+      "absent": "Absent",
+      "incomplete": "Incomplete punch",
+      "weekend": "Weekend",
+      "holiday": "Holiday"
+    },
+    "table": {
+      "search": "Search by name, position or department",
+      "name": "Name",
+      "position": "Position",
+      "department": "Department",
+      "shift": "Shift",
+      "worked": "Worked",
+      "late": "Late (min)",
+      "fee": "Fee",
+      "open": "Open",
+      "day": "Day",
+      "dow": "Dow",
+      "status": "Status",
+      "clickHint": "click any cell"
+    },
+    "shift": {
+      "day": "Day 08–20",
+      "night": "Night 20–08",
+      "office": "Office 09–18",
+      "light": "Light 09–14",
+      "flexible": "Flexible",
+      "remote": "Remote"
+    },
+    "shifts": {
+      "start": "Start",
+      "end": "End",
+      "anchor": "Half-day anchor"
+    },
+    "policies": {
+      "title": "Policies & decisions",
+      "intro": "These rules feed the status engine and the payroll calculator. Edit any value below — the dashboard, employee, and payroll pages react instantly.",
+      "summary": {
+        "grace": "Grace",
+        "flatFee": "Flat fee",
+        "dailyCap": "Daily cap",
+        "halfDay": "Half-day min",
+        "feeBudget": "Fee budget",
+        "minShort": "min",
+        "hShort": "h",
+        "yearsShort": "yrs"
+      },
+      "lateRules": "Late-arrival fees",
+      "lateRulesBody": "Grace ≤ {grace} min. Within {grace}+10 min → flat {flat}. Beyond → {flat} + {step} per 10-min block, capped at {cap}.",
+      "halfDay": "Half day",
+      "halfDayBody": "Arrival on/after the shift's half-day anchor AND at least the minimum hours worked → half day. Otherwise the day counts as incomplete (no pay).",
+      "nightShift": "Night shift",
+      "nightShiftBody": "Same grace and same fee table. No flat +10% premium on the whole shift; +10% applies only to overtime hours that the manager has approved.",
+      "staj": "Staj (length-of-service) bonus",
+      "stajBody": "Tiered bonus stacked on top of the position salary.",
+      "cap": "Daily fee ceiling",
+      "capBody": "A single hard cap per employee per day.",
+      "transport": "Transport allowance by region",
+      "transportBody": "Paid per worked-day equivalent (full-day = 1, half-day = 0.5). Each employee's region is set on their profile."
+    },
+    "policy": {
+      "reset": "Reset to defaults",
+      "preview": "Preview",
+      "grace": "Grace minutes",
+      "flatFee": "Flat fee",
+      "stepFee": "Step fee per 10 min",
+      "dailyCap": "Daily cap",
+      "halfDayMin": "Half-day minimum hours",
+      "feeBudget": "Monthly fee budget",
+      "shiftDefs": "Shift definitions",
+      "shiftStart": "Start",
+      "shiftEnd": "End",
+      "length": "Length",
+      "anchor": "Half-day anchor",
+      "addTier": "Add tier",
+      "removeTier": "Remove tier",
+      "bonusPct": "Bonus %",
+      "range": "Range"
+    },
+    "positions": {
+      "title": "Positions",
+      "subtitle": "Catalog of unique positions with editable monthly base salaries.",
+      "summary": {
+        "positions": "Positions",
+        "headcount": "Headcount",
+        "customized": "Customized",
+        "avgSalary": "Avg. salary",
+        "monthlyPayroll": "Monthly payroll",
+        "salaryRange": "Salary range"
+      },
+      "catalog": "Catalog",
+      "label": "Position",
+      "employees": "Employees",
+      "salary": "Monthly salary",
+      "withStaj": "With staj overlay",
+      "customized": "Customized",
+      "reset": "Reset",
+      "resetAll": "Reset all",
+      "defaultHint": "Positions without a custom value use the default of {value}."
+    },
+    "payroll": {
+      "title": "Payroll calculator",
+      "subtitle": "Live preview using position salary + staj bonus + manager-approved overtime.",
+      "cardTitle": "Monthly payroll",
+      "pickEmployee": "Pick an employee",
+      "standalone": "Standalone (no employee)",
+      "inputs": "Inputs",
+      "breakdown": "Breakdown",
+      "basePosition": "Position salary",
+      "stajYears": "Years of service",
+      "scheduledDays": "Scheduled days",
+      "daysWorked": "Days worked",
+      "overtimeMin": "Overtime minutes",
+      "coefficient": "OT coefficient",
+      "isNightOT": "Night overtime",
+      "baseWithStaj": "Base + staj",
+      "attendance": "Attendance",
+      "earnedSalary": "Earned salary",
+      "overtime": "Overtime",
+      "fees": "Fees",
+      "transport": "Transport allowance",
+      "perDayShort": "day",
+      "gross": "Gross",
+      "net": "Net pay"
+    },
+    "region": {
+      "label": "Region",
+      "city": "City",
+      "district": "District",
+      "farDistrict": "Far district"
+    },
+    "day": {
+      "in": "In",
+      "out": "Out",
+      "worked": "Worked",
+      "late": "Late",
+      "fee": "Fee",
+      "explain": "Why this status",
+      "exp": {
+        "absent": "No punches recorded — counted as absent.",
+        "incomplete": "Only one punch recorded — day is incomplete.",
+        "halfDay": "Arrival at/after {anchor} with {worked} worked → half day.",
+        "present": "On time within the grace window.",
+        "lateFlat": "Late by {min} min → flat fee {fee}.",
+        "lateStep": "Late by {min} min → flat + {blocks} × {step} = {fee} (capped at {cap}).",
+        "shiftInfo": "Shift starts {start}, half-day anchor {anchor}, length {hours}h."
+      }
+    },
+    "edit": {
+      "profile": "Edit profile",
+      "punches": "Daily punches",
+      "extraMin": "Extra (min)",
+      "resetDay": "Reset day",
+      "resetAll": "Reset all overrides",
+      "hireDate": "Hire date",
+      "terminationDate": "Termination date"
+    },
+    "tabel": {
+      "title": "Work-days timesheet",
+      "subtitle": "Monthly attendance log: K = present, Y = half day, D = day off",
+      "month": "Month",
+      "year": "Year",
+      "daysInMonth": "Days in month",
+      "rowNum": "#",
+      "fullName": "Full name",
+      "position": "Position",
+      "totals": "TOTALS",
+      "workDays": "Total work days",
+      "kCount": "K",
+      "yCount": "Y",
+      "dCount": "D",
+      "legend": "K — present · Y — half day · D — absent / day off · ? — incomplete punch · + — hired · − — terminated · / — not employed",
+      "print": "Print",
+      "all": "All",
+      "men": "Men",
+      "women": "Women",
+      "sortBy": "Sort by",
+      "sortAsc": "Ascending",
+      "sortDesc": "Descending",
+      "sort": {
+        "name": "Name",
+        "workDays": "Work days",
+        "kCount": "Present (K)",
+        "dCount": "Days off (D)",
+        "nCount": "Incomplete (?)",
+        "position": "Position",
+        "dept": "Department"
+      },
+      "summary": {
+        "headcount": "In view",
+        "totalFee": "Total fees",
+        "lateIncidents": "Late incidents",
+        "clean": "Clean",
+        "halfDays": "Half days"
+      }
+    },
+    "back": "Back",
+    "open": "Open",
+    "all": "All",
+    "noShift": "—",
+    "emptyState": {
+      "noDemoData": "No demo attendance data for this employee."
+    }
   }
 }
