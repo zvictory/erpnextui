@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   format,
   startOfDay,
@@ -20,6 +20,7 @@ import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
 import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import type { DateRange } from "@/types/reports";
@@ -111,10 +112,27 @@ export function DateRangePicker({ dateRange, onDateRangeChange }: DateRangePicke
   const calendarRef = useRef<HTMLDivElement>(null);
   const fpRef = useRef<flatpickr.Instance | null>(null);
 
+  // Custom text inputs state — kept in sync with dateRange
+  const [customFrom, setCustomFrom] = useState(() => format(dateRange.from, "yyyy-MM-dd"));
+  const [customTo, setCustomTo] = useState(() => format(dateRange.to, "yyyy-MM-dd"));
+
+  // Reset custom inputs whenever the popover opens or dateRange changes externally
+  useEffect(() => {
+    setCustomFrom(format(dateRange.from, "yyyy-MM-dd"));
+    setCustomTo(format(dateRange.to, "yyyy-MM-dd"));
+  }, [dateRange]);
+
+  const applyCustom = useCallback(() => {
+    const from = new Date(customFrom);
+    const to = new Date(customTo);
+    if (isNaN(from.getTime()) || isNaN(to.getTime()) || from > to) return;
+    onDateRangeChange({ from, to });
+    setOpen(false);
+  }, [customFrom, customTo, onDateRangeChange]);
+
   useEffect(() => {
     if (!open || !calendarRef.current) return;
 
-    // Small delay to let popover render
     const timer = setTimeout(() => {
       if (!calendarRef.current) return;
       const fp = flatpickr(calendarRef.current, {
@@ -141,7 +159,6 @@ export function DateRangePicker({ dateRange, onDateRangeChange }: DateRangePicke
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // Sync external date changes when open
   useEffect(() => {
     if (fpRef.current && open) {
       fpRef.current.setDate([dateRange.from, dateRange.to], false);
@@ -160,6 +177,7 @@ export function DateRangePicker({ dateRange, onDateRangeChange }: DateRangePicke
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="end">
         <div className="flex">
+          {/* Presets sidebar */}
           <div className="flex flex-col border-r w-[140px] py-2">
             {presetGroups.map((group, gi) => (
               <div key={group.label}>
@@ -184,8 +202,31 @@ export function DateRangePicker({ dateRange, onDateRangeChange }: DateRangePicke
               </div>
             ))}
           </div>
-          <div className="p-3">
-            <div ref={calendarRef} />
+
+          {/* Calendar + custom inputs */}
+          <div className="flex flex-col">
+            <div className="p-3">
+              <div ref={calendarRef} />
+            </div>
+            <Separator />
+            <div className="flex items-center gap-2 px-3 py-2.5">
+              <Input
+                type="date"
+                value={customFrom}
+                onChange={(e) => setCustomFrom(e.target.value)}
+                className="h-7 text-xs w-[130px]"
+              />
+              <span className="text-muted-foreground text-xs">–</span>
+              <Input
+                type="date"
+                value={customTo}
+                onChange={(e) => setCustomTo(e.target.value)}
+                className="h-7 text-xs w-[130px]"
+              />
+              <Button size="sm" className="h-7 px-3 text-xs" onClick={applyCustom}>
+                Apply
+              </Button>
+            </div>
           </div>
         </div>
       </PopoverContent>
