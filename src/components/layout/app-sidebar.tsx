@@ -52,6 +52,7 @@ import {
   CalendarCheck,
   Hammer,
   AlertTriangle,
+  CalendarDays,
 } from "lucide-react";
 import {
   Sidebar,
@@ -127,6 +128,13 @@ const masterDataNav: NavItem[] = [
     tKey: "employees",
     href: "/employees",
     icon: UserCheck,
+    doctype: "Employee",
+    navCapability: "nav.employees",
+  },
+  {
+    tKey: "attendance",
+    href: "/employees/attendance",
+    icon: CalendarDays,
     doctype: "Employee",
     navCapability: "nav.employees",
   },

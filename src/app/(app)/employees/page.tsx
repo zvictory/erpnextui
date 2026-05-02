@@ -3,14 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { CalendarCheck, Settings } from "lucide-react";
+import { CalendarCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmployeeListPanel } from "@/components/employees/employee-list-panel";
 import { EmployeeDetailPanel } from "@/components/employees/employee-detail-panel";
 import { EmployeeTransactionsPane } from "@/components/employees/employee-transactions-pane";
-import { EmployeesTabelView } from "@/components/attendance/views/employees-tabel-view";
-import { EmployeesDashboardView } from "@/components/attendance/views/employees-dashboard-view";
 import { useEmployeeList, useEmployeeCount } from "@/hooks/use-employees";
 import { useEmployeeGLBalances } from "@/hooks/use-employee-balances";
 import { useListState } from "@/hooks/use-list-state";
@@ -30,7 +27,6 @@ function useIsMobile() {
 }
 
 export type EmployeeSortBy = "name" | "balance";
-type EmployeesView = "list" | "tabel" | "dashboard";
 
 export default function EmployeesPage() {
   const t = useTranslations("employees");
@@ -47,7 +43,6 @@ export default function EmployeesPage() {
   const { balanceMap, isLoading: balancesLoading } = useEmployeeGLBalances(company);
 
   const [sortBy, setSortBy] = useState<EmployeeSortBy>("name");
-  const [view, setView] = useState<EmployeesView>("list");
 
   const employeesWithBalance = useMemo<EmployeeWithBalance[]>(() => {
     const list = employees.map((e) => {
@@ -69,7 +64,6 @@ export default function EmployeesPage() {
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeWithBalance | null>(null);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
 
-  // Derive effective selection — auto-pick first item if nothing is selected yet
   const effectiveSelectedEmployee =
     selectedEmployee ?? (employeesWithBalance.length > 0 ? employeesWithBalance[0] : null);
 
@@ -90,45 +84,20 @@ export default function EmployeesPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b">
-        <Tabs value={view} onValueChange={(v) => setView(v as EmployeesView)}>
-          <TabsList>
-            <TabsTrigger value="list">{t("view.list")}</TabsTrigger>
-            <TabsTrigger value="tabel">{t("view.tabel")}</TabsTrigger>
-            <TabsTrigger value="dashboard">{t("view.dashboard")}</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <Button variant="ghost" size="icon" asChild title={t("attendanceSettings")}>
-          <Link href="/employees/attendance-settings">
-            <Settings className="h-4 w-4" />
+      <div className="flex items-center justify-between px-3 pt-2.5 pb-0 gap-2 border-b pb-2">
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-0.5">
+          {t("title")}
+        </span>
+        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-muted-foreground" asChild>
+          <Link href="/employees/salary-accrual">
+            <CalendarCheck className="h-3.5 w-3.5" />
+            {t("salaryAccrual")}
           </Link>
         </Button>
       </div>
 
-      {view === "tabel" && (
-        <div className="p-4 md:p-6">
-          <EmployeesTabelView />
-        </div>
-      )}
-      {view === "dashboard" && (
-        <div className="p-4 md:p-6">
-          <EmployeesDashboardView />
-        </div>
-      )}
-      {view === "list" && (
-      <div className="flex overflow-hidden -m-4 md:-m-6 h-[calc(100svh-7rem)]">
+      <div className="flex overflow-hidden -mx-4 -mb-4 md:-mx-6 md:-mb-6 h-[calc(100svh-6.5rem)]">
         <div className="w-full md:w-[340px] flex-shrink-0 flex flex-col border-r overflow-hidden">
-          <div className="flex items-center justify-between px-3 pt-2.5 pb-0 gap-2">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-0.5">
-              {t("title")}
-            </span>
-            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-muted-foreground" asChild>
-              <Link href="/employees/salary-accrual">
-                <CalendarCheck className="h-3.5 w-3.5" />
-                {t("salaryAccrual")}
-              </Link>
-            </Button>
-          </div>
           <EmployeeListPanel
             employees={listRows}
             isLoading={isLoading}
@@ -168,9 +137,8 @@ export default function EmployeesPage() {
           )}
         </div>
       </div>
-      )}
 
-      {effectiveSelectedEmployee && view === "list" && (
+      {effectiveSelectedEmployee && (
         <EmployeeTransactionsPane
           open={mobileSheetOpen}
           onOpenChange={setMobileSheetOpen}
