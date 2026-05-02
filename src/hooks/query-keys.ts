@@ -11,6 +11,7 @@ export const queryKeys = {
   accounts: {
     bank: (company: string) => ["accounts", "bank", company] as const,
     bankWithCurrency: (company: string) => ["accounts", "bankWithCurrency", company] as const,
+    transferWithCurrency: (company: string) => ["accounts", "transferWithCurrency", company] as const,
     expense: (company: string) => ["accounts", "expense", company] as const,
     expenseWithCurrency: (company: string) => ["accounts", "expenseWithCurrency", company] as const,
     expenseGroups: (company: string) => ["accounts", "expenseGroups", company] as const,

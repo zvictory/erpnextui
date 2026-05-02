@@ -17,6 +17,13 @@ export interface AccountWithCurrency {
   balance?: number;
 }
 
+export interface TransferAccount {
+  name: string;
+  account_currency: string;
+  balance: number;
+  root_type: "Asset" | "Equity";
+}
+
 export interface AccountDetail extends Account {
   account_currency: string;
   bank_name?: string;

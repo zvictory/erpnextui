@@ -20,7 +20,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -28,7 +30,7 @@ import {
 import { StatusBar } from "@/components/shared/status-bar";
 import { EditModeBar } from "@/components/expenses/edit-mode-bar";
 import { InsufficientBalanceWarning } from "@/components/shared/insufficient-balance-warning";
-import { useBankAccountsWithCurrency } from "@/hooks/use-accounts";
+import { useTransferAccountsWithCurrency } from "@/hooks/use-accounts";
 import { useExchangeRate } from "@/hooks/use-exchange-rate";
 import { useCompanyStore } from "@/stores/company-store";
 import { useCompanies } from "@/hooks/use-companies";
@@ -131,10 +133,13 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
   const t = useTranslations("funds");
   const { company } = useCompanyStore();
   const {
-    data: bankAccounts = [],
+    data: transferAccounts = [],
     isLoading: isAccountsLoading,
     isError: isAccountsError,
-  } = useBankAccountsWithCurrency(company);
+  } = useTransferAccountsWithCurrency(company);
+
+  const bankAccounts = transferAccounts.filter((a) => a.root_type === "Asset");
+  const equityAccounts = transferAccounts.filter((a) => a.root_type === "Equity");
   const { data: companies } = useCompanies();
 
   const companyCurrency = companies?.find((c) => c.name === company)?.default_currency ?? "";
@@ -155,8 +160,8 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
     message: string;
   }>({ type: null, message: "" });
 
-  const fromCurrency = bankAccounts.find((a) => a.name === fromAccount)?.account_currency ?? "";
-  const toCurrency = bankAccounts.find((a) => a.name === toAccount)?.account_currency ?? "";
+  const fromCurrency = transferAccounts.find((a) => a.name === fromAccount)?.account_currency ?? "";
+  const toCurrency = transferAccounts.find((a) => a.name === toAccount)?.account_currency ?? "";
   const isExchange = fromCurrency !== "" && toCurrency !== "" && fromCurrency !== toCurrency;
 
   const [baseCurrency, quoteCurrency] = useMemo(
@@ -293,9 +298,9 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
 
         // Restore exchange rate if accounts have different currencies
         const loadedFromCurrency =
-          bankAccounts.find((a) => a.name === creditAcc?.account)?.account_currency ?? "";
+          transferAccounts.find((a) => a.name === creditAcc?.account)?.account_currency ?? "";
         const loadedToCurrency =
-          bankAccounts.find((a) => a.name === debitAcc?.account)?.account_currency ?? "";
+          transferAccounts.find((a) => a.name === debitAcc?.account)?.account_currency ?? "";
 
         if (loadedFromCurrency && loadedToCurrency && loadedFromCurrency !== loadedToCurrency) {
           // exchange_rate on the JE row = "company currency per 1 account currency"
@@ -315,7 +320,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
         setStatus({ type: "error", message });
       }
     },
-    [onLoadEntry, bankAccounts, companyCurrency],
+    [onLoadEntry, transferAccounts, companyCurrency],
   );
 
   useImperativeHandle(ref, () => ({
@@ -323,10 +328,13 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
     cancelEditMode,
   }));
 
-  const fromAccountData = bankAccounts.find((a) => a.name === fromAccount);
+  const fromAccountData = transferAccounts.find((a) => a.name === fromAccount);
   const fromBalance = fromAccountData?.balance ?? 0;
   const fromCurrencyCode = fromAccountData?.account_currency ?? "";
-  const isInsufficientBalance = !!fromAccount && parsedAmount > 0 && parsedAmount > fromBalance;
+  // Equity accounts have no "insufficient balance" concept — owners can always invest
+  const isEquityFrom = fromAccountData?.root_type === "Equity";
+  const isInsufficientBalance =
+    !!fromAccount && !isEquityFrom && parsedAmount > 0 && parsedAmount > fromBalance;
 
   const validate = (): string | null => {
     if (!postingDate) return "Date is required";
@@ -423,7 +431,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
       return <span className="text-xs text-muted-foreground">{t("loading")}</span>;
     if (isAccountsError)
       return <span className="text-xs text-destructive">{t("balanceUnavailable")}</span>;
-    const acc = bankAccounts.find((a) => a.name === accountName);
+    const acc = transferAccounts.find((a) => a.name === accountName);
     if (!acc) return null;
     return (
       <span className="inline-block rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
@@ -463,11 +471,26 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
                     <SelectValue placeholder={t("selectAccount")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {bankAccounts.map((acc) => (
-                      <SelectItem key={acc.name} value={acc.name}>
-                        {acc.name} ({acc.account_currency})
-                      </SelectItem>
-                    ))}
+                    {bankAccounts.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel className="text-xs text-muted-foreground">Bank & Cash</SelectLabel>
+                        {bankAccounts.map((acc) => (
+                          <SelectItem key={acc.name} value={acc.name}>
+                            {acc.name} ({acc.account_currency})
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
+                    {equityAccounts.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel className="text-xs text-muted-foreground">Equity</SelectLabel>
+                        {equityAccounts.map((acc) => (
+                          <SelectItem key={acc.name} value={acc.name}>
+                            {acc.name} ({acc.account_currency})
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -497,13 +520,30 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
                     <SelectValue placeholder={t("selectAccount")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {bankAccounts
-                      .filter((acc) => acc.name !== fromAccount)
-                      .map((acc) => (
-                        <SelectItem key={acc.name} value={acc.name}>
-                          {acc.name} ({acc.account_currency})
-                        </SelectItem>
-                      ))}
+                    {bankAccounts.filter((a) => a.name !== fromAccount).length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel className="text-xs text-muted-foreground">Bank & Cash</SelectLabel>
+                        {bankAccounts
+                          .filter((acc) => acc.name !== fromAccount)
+                          .map((acc) => (
+                            <SelectItem key={acc.name} value={acc.name}>
+                              {acc.name} ({acc.account_currency})
+                            </SelectItem>
+                          ))}
+                      </SelectGroup>
+                    )}
+                    {equityAccounts.filter((a) => a.name !== fromAccount).length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel className="text-xs text-muted-foreground">Equity</SelectLabel>
+                        {equityAccounts
+                          .filter((acc) => acc.name !== fromAccount)
+                          .map((acc) => (
+                            <SelectItem key={acc.name} value={acc.name}>
+                              {acc.name} ({acc.account_currency})
+                            </SelectItem>
+                          ))}
+                      </SelectGroup>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -518,7 +558,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
               </div>
             )}
 
-            {fromAccount && (
+            {fromAccount && !isEquityFrom && (
               <InsufficientBalanceWarning
                 balance={fromBalance}
                 amount={parsedAmount}

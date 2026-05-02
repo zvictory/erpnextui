@@ -15,6 +15,7 @@ import { useCompanyStore } from "@/stores/company-store";
 import type {
   Account,
   AccountWithCurrency,
+  TransferAccount,
   AccountDetail,
   BankAccountListItem,
   COAAccountListItem,
@@ -116,6 +117,52 @@ export function useBankAccountsWithCurrency(company: string) {
       );
 
       return accounts.map((acc) => ({
+        ...acc,
+        balance: balanceMap.get(acc.name)?.balance ?? 0,
+      }));
+    },
+    enabled: !!company,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Fetches Bank, Cash, and Equity accounts for use in the Transfer Funds form. */
+export function useTransferAccountsWithCurrency(company: string) {
+  return useQuery({
+    queryKey: queryKeys.accounts.transferWithCurrency(company),
+    queryFn: async () => {
+      const [bankCash, equity] = await Promise.all([
+        frappe.getList<{ name: string; account_currency: string }>("Account", {
+          filters: [
+            ["account_type", "in", ["Bank", "Cash"]],
+            ["is_group", "=", 0],
+            ["disabled", "=", 0],
+            ["company", "=", company],
+          ],
+          fields: ["name", "account_currency"],
+        }),
+        frappe.getList<{ name: string; account_currency: string }>("Account", {
+          filters: [
+            ["root_type", "=", "Equity"],
+            ["is_group", "=", 0],
+            ["disabled", "=", 0],
+            ["company", "=", company],
+          ],
+          fields: ["name", "account_currency"],
+        }),
+      ]);
+
+      const all: TransferAccount[] = [
+        ...bankCash.map((a) => ({ ...a, root_type: "Asset" as const, balance: 0 })),
+        ...equity.map((a) => ({ ...a, root_type: "Equity" as const, balance: 0 })),
+      ];
+
+      const balanceMap = await fetchBalancesBatch(
+        all.map((a) => a.name),
+        getToday(),
+      );
+
+      return all.map((acc) => ({
         ...acc,
         balance: balanceMap.get(acc.name)?.balance ?? 0,
       }));
