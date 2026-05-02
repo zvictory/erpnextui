@@ -13,7 +13,7 @@ import {
   Send,
   Trash2,
   Banknote,
-  Settings,
+  Settings2,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -27,8 +27,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -212,6 +210,28 @@ export function EmployeeDetailPanel({
     return sortAsc ? withBalance : [...withBalance].reverse();
   }, [ledgerEntries, draftJEs, sortAsc]);
 
+  // Deterministic avatar color from employee ID
+  const AVATAR_COLORS = [
+    "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
+    "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300",
+    "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
+    "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
+    "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300",
+    "bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300",
+    "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
+    "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300",
+  ];
+  let hash = 0;
+  for (const c of employeeName) hash = ((hash * 31) + c.charCodeAt(0)) >>> 0;
+  const avatarColorClass = AVATAR_COLORS[hash % AVATAR_COLORS.length];
+
+  const balanceColorClass =
+    outstandingBalance == null || outstandingBalance === 0
+      ? "text-foreground"
+      : outstandingBalance > 0
+        ? "text-red-600 dark:text-red-400"
+        : "text-emerald-600 dark:text-emerald-400";
+
   return (
     <>
       <div className={cn("h-full flex flex-col gap-0 min-h-0", className)}>
@@ -219,141 +239,131 @@ export function EmployeeDetailPanel({
           {employeeDisplayName} — {t("employee")} {t("details")}
         </span>
 
-        <div className="flex flex-col gap-4 p-6 pb-4">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10">
-              <AvatarFallback className="bg-muted text-muted-foreground text-sm font-medium">
-                {getInitials(employeeDisplayName)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-base font-bold leading-tight truncate">
-                {employeeDisplayName}
-              </span>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-xs text-muted-foreground truncate">{employeeName}</span>
+        {/* Hero header */}
+        <div className="px-6 pt-5 pb-0">
+          <div className="flex items-start gap-4">
+            {/* Avatar */}
+            <div
+              className={cn(
+                "h-14 w-14 rounded-2xl flex-shrink-0 flex items-center justify-center text-base font-bold",
+                avatarColorClass,
+              )}
+            >
+              {getInitials(employeeDisplayName)}
+            </div>
+
+            {/* Identity */}
+            <div className="flex-1 min-w-0 pt-0.5">
+              <h2 className="text-lg font-bold leading-tight truncate">{employeeDisplayName}</h2>
+              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                <span className="text-xs text-muted-foreground font-mono">{employeeName}</span>
                 {designation && (
-                  <Badge variant="secondary" className="text-xs py-0 h-4">
+                  <Badge variant="secondary" className="text-[11px] py-0 h-[18px]">
                     {designation}
                   </Badge>
                 )}
                 {department && (
-                  <Badge variant="outline" className="text-xs py-0 h-4">
+                  <Badge variant="outline" className="text-[11px] py-0 h-[18px]">
                     {department}
                   </Badge>
                 )}
               </div>
+              {monthlySalary != null && monthlySalary > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t("monthlySalary")}:{" "}
+                  <span className="font-medium tabular-nums">
+                    {formatCurrency(monthlySalary, currencySymbol, symbolOnRight)}
+                  </span>
+                </p>
+              )}
+            </div>
+
+            {/* Outstanding balance */}
+            <div className="flex-shrink-0 text-right pt-0.5">
+              <p className="text-[11px] text-muted-foreground mb-1">{t("outstanding")}</p>
+              {outstandingBalance == null ? (
+                <div className="space-y-1.5 flex flex-col items-end">
+                  <Skeleton className="h-6 w-28" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              ) : currencyBalances.length >= 1 ? (
+                <>
+                  <div className="flex flex-col items-end gap-0.5">
+                    {currencyBalances.map((b) => {
+                      const info = currencyMap?.get(b.currency);
+                      const bColor =
+                        b.amount > 0
+                          ? "text-red-600 dark:text-red-400"
+                          : b.amount < 0
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-foreground";
+                      return (
+                        <p
+                          key={b.currency}
+                          className={cn(
+                            "font-bold tabular-nums",
+                            currencyBalances.length > 1 ? "text-base" : "text-xl",
+                            bColor,
+                          )}
+                        >
+                          {formatInvoiceCurrency(Math.abs(b.amount), b.currency, info)}
+                        </p>
+                      );
+                    })}
+                  </div>
+                  {currencyBalances.length > 1 && (
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      ≈ {formattedBalance}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p className={cn("text-xl font-bold tabular-nums", balanceColorClass)}>
+                  {formattedBalance}
+                </p>
+              )}
+              <p className="text-[11px] text-muted-foreground mt-1">{tCommon("asOfToday")}</p>
             </div>
           </div>
 
-          <Card>
-            <CardContent className="p-4">
-              {outstandingBalance == null ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-7 w-48" />
-                  <Skeleton className="h-3 w-28" />
-                </div>
-              ) : (
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">{t("outstanding")}</p>
-                    {currencyBalances.length >= 1 ? (
-                      <>
-                        <div className="flex flex-col gap-0.5">
-                          {currencyBalances.map((b) => {
-                            const info = currencyMap?.get(b.currency);
-                            return (
-                              <p
-                                key={b.currency}
-                                className={cn(
-                                  "font-bold tabular-nums",
-                                  currencyBalances.length > 1 ? "text-lg" : "text-2xl",
-                                  b.amount > 0
-                                    ? "text-red-600"
-                                    : b.amount < 0
-                                      ? "text-green-600"
-                                      : "",
-                                )}
-                              >
-                                {formatInvoiceCurrency(Math.abs(b.amount), b.currency, info)}
-                              </p>
-                            );
-                          })}
-                        </div>
-                        {currencyBalances.length > 1 && (
-                          <p className="text-xs text-muted-foreground mt-1.5 border-t pt-1.5">
-                            {tInvoices("total")} ≈ {formattedBalance}
-                          </p>
-                        )}
-                      </>
-                    ) : (
-                      <p
-                        className={
-                          outstandingBalance > 0
-                            ? "text-2xl font-bold text-red-600 tabular-nums"
-                            : outstandingBalance < 0
-                              ? "text-2xl font-bold text-green-600 tabular-nums"
-                              : "text-2xl font-bold tabular-nums"
-                        }
-                      >
-                        {formattedBalance}
-                      </p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {t("employee")} · {tCommon("asOfToday")}
-                    </p>
-                  </div>
-                  <div
-                    className={
-                      outstandingBalance > 0
-                        ? "text-red-600"
-                        : outstandingBalance < 0
-                          ? "text-green-600"
-                          : "text-muted-foreground"
-                    }
-                  >
-                    {outstandingBalance > 0 ? (
-                      <ArrowUpRight className="h-5 w-5" />
-                    ) : outstandingBalance < 0 ? (
-                      <ArrowDownLeft className="h-5 w-5" />
-                    ) : null}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {monthlySalary != null && monthlySalary > 0 && (
-            <p className="text-xs text-muted-foreground">
-              {t("monthlySalary")}:{" "}
-              <span className="font-medium tabular-nums">
-                {formatCurrency(monthlySalary, currencySymbol, symbolOnRight)}
-              </span>
-            </p>
-          )}
-
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={handleIceCreamSale}>
-              <IceCreamCone className="h-4 w-4 mr-1" />
+          {/* Action bar */}
+          <div className="flex items-center gap-2 mt-4 pb-4 border-b">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+              onClick={handleIceCreamSale}
+            >
+              <IceCreamCone className="h-4 w-4" />
               {t("iceCreamSale")}
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setSalaryPayDialogOpen(true)}>
-              <Banknote className="h-4 w-4 mr-1" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+              onClick={() => setSalaryPayDialogOpen(true)}
+            >
+              <Banknote className="h-4 w-4" />
               {t("paySalary")}
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setCostSetupOpen(true)}>
-              <Settings className="h-4 w-4 mr-1" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+              onClick={() => setCostSetupOpen(true)}
+            >
+              <Settings2 className="h-4 w-4" />
               {t("costSetup")}
             </Button>
-            <Button size="sm" onClick={handleNewAdvance}>
-              <Plus className="h-4 w-4 mr-1" />
+            <div className="flex-1" />
+            <Button size="sm" className="h-8 gap-1.5" onClick={handleNewAdvance}>
+              <Plus className="h-4 w-4" />
               {t("newAdvance")}
             </Button>
           </div>
         </div>
 
-        <Separator />
+        <Separator className="hidden" />
 
         <Tabs defaultValue="overview" className="flex-1 flex flex-col min-h-0">
           <TabsList className="mx-4 mt-2 self-start">

@@ -117,12 +117,14 @@ export default function EmployeesPage() {
       )}
       {view === "list" && (
       <div className="flex overflow-hidden -m-4 md:-m-6 h-[calc(100svh-7rem)]">
-        <div className="w-full md:w-[380px] flex-shrink-0 flex flex-col border-r overflow-hidden">
-          <div className="flex items-center justify-between px-4 pt-3 pb-1">
-            <h2 className="text-sm font-semibold">{t("title")}</h2>
-            <Button variant="outline" size="sm" asChild>
+        <div className="w-full md:w-[340px] flex-shrink-0 flex flex-col border-r overflow-hidden">
+          <div className="flex items-center justify-between px-3 pt-2.5 pb-0 gap-2">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-0.5">
+              {t("title")}
+            </span>
+            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-muted-foreground" asChild>
               <Link href="/employees/salary-accrual">
-                <CalendarCheck className="h-4 w-4 mr-1" />
+                <CalendarCheck className="h-3.5 w-3.5" />
                 {t("salaryAccrual")}
               </Link>
             </Button>
