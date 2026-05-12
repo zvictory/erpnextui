@@ -72,6 +72,7 @@ export function SalesOrderForm({
   const sellingWarehouse = useUISettingsStore(
     (s) => s.getCompanySettings(company).sellingWarehouse,
   );
+  const updateCompanySetting = useUISettingsStore((s) => s.updateCompanySetting);
   const { data: currencyMap } = useCurrencyMap();
   const { data: companiesList } = useCompanies();
   const companyDefaultCurrency = companiesList?.find((c) => c.name === company)?.default_currency;
@@ -263,7 +264,10 @@ export function SalesOrderForm({
             <LinkField
               doctype="Warehouse"
               value={watch("set_warehouse") ?? ""}
-              onChange={(v) => setValue("set_warehouse", v, { shouldValidate: true })}
+              onChange={(v) => {
+                setValue("set_warehouse", v, { shouldValidate: true });
+                if (v) updateCompanySetting(company, "sellingWarehouse", v);
+              }}
               disabled={isReadOnly}
               filters={[["company", "=", company], ["is_group", "=", 0]]}
             />
