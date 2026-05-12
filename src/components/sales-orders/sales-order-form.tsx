@@ -94,6 +94,7 @@ export function SalesOrderForm({
           customer: defaultValues.customer,
           transaction_date: defaultValues.transaction_date,
           delivery_date: defaultValues.delivery_date ?? defaultValues.transaction_date,
+          set_warehouse: defaultValues.set_warehouse ?? sellingWarehouse ?? "",
           items: defaultValues.items.map((item) => ({
             item_code: item.item_code,
             qty: item.qty,
@@ -115,6 +116,7 @@ export function SalesOrderForm({
           customer: "",
           transaction_date: getToday(),
           delivery_date: getToday(),
+          set_warehouse: sellingWarehouse ?? "",
           items: [
             { item_code: "", qty: 1, rate: 0, amount: 0, uom: "", conversion_factor: 1 },
             { item_code: "", qty: 1, rate: 0, amount: 0, uom: "", conversion_factor: 1 },
@@ -133,6 +135,7 @@ export function SalesOrderForm({
   const transactionDate = watch("transaction_date");
   const deliveryDate = watch("delivery_date");
   const watchedCustomer = watch("customer");
+  const selectedWarehouse = watch("set_warehouse") ?? sellingWarehouse ?? "";
 
   const { data: customerDoc } = useCustomer(watchedCustomer);
   const effectiveCurrency =
@@ -235,7 +238,7 @@ export function SalesOrderForm({
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label>{tInvoices("priceList")}</Label>
             <Select
@@ -255,6 +258,16 @@ export function SalesOrderForm({
               </SelectContent>
             </Select>
           </div>
+          <div className="space-y-1.5">
+            <Label>{t("warehouse")}</Label>
+            <LinkField
+              doctype="Warehouse"
+              value={watch("set_warehouse") ?? ""}
+              onChange={(v) => setValue("set_warehouse", v, { shouldValidate: true })}
+              disabled={isReadOnly}
+              filters={[["company", "=", company], ["is_group", "=", 0]]}
+            />
+          </div>
         </div>
 
         <Separator />
@@ -265,7 +278,7 @@ export function SalesOrderForm({
           currencySymbol={currencySymbol}
           symbolOnRight={symbolOnRight}
           showStockAvailability={!isReadOnly}
-          sellingWarehouse={sellingWarehouse}
+          sellingWarehouse={selectedWarehouse}
         />
 
         {errors.items && (

@@ -69,7 +69,7 @@ function ItemRow({
   showDiscPct,
   showDiscAmt,
   showStockAvailability,
-  sellingWarehouse: _sellingWarehouse,
+  sellingWarehouse,
   warehouseItemCodes,
   onRemove,
 }: {
@@ -105,13 +105,16 @@ function ItemRow({
 
   const isStockItem = itemDoc?.is_stock_item === 1;
   const { data: bins } = useItemBins(showStockAvailability && isStockItem ? (itemCode ?? "") : "");
-  const availableQty = (bins ?? []).reduce(
+  const binsForWarehouse = sellingWarehouse
+    ? (bins ?? []).filter((b) => b.warehouse === sellingWarehouse)
+    : (bins ?? []);
+  const availableQty = binsForWarehouse.reduce(
     (sum, b) => sum + b.actual_qty - (b.reserved_qty ?? 0),
     0,
   );
   const qtyInStockUom = (parseFloat(qty) || 0) * (parseFloat(String(convFactor)) || 1);
   const isOverQty =
-    showStockAvailability && isStockItem && (bins?.length ?? 0) > 0 && qtyInStockUom > availableQty;
+    showStockAvailability && isStockItem && binsForWarehouse.length > 0 && qtyInStockUom > availableQty;
 
   const prevOverQtyRef = useRef(false);
   useEffect(() => {
@@ -213,6 +216,7 @@ function ItemRow({
           <StockAvailabilityIndicator
             itemCode={itemCode}
             isStockItem={itemDoc?.is_stock_item === 1}
+            warehouse={sellingWarehouse}
           />
         )}
       </div>

@@ -739,7 +739,8 @@
     "toReceive": "Қабул қилиш керак",
     "toDeliver": "Етказиш керак",
     "toDeliverAndBill": "Етказиш ва ҳисоблаш",
-    "completed": "Якунланган"
+    "completed": "Якунланган",
+    "warehouse": "Омбор"
   },
   "quotations": {
     "title": "Таклифномалар",

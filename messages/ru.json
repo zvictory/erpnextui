@@ -754,7 +754,8 @@
     "toReceive": "К получению",
     "toDeliver": "К доставке",
     "toDeliverAndBill": "К доставке и оплате",
-    "completed": "Завершён"
+    "completed": "Завершён",
+    "warehouse": "Склад"
   },
   "quotations": {
     "title": "Коммерческие предложения",

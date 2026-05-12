@@ -739,7 +739,8 @@
     "toReceive": "Qabul qilish kerak",
     "toDeliver": "Yetkazish kerak",
     "toDeliverAndBill": "Yetkazish va hisoblash",
-    "completed": "Yakunlangan"
+    "completed": "Yakunlangan",
+    "warehouse": "Ombor"
   },
   "quotations": {
     "title": "Taklifnomalar",

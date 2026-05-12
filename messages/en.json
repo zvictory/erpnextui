@@ -801,7 +801,8 @@
     "toReceive": "To Receive",
     "toDeliver": "To Deliver",
     "toDeliverAndBill": "To Deliver and Bill",
-    "completed": "Completed"
+    "completed": "Completed",
+    "warehouse": "Warehouse"
   },
   "quotations": {
     "title": "Quotations",

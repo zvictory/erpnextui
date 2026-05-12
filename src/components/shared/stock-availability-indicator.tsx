@@ -15,11 +15,13 @@ import { Separator } from "@/components/ui/separator";
 interface StockAvailabilityIndicatorProps {
   itemCode: string;
   isStockItem?: boolean;
+  warehouse?: string;
 }
 
 export function StockAvailabilityIndicator({
   itemCode,
   isStockItem,
+  warehouse,
 }: StockAvailabilityIndicatorProps) {
   const t = useTranslations("invoices");
   const { data: bins, isLoading } = useItemBins(isStockItem ? itemCode : "");
@@ -31,14 +33,16 @@ export function StockAvailabilityIndicator({
     return <span className="text-xs text-muted-foreground animate-pulse">...</span>;
   }
 
-  const totalQty = (bins ?? []).reduce((sum, b) => sum + b.actual_qty, 0);
-  const availableQty = (bins ?? []).reduce(
+  const filteredBins = warehouse ? (bins ?? []).filter((b) => b.warehouse === warehouse) : (bins ?? []);
+
+  const totalQty = filteredBins.reduce((sum, b) => sum + b.actual_qty, 0);
+  const availableQty = filteredBins.reduce(
     (sum, b) => sum + b.actual_qty - (b.reserved_qty ?? 0),
     0,
   );
   const hasReserved = totalQty !== availableQty;
   const isOversold = availableQty < 0;
-  const nonZeroBins = (bins ?? []).filter((b) => b.actual_qty > 0);
+  const nonZeroBins = filteredBins.filter((b) => b.actual_qty > 0);
   const hasStock = totalQty > 0;
 
   const triggerColor = isOversold
