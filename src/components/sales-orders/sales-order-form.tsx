@@ -31,6 +31,7 @@ import { useCurrencyMap } from "@/hooks/use-accounts";
 import { useCompanies } from "@/hooks/use-companies";
 import { useCustomer } from "@/hooks/use-customers";
 import { useSellingPriceList, useSellingPriceLists } from "@/hooks/use-selling-price-list";
+import { useWarehousesAll } from "@/hooks/use-warehouses";
 
 function getToday(): string {
   const d = new Date();
@@ -80,6 +81,7 @@ export function SalesOrderForm({
   const { data: defaultPriceList } = useSellingPriceList(company);
   const { data: priceLists } = useSellingPriceLists();
   const [selectedPriceList, setSelectedPriceList] = useState("");
+  const { data: allWarehouses } = useWarehousesAll(company);
 
   useEffect(() => {
     if (defaultPriceList && !selectedPriceList) {
@@ -166,6 +168,15 @@ export function SalesOrderForm({
       setValue("delivery_date", transactionDate, { shouldValidate: true });
     }
   }, [transactionDate, deliveryDate, setValue]);
+
+  // Auto-select first warehouse when no default is configured (fresh session / new user)
+  useEffect(() => {
+    if (isEdit || selectedWarehouse) return;
+    const first = allWarehouses?.[0]?.name;
+    if (!first) return;
+    setValue("set_warehouse", first, { shouldValidate: true });
+    updateCompanySetting(company, "sellingWarehouse", first);
+  }, [allWarehouses, isEdit, selectedWarehouse, setValue, updateCompanySetting, company]);
 
   return (
     <FormProvider {...form}>
@@ -260,7 +271,9 @@ export function SalesOrderForm({
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>{t("warehouse")}</Label>
+            <Label>
+              {t("warehouse")} <span className="text-destructive">*</span>
+            </Label>
             <LinkField
               doctype="Warehouse"
               value={watch("set_warehouse") ?? ""}
@@ -271,6 +284,9 @@ export function SalesOrderForm({
               disabled={isReadOnly}
               filters={[["company", "=", company], ["is_group", "=", 0]]}
             />
+            {errors.set_warehouse && (
+              <p className="text-sm text-destructive">{errors.set_warehouse.message}</p>
+            )}
           </div>
         </div>
 

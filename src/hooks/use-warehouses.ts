@@ -39,6 +39,23 @@ export function useWarehouseCount(company: string, search: string) {
   });
 }
 
+export function useWarehousesAll(company: string) {
+  return useQuery({
+    queryKey: ["warehouses", "all", company],
+    queryFn: () =>
+      frappe.getList<WarehouseListItem>("Warehouse", {
+        filters: [
+          ["company", "=", company],
+          ["is_group", "=", 0],
+        ],
+        fields: ["name", "warehouse_name"],
+        orderBy: "warehouse_name asc",
+        limitPageLength: 0,
+      }),
+    enabled: !!company,
+  });
+}
+
 export function useWarehouse(name: string) {
   return useQuery({
     queryKey: queryKeys.warehouses.detail(name),
