@@ -338,7 +338,8 @@
     "returnInvoice": "Қайтариш ҳисоб-фактураси",
     "stockTotal": "Омборда: {qty}",
     "stockOut": "Мавжуд эмас",
-    "stockByWarehouse": "Омборлар бўйича қолдиқ"
+    "stockByWarehouse": "Омборлар бўйича қолдиқ",
+    "qtyExceedsAvail": "Мавжуддан ошиб кетди: {qty}"
   },
   "customers": {
     "title": "Мижозлар",

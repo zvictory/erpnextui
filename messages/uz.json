@@ -338,7 +338,8 @@
     "returnInvoice": "Qaytarish hisob-fakturasi",
     "stockTotal": "Omborda: {qty}",
     "stockOut": "Mavjud emas",
-    "stockByWarehouse": "Omborlar bo'yicha qoldiq"
+    "stockByWarehouse": "Omborlar bo'yicha qoldiq",
+    "qtyExceedsAvail": "Mavjuddan oshib ketdi: {qty}"
   },
   "customers": {
     "title": "Mijozlar",

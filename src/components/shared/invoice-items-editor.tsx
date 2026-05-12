@@ -22,8 +22,11 @@ import { useCompanies } from "@/hooks/use-companies";
 import { useUISettingsStore } from "@/stores/ui-settings-store";
 import { useItem, useWarehouseItemCodes } from "@/hooks/use-items";
 import { useItemPrice } from "@/hooks/use-item-price";
+import { useItemBins } from "@/hooks/use-stock-ledger";
 import { StockAvailabilityIndicator } from "@/components/shared/stock-availability-indicator";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
+import { formatNumber } from "@/lib/formatters";
 
 interface InvoiceItemsEditorProps {
   disabled?: boolean;
@@ -95,8 +98,31 @@ function ItemRow({
   // Skip amount recalc on initial load — preserve ERPNext's stored amount
   const isInitialMount = useRef(true);
 
+  const convFactor = useWatch({ control, name: `${prefix}.${index}.conversion_factor` }) ?? 1;
+
   const { data: itemDoc } = useItem(itemCode ?? "");
   const { data: priceListRate } = useItemPrice(itemCode ?? "", priceList, uom);
+
+  const isStockItem = itemDoc?.is_stock_item === 1;
+  const { data: bins } = useItemBins(showStockAvailability && isStockItem ? (itemCode ?? "") : "");
+  const availableQty = (bins ?? []).reduce(
+    (sum, b) => sum + b.actual_qty - (b.reserved_qty ?? 0),
+    0,
+  );
+  const qtyInStockUom = (parseFloat(qty) || 0) * (parseFloat(String(convFactor)) || 1);
+  const isOverQty =
+    showStockAvailability && isStockItem && (bins?.length ?? 0) > 0 && qtyInStockUom > availableQty;
+
+  const prevOverQtyRef = useRef(false);
+  useEffect(() => {
+    if (isOverQty && !prevOverQtyRef.current && itemCode) {
+      toast.warning(
+        `${itemCode}: ${t("qtyExceedsAvail", { qty: formatNumber(availableQty) })}`,
+        { id: `over-qty-${itemCode}` },
+      );
+    }
+    prevOverQtyRef.current = isOverQty;
+  }, [isOverQty, itemCode, availableQty, t]);
 
   const uomOptions = itemDoc?.uoms?.length
     ? itemDoc.uoms.map((u) => u.uom)
@@ -227,7 +253,13 @@ function ItemRow({
           min={0}
           decimals={2}
           disabled={disabled}
+          className={isOverQty ? "border-red-500 dark:border-red-400 focus-visible:ring-red-500/30" : undefined}
         />
+        {isOverQty && (
+          <span className="text-[10px] text-red-600 dark:text-red-400 leading-tight">
+            {t("qtyExceedsAvail", { qty: formatNumber(availableQty) })}
+          </span>
+        )}
       </div>
       <div className="space-y-1">
         {index === 0 && <Label className="text-xs">{t("rate")}</Label>}

@@ -343,7 +343,8 @@
     "returnInvoice": "Возвратная накладная",
     "stockTotal": "На складе: {qty}",
     "stockOut": "Нет в наличии",
-    "stockByWarehouse": "Остатки по складам"
+    "stockByWarehouse": "Остатки по складам",
+    "qtyExceedsAvail": "Превышает доступный: {qty}"
   },
   "customers": {
     "title": "Клиенты",

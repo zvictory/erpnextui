@@ -343,7 +343,8 @@
     "returnInvoice": "Return Invoice",
     "stockTotal": "In stock: {qty}",
     "stockOut": "Out of stock",
-    "stockByWarehouse": "Stock by warehouse"
+    "stockByWarehouse": "Stock by warehouse",
+    "qtyExceedsAvail": "Exceeds available: {qty}"
   },
   "customers": {
     "title": "Customers",
