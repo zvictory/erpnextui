@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 
 const NEW_PAGE_MAP: Record<string, string> = {
-  "/sales-invoices": "/sales-invoices/new",
+  "/sales-invoices": "/sales-orders",
   "/purchase-invoices": "/purchase-invoices/new",
   "/sales-orders": "/sales-orders/new",
   "/purchase-orders": "/purchase-orders/new",

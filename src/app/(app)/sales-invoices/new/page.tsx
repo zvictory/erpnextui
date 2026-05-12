@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FormPageLayout } from "@/components/shared/form-page-layout";
@@ -23,6 +24,14 @@ export default function NewSalesInvoicePage() {
   const fromSO = searchParams.get("from_so") ?? "";
   const { company } = useCompanyStore();
   const createInvoice = useCreateSalesInvoice();
+
+  const isDirect = !fromSO && !amendFrom && !returnAgainst;
+  useEffect(() => {
+    if (isDirect) {
+      toast.info("Create a sales invoice from a Sales Order");
+      router.replace("/sales-orders");
+    }
+  }, [isDirect, router]);
 
   const sourceDocName = amendFrom || returnAgainst;
   const { data: sourceDoc, isLoading: isLoadingSource } = useSalesInvoice(sourceDocName);
@@ -49,6 +58,8 @@ export default function NewSalesInvoicePage() {
       onError: (err) => toast.error(err.message),
     });
   }
+
+  if (isDirect) return null;
 
   if ((sourceDocName && isLoadingSource) || (fromSO && isLoadingSO)) {
     return (

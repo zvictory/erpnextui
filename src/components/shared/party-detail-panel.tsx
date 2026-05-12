@@ -434,7 +434,7 @@ export function PartyDetailPanel({
   const newInvoiceHref =
     partyType === "Supplier"
       ? `/purchase-invoices/new?supplier=${encodeURIComponent(partyName)}`
-      : `/sales-invoices/new?customer=${encodeURIComponent(partyName)}`;
+      : `/sales-orders/new?customer=${encodeURIComponent(partyName)}`;
 
   const newOrderHref =
     partyType === "Supplier"

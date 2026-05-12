@@ -13,7 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const actions = [
-  { tKey: "newInvoice", href: "/sales-invoices/new", icon: FileText },
+  { tKey: "newOrder", href: "/sales-orders/new", icon: FileText },
   { tKey: "receivePayment", href: "/payments/receive", icon: ArrowDownToLine },
   { tKey: "newBill", href: "/purchase-invoices/new", icon: FileInput },
   { tKey: "payBills", href: "/payments/pay", icon: CreditCard },

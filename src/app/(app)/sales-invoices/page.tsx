@@ -190,7 +190,7 @@ export default function SalesInvoicesPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{t("salesInvoices")}</h1>
         {canCreate("Sales Invoice") && (
-          <Button onClick={() => router.push("/sales-invoices/new")}>
+          <Button onClick={() => router.push("/sales-orders")}>
             <Plus className="mr-1 h-4 w-4" />
             {t("newSalesInvoice")}
           </Button>
