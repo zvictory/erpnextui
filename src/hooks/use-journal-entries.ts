@@ -60,8 +60,16 @@ export function useJournalEntryAccountRows(names: string[]) {
   return useQuery({
     queryKey: queryKeys.journalEntries.accountRows(names),
     queryFn: () =>
-      frappe.call<JEAccountRow[]>("stable_app.api.transfer.get_je_account_rows", {
-        names: JSON.stringify(names),
+      frappe.getList<JEAccountRow>("Journal Entry Account", {
+        filters: [["parent", "in", names]],
+        fields: [
+          "parent",
+          "account",
+          "account_currency",
+          "debit_in_account_currency",
+          "credit_in_account_currency",
+        ],
+        limitPageLength: 0,
       }),
     enabled: names.length > 0,
     staleTime: 60_000,
