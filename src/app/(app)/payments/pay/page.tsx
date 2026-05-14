@@ -499,8 +499,8 @@ export default function PayBillsPage() {
               value={amount ? parseFloat(amount) : undefined}
               onChange={(v) => setAmount(String(v))}
               min={0}
-              decimals={0}
-              placeholder="0"
+              decimals={2}
+              placeholder="0.00"
             />
           </div>
 

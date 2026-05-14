@@ -78,16 +78,19 @@ export function SalesOrderForm({
   const { data: companiesList } = useCompanies();
   const companyDefaultCurrency = companiesList?.find((c) => c.name === company)?.default_currency;
 
-  const { data: defaultPriceList } = useSellingPriceList(company);
+  const userDefaultPriceList = useUISettingsStore(
+    (s) => s.getCompanySettings(company).defaultSellingPriceList,
+  );
+  const { data: erpDefaultPriceList } = useSellingPriceList(company);
   const { data: priceLists } = useSellingPriceLists();
   const [selectedPriceList, setSelectedPriceList] = useState("");
   const { data: allWarehouses } = useWarehousesAll(company);
 
   useEffect(() => {
-    if (defaultPriceList && !selectedPriceList) {
-      setSelectedPriceList(defaultPriceList);
-    }
-  }, [defaultPriceList, selectedPriceList]);
+    if (selectedPriceList) return;
+    const pl = userDefaultPriceList || erpDefaultPriceList;
+    if (pl) setSelectedPriceList(pl);
+  }, [userDefaultPriceList, erpDefaultPriceList, selectedPriceList]);
 
   const form = useForm<SalesOrderFormValues>({
     mode: "onChange",

@@ -10,10 +10,12 @@ import { HistoryRow } from "@/components/expenses/history-row";
 import { useCompanyStore } from "@/stores/company-store";
 import {
   useJournalEntryList,
+  useJournalEntryAccountRows,
   useSubmitJournalEntry,
   useCancelJournalEntry,
   useDeleteJournalEntry,
 } from "@/hooks/use-journal-entries";
+import type { JEAccountRow } from "@/types/journal-entry";
 
 interface HistoryPanelProps {
   onEdit?: (name: string) => void;
@@ -70,6 +72,15 @@ export function HistoryPanel({ onEdit, voucherType, remarkFilter }: HistoryPanel
     refetch,
     isRefetching,
   } = useJournalEntryList(company, voucherType, remarkFilter);
+
+  const names = (entries ?? []).map((e) => e.name);
+  const { data: accountRowsFlat } = useJournalEntryAccountRows(names);
+  const rowsByParent = new Map<string, JEAccountRow[]>();
+  for (const r of accountRowsFlat ?? []) {
+    const list = rowsByParent.get(r.parent) ?? [];
+    list.push(r);
+    rowsByParent.set(r.parent, list);
+  }
 
   const submitMutation = useSubmitJournalEntry();
   const cancelMutation = useCancelJournalEntry();
@@ -199,6 +210,7 @@ export function HistoryPanel({ onEdit, voucherType, remarkFilter }: HistoryPanel
                 entry={entry}
                 currencySymbol={currencySymbol}
                 symbolOnRight={symbolOnRight}
+                accountRows={rowsByParent.get(entry.name)}
                 onSubmit={(name) => openConfirm("submit", name)}
                 onEdit={onEdit ?? undefined}
                 onAmend={onEdit ?? undefined}

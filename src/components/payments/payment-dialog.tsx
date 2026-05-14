@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Label } from "@/components/ui/label";
 import { DateInput } from "@/components/shared/date-input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -70,16 +71,16 @@ export function PaymentDialog({ open, onOpenChange, partyType, partyName }: Paym
 
   const [postingDate, setPostingDate] = useState(getToday);
   const [paymentAccount, setPaymentAccount] = useState("");
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState(0);
   const [memo, setMemo] = useState("");
   const [selections, setSelections] = useState<Record<string, boolean>>({});
-  const [allocations, setAllocations] = useState<Record<string, string>>({});
+  const [allocations, setAllocations] = useState<Record<string, number>>({});
   const [status, setStatus] = useState<{
     type: "success" | "error" | "loading" | null;
     message: string;
   }>({ type: null, message: "" });
 
-  const parsedAmount = parseFloat(amount) || 0;
+  const parsedAmount = amount;
 
   const selectedAccount = filteredBankAccounts.find((a) => a.name === paymentAccount);
   const selectedBalance = selectedAccount?.balance ?? 0;
@@ -92,7 +93,7 @@ export function PaymentDialog({ open, onOpenChange, partyType, partyName }: Paym
 
   const totalAllocated = invoices.reduce((sum, inv) => {
     if (!selections[inv.name]) return sum;
-    return sum + (parseFloat(allocations[inv.name]) || 0);
+    return sum + (allocations[inv.name] ?? 0);
   }, 0);
 
   const isOverAllocated = totalAllocated > parsedAmount + 0.005;
@@ -100,12 +101,12 @@ export function PaymentDialog({ open, onOpenChange, partyType, partyName }: Paym
 
   /** Distribute `total` across selected invoices FIFO (due_date asc). */
   const computeAllocations = (selected: Record<string, boolean>, total: number) => {
-    const alloc: Record<string, string> = {};
+    const alloc: Record<string, number> = {};
     let remaining = total;
     for (const inv of invoices) {
       if (!selected[inv.name]) continue;
       const amt = Math.min(inv.outstanding_amount, remaining);
-      alloc[inv.name] = String(amt);
+      alloc[inv.name] = amt;
       remaining = Math.max(0, remaining - amt);
     }
     return alloc;
@@ -120,7 +121,7 @@ export function PaymentDialog({ open, onOpenChange, partyType, partyName }: Paym
 
     const totalOutstanding = invoices.reduce((s, inv) => s + inv.outstanding_amount, 0);
     if (!parsedAmount) {
-      setAmount(totalOutstanding > 0 ? String(totalOutstanding) : "");
+      setAmount(totalOutstanding > 0 ? totalOutstanding : 0);
     }
     const pool = parsedAmount || totalOutstanding;
     const alloc = computeAllocations(allSelected, pool);
@@ -128,7 +129,7 @@ export function PaymentDialog({ open, onOpenChange, partyType, partyName }: Paym
     // Only check invoices that received a non-zero allocation
     const next: Record<string, boolean> = {};
     for (const inv of invoices) {
-      if ((parseFloat(alloc[inv.name]) || 0) > 0) {
+      if ((alloc[inv.name] ?? 0) > 0) {
         next[inv.name] = true;
       }
     }
@@ -139,7 +140,7 @@ export function PaymentDialog({ open, onOpenChange, partyType, partyName }: Paym
   const handleClearAll = () => {
     setSelections({});
     setAllocations({});
-    setAmount("");
+    setAmount(0);
   };
 
   const handleToggleInvoice = (name: string, checked: boolean) => {
@@ -149,7 +150,7 @@ export function PaymentDialog({ open, onOpenChange, partyType, partyName }: Paym
       .filter((inv) => next[inv.name])
       .reduce((sum, inv) => sum + inv.outstanding_amount, 0);
     if (!parsedAmount) {
-      setAmount(selectedOutstanding > 0 ? String(selectedOutstanding) : "");
+      setAmount(selectedOutstanding > 0 ? selectedOutstanding : 0);
     }
     const pool = parsedAmount || selectedOutstanding;
     setAllocations(computeAllocations(next, pool));
@@ -167,7 +168,7 @@ export function PaymentDialog({ open, onOpenChange, partyType, partyName }: Paym
     const totalOutstanding = invoices.reduce((s, inv) => s + inv.outstanding_amount, 0);
     const pool = parsedAmount || totalOutstanding;
     if (!parsedAmount && totalOutstanding > 0) {
-      setAmount(String(totalOutstanding));
+      setAmount(totalOutstanding);
     }
     setSelections(next);
     setAllocations(computeAllocations(next, pool));
@@ -179,7 +180,7 @@ export function PaymentDialog({ open, onOpenChange, partyType, partyName }: Paym
   const resetForm = () => {
     setPostingDate(getToday());
     setPaymentAccount("");
-    setAmount("");
+    setAmount(0);
     setMemo("");
     setSelections({});
     setAllocations({});
@@ -208,7 +209,7 @@ export function PaymentDialog({ open, onOpenChange, partyType, partyName }: Paym
     }
 
     const checkedInvoices = invoices.filter(
-      (inv) => selections[inv.name] && (parseFloat(allocations[inv.name]) || 0) > 0,
+      (inv) => selections[inv.name] && (allocations[inv.name] ?? 0) > 0,
     );
 
     const refs: PaymentReference[] = checkedInvoices.map((inv) => ({
@@ -216,7 +217,7 @@ export function PaymentDialog({ open, onOpenChange, partyType, partyName }: Paym
       reference_name: inv.name,
       total_amount: inv.grand_total,
       outstanding_amount: inv.outstanding_amount,
-      allocated_amount: parseFloat(allocations[inv.name]) || 0,
+      allocated_amount: allocations[inv.name] ?? 0,
     }));
 
     setStatus({ type: "loading", message: "Creating payment entry..." });
@@ -307,14 +308,12 @@ export function PaymentDialog({ open, onOpenChange, partyType, partyName }: Paym
               <Label htmlFor="amount">
                 {t("paymentAmount")} <span className="text-destructive">*</span>
               </Label>
-              <Input
+              <MoneyInput
                 id="amount"
-                type="number"
-                step="any"
-                min="0"
+                min={0}
                 placeholder="0.00"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={setAmount}
               />
             </div>
 
@@ -403,17 +402,15 @@ export function PaymentDialog({ open, onOpenChange, partyType, partyName }: Paym
                           {formatNumber(inv.outstanding_amount)}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Input
-                            type="number"
-                            step="any"
-                            min="0"
+                          <MoneyInput
+                            min={0}
                             className="h-7 w-28 text-right tabular-nums text-sm ml-auto"
-                            value={allocations[inv.name] ?? ""}
+                            value={allocations[inv.name] ?? 0}
                             disabled={!selections[inv.name]}
-                            onChange={(e) =>
+                            onChange={(v) =>
                               setAllocations((prev) => ({
                                 ...prev,
-                                [inv.name]: e.target.value,
+                                [inv.name]: v,
                               }))
                             }
                           />

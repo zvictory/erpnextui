@@ -21,6 +21,8 @@ export interface CompanySpecificSettings {
   iceCreamCustomer: string;
   iceCreamCustomerARAccount: string;
   sellingWarehouse: string;
+  defaultSellingPriceList: string;
+  defaultBuyingPriceList: string;
 }
 
 export const DEFAULT_COMPANY_SETTINGS: CompanySpecificSettings = {
@@ -33,6 +35,8 @@ export const DEFAULT_COMPANY_SETTINGS: CompanySpecificSettings = {
   iceCreamCustomer: "",
   iceCreamCustomerARAccount: "",
   sellingWarehouse: "",
+  defaultSellingPriceList: "",
+  defaultBuyingPriceList: "",
 };
 
 interface UISettingsState {
@@ -72,7 +76,7 @@ export const useUISettingsStore = create<UISettingsState>()(
     (set, get) => ({
       autoCollapseSidebar: false,
       setAutoCollapseSidebar: (autoCollapseSidebar) => set({ autoCollapseSidebar }),
-      theme: "system",
+      theme: "light",
       setTheme: (theme) => set({ theme }),
       dateFormat: "dd MMM yyyy",
       numberFormat: "1 234,56",
@@ -106,7 +110,7 @@ export const useUISettingsStore = create<UISettingsState>()(
     }),
     {
       name: "erpnext-ui-settings",
-      version: 8,
+      version: 10,
       merge: (persisted, current) => ({
         ...current,
         ...(persisted as Partial<UISettingsState>),
@@ -145,6 +149,8 @@ export const useUISettingsStore = create<UISettingsState>()(
               iceCreamCustomerARAccount: (s.iceCreamCustomerARAccount as string) ?? "",
               salaryBankAccount: "",
               sellingWarehouse: "",
+              defaultSellingPriceList: "",
+              defaultBuyingPriceList: "",
             };
             // Store under "__migrated" key — user will see it under whichever company
             // they had selected. The settings UI will pick it up for the active company.
@@ -165,6 +171,11 @@ export const useUISettingsStore = create<UISettingsState>()(
           delete s.setIceCreamCurrency;
           delete s.setIceCreamCustomer;
           delete s.setIceCreamCustomerARAccount;
+        }
+
+        // v8 → v9: default theme system → light
+        if ((version ?? 0) < 9 && s.theme === "system") {
+          s.theme = "light";
         }
 
         return s as unknown as UISettingsState;

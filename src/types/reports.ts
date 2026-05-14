@@ -199,6 +199,69 @@ export interface SalesByCustomerData {
   uniqueCustomerCount: number;
 }
 
+// Detail (QuickBooks-style drill-down) — one record per Sales Invoice line.
+// Driven by the same fetch as the summary; only the parser/UI differ.
+export interface SalesRegisterLine {
+  invoice: string;
+  posting_date: string;
+  currency: string;
+  customer: string;
+  customer_name: string;
+  customer_group?: string;
+  item_code: string;
+  item_name: string;
+  item_group?: string;
+  qty: number;
+  stock_qty: number;
+  stock_uom?: string;
+  warehouse?: string;
+  rate: number;
+  amount: number;
+  net_amount: number;
+  base_amount: number;
+  base_net_amount: number;
+}
+
+export interface SalesByItemDetailGroup {
+  groupKey: string; // `${item_code}|${currency}`
+  itemCode: string;
+  itemName: string;
+  itemGroup?: string;
+  currency: string;
+  totalQty: number;
+  totalAmount: number;
+  lineCount: number;
+  stockUom?: string;
+  lines: SalesRegisterLine[];
+}
+
+export interface SalesByItemDetailData {
+  groups: SalesByItemDetailGroup[];
+  totalsByCurrency: Record<string, number>;
+  totalCount: number;
+  uniqueItemCount: number;
+}
+
+export interface SalesByCustomerDetailGroup {
+  groupKey: string; // `${customer}|${currency}`
+  customer: string;
+  customerName: string;
+  customerGroup?: string;
+  currency: string;
+  totalQty: number;
+  totalAmount: number;
+  lineCount: number;
+  invoiceCount: number;
+  lines: SalesRegisterLine[];
+}
+
+export interface SalesByCustomerDetailData {
+  groups: SalesByCustomerDetailGroup[];
+  totalsByCurrency: Record<string, number>;
+  totalCount: number;
+  uniqueCustomerCount: number;
+}
+
 // Sales Analytics — quantity-only (no monetary fields). The dimension
 // determines what identifies a row; monthly buckets are keyed "YYYY-MM".
 // stockUom stays blank when grouping rolls up multiple UOMs (e.g. by Customer),

@@ -30,7 +30,7 @@ import {
 import { StatusBar } from "@/components/shared/status-bar";
 import { EditModeBar } from "@/components/expenses/edit-mode-bar";
 import { InsufficientBalanceWarning } from "@/components/shared/insufficient-balance-warning";
-import { useTransferAccountsWithCurrency } from "@/hooks/use-accounts";
+import { useTransferAccountsWithCurrency, useCurrencyMap } from "@/hooks/use-accounts";
 import { useExchangeRate } from "@/hooks/use-exchange-rate";
 import { useCompanyStore } from "@/stores/company-store";
 import { useCompanies } from "@/hooks/use-companies";
@@ -176,6 +176,31 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
   // Auto-fetch exchange rate for the selected date
   const { data: fetchedRate } = useExchangeRate(baseCurrency, quoteCurrency, postingDate);
 
+  // Currency symbol lookup (e.g. "USD" → "$", "UZS" → "сўм")
+  const { data: currencyMap } = useCurrencyMap();
+  const getSym = useCallback(
+    (code: string) => {
+      const e = currencyMap?.get(code);
+      return e ? { symbol: e.symbol, onRight: e.onRight } : { symbol: code, onRight: false };
+    },
+    [currencyMap],
+  );
+  const fromSym = getSym(fromCurrency);
+  const toSym = getSym(toCurrency);
+  const baseSym = getSym(baseCurrency);
+  const quoteSym = getSym(quoteCurrency);
+  const companySym = getSym(companyCurrency);
+
+  // For cross-foreign transfers (neither side = company currency), fetch the
+  // from→company rate so we can display the base-currency equivalent.
+  const needsBaseEquivalent =
+    isExchange && fromCurrency !== companyCurrency && toCurrency !== companyCurrency;
+  const { data: fromToCompanyRate } = useExchangeRate(
+    needsBaseEquivalent ? fromCurrency : "",
+    needsBaseEquivalent ? companyCurrency : "",
+    postingDate,
+  );
+
   // State for manual-edit flag (read during render, so must be state not a ref)
   const [rateManuallyEdited, setRateManuallyEdited] = useState(false);
 
@@ -202,8 +227,6 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
         )
       : "";
   const effectiveReceivedInput = rateManuallyEdited ? receivedInput : autoReceived;
-
-  const receivedCurrency = toCurrency;
 
   const handleSwap = useCallback(() => {
     setFromAccount((prev) => {
@@ -583,7 +606,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
             <div className="space-y-1.5">
               <Label htmlFor="amount">
                 {t("amount")}
-                {fromCurrency ? ` (${fromCurrency})` : ""}{" "}
+                {fromCurrency ? ` (${fromSym.symbol})` : ""}{" "}
                 <span className="text-destructive">*</span>
               </Label>
               <NumberInput
@@ -608,7 +631,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
                   </Label>
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
-                      1 {baseCurrency} =
+                      1 {baseSym.symbol} =
                     </span>
                     <Input
                       id="exchangeRate"
@@ -620,14 +643,14 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
                       onBlur={handleRateBlur}
                       className="h-8 min-w-0"
                     />
-                    <span className="text-xs text-muted-foreground shrink-0">{quoteCurrency}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">{quoteSym.symbol}</span>
                   </div>
                 </div>
 
                 {/* Received */}
                 <div className="space-y-1.5">
                   <Label htmlFor="receivedInput" className="text-xs">
-                    {t("received")} ({receivedCurrency})
+                    {t("received")} ({toSym.symbol})
                   </Label>
                   <Input
                     id="receivedInput"
@@ -645,9 +668,13 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
               {/* Conversion summary */}
               {parsedAmount > 0 && parseFloat(effectiveReceivedInput) > 0 && (
                 <p className="text-[11px] text-muted-foreground text-center">
-                  {formatNumber(parsedAmount, 2)}&nbsp;{fromCurrency}
+                  {formatCurrency(parsedAmount, fromSym.symbol, fromSym.onRight)}
                   <span className="mx-1.5 opacity-40">→</span>
-                  {formatNumber(parseFloat(effectiveReceivedInput), 2)}&nbsp;{toCurrency}
+                  {formatCurrency(
+                    parseFloat(effectiveReceivedInput),
+                    toSym.symbol,
+                    toSym.onRight,
+                  )}
                 </p>
               )}
             </div>
@@ -664,6 +691,49 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
               rows={1}
             />
           </div>
+
+          {/* Transfer Summary — from→to detail block */}
+          {fromAccount && toAccount && parsedAmount > 0 && (
+            <div className="rounded-lg border bg-muted/20 px-3 py-2.5 space-y-1.5 text-sm">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-muted-foreground shrink-0">{t("summary.from")}</span>
+                <span className="font-medium truncate text-right">{fromAccount}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-muted-foreground shrink-0">{t("summary.to")}</span>
+                <span className="font-medium truncate text-right">{toAccount}</span>
+              </div>
+              <div className="border-t pt-1.5 flex items-center justify-between gap-2">
+                <span className="font-semibold">
+                  {formatCurrency(parsedAmount, fromSym.symbol, fromSym.onRight)}
+                </span>
+                <span className="opacity-50">→</span>
+                <span className="font-semibold">
+                  {formatCurrency(
+                    parseFloat(effectiveReceivedInput) || parsedAmount,
+                    toSym.symbol,
+                    toSym.onRight,
+                  )}
+                </span>
+              </div>
+              {isExchange && parsedRate > 0 && (
+                <p className="text-[11px] text-muted-foreground text-right">
+                  {t("summary.at")} 1 {baseSym.symbol} = {formatNumber(parsedRate, 4)}{" "}
+                  {quoteSym.symbol}
+                </p>
+              )}
+              {needsBaseEquivalent && fromToCompanyRate && fromToCompanyRate > 0 && (
+                <p className="text-[11px] text-muted-foreground text-right">
+                  {t("summary.baseEquivalent")}:{" "}
+                  {formatCurrency(
+                    parsedAmount * fromToCompanyRate,
+                    companySym.symbol,
+                    companySym.onRight,
+                  )}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Row 5: Actions */}
           <div className="flex items-center justify-end gap-3">

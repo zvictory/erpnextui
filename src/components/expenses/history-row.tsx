@@ -1,19 +1,23 @@
 "use client";
 
+"use client";
+
 import { useState } from "react";
-import { Send, Pencil, Trash2, RotateCcw } from "lucide-react";
+import { ArrowRight, Send, Pencil, Trash2, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn, formatCurrency } from "@/lib/utils";
 import { formatDate, formatNumber } from "@/lib/formatters";
 import { useJournalEntry } from "@/hooks/use-journal-entries";
-import type { JournalEntryListItem } from "@/types/journal-entry";
+import { useCurrencyMap } from "@/hooks/use-accounts";
+import type { JournalEntryListItem, JEAccountRow } from "@/types/journal-entry";
 
 interface HistoryRowProps {
   entry: JournalEntryListItem;
   currencySymbol: string;
   symbolOnRight: boolean;
+  accountRows?: JEAccountRow[];
   onSubmit: (name: string) => void;
   onEdit?: (name: string) => void;
   onAmend?: (name: string) => void;
@@ -39,6 +43,7 @@ export function HistoryRow({
   entry,
   currencySymbol,
   symbolOnRight,
+  accountRows,
   onSubmit,
   onEdit,
   onAmend,
@@ -49,6 +54,16 @@ export function HistoryRow({
   const status = STATUS_CONFIG[entry.docstatus];
   const [expanded, setExpanded] = useState(false);
   const { data: jeDoc, isLoading: jeLoading } = useJournalEntry(expanded ? entry.name : "");
+  const { data: currencyMap } = useCurrencyMap();
+
+  const fromRow = accountRows?.find((r) => (r.credit_in_account_currency ?? 0) > 0);
+  const toRow = accountRows?.find((r) => (r.debit_in_account_currency ?? 0) > 0);
+  const sameCurrency = fromRow && toRow && fromRow.account_currency === toRow.account_currency;
+
+  function currSymbol(code: string): [string, boolean] {
+    const info = currencyMap?.get(code);
+    return [info?.symbol ?? code, !!info?.onRight];
+  }
 
   return (
     <div
@@ -69,7 +84,19 @@ export function HistoryRow({
       {/* Row 1: Amount — full width */}
       <div>
         <span className="font-mono text-sm font-semibold">
-          {formatCurrency(entry.total_debit, currencySymbol, symbolOnRight)}
+          {fromRow && toRow ? (
+            sameCurrency ? (
+              formatCurrency(toRow.debit_in_account_currency, ...currSymbol(toRow.account_currency))
+            ) : (
+              <span className="flex items-center gap-1.5 flex-wrap">
+                <span>{formatCurrency(fromRow.credit_in_account_currency, ...currSymbol(fromRow.account_currency))}</span>
+                <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                <span>{formatCurrency(toRow.debit_in_account_currency, ...currSymbol(toRow.account_currency))}</span>
+              </span>
+            )
+          ) : (
+            formatCurrency(entry.total_debit, currencySymbol, symbolOnRight)
+          )}
         </span>
       </div>
 

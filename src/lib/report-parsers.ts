@@ -18,6 +18,11 @@ import type {
   SalesByItemData,
   SalesByCustomerRow,
   SalesByCustomerData,
+  SalesRegisterLine,
+  SalesByItemDetailData,
+  SalesByItemDetailGroup,
+  SalesByCustomerDetailData,
+  SalesByCustomerDetailGroup,
 } from "@/types/reports";
 
 // Fields that are never period columns
@@ -708,6 +713,121 @@ export function parseSalesByCustomer(
 
   return {
     rows,
+    totalsByCurrency,
+    totalCount,
+    uniqueCustomerCount: uniqueCustomers.size,
+  };
+}
+
+/**
+ * Detail-mode grouping: one record per Sales Invoice Item, grouped by
+ * (item, currency). Mirrors `parseSalesByItem` totals so the detail and
+ * summary views always agree.
+ */
+export function groupRowsByItem(rows: SalesRegisterLine[]): SalesByItemDetailData {
+  const map = new Map<string, SalesByItemDetailGroup>();
+  const uniqueItems = new Set<string>();
+  const totalsByCurrency: Record<string, number> = {};
+  let totalCount = 0;
+
+  for (const r of rows) {
+    if (!r.item_code || !r.currency) continue;
+    const amount = Number(r.net_amount ?? r.amount ?? 0);
+    const key = `${r.item_code}|${r.currency}`;
+    let g = map.get(key);
+    if (!g) {
+      g = {
+        groupKey: key,
+        itemCode: r.item_code,
+        itemName: r.item_name || r.item_code,
+        itemGroup: r.item_group,
+        currency: r.currency,
+        totalQty: 0,
+        totalAmount: 0,
+        lineCount: 0,
+        stockUom: r.stock_uom,
+        lines: [],
+      };
+      map.set(key, g);
+    }
+    g.totalQty += Number(r.qty ?? 0);
+    g.totalAmount += amount;
+    g.lineCount += 1;
+    g.lines.push(r);
+
+    uniqueItems.add(r.item_code);
+    totalsByCurrency[r.currency] = (totalsByCurrency[r.currency] ?? 0) + amount;
+    totalCount++;
+  }
+
+  for (const g of map.values()) {
+    g.lines.sort((a, b) => (a.posting_date < b.posting_date ? 1 : -1));
+  }
+
+  const groups = Array.from(map.values()).sort((a, b) => b.totalAmount - a.totalAmount);
+  return {
+    groups,
+    totalsByCurrency,
+    totalCount,
+    uniqueItemCount: uniqueItems.size,
+  };
+}
+
+/**
+ * Detail-mode grouping by (customer, currency). `invoiceCount` is the count
+ * of distinct Sales Invoices contributing to this group, matching the
+ * summary view's invoice_count field.
+ */
+export function groupRowsByCustomer(rows: SalesRegisterLine[]): SalesByCustomerDetailData {
+  const map = new Map<string, SalesByCustomerDetailGroup & { _invoices: Set<string> }>();
+  const uniqueCustomers = new Set<string>();
+  const totalsByCurrency: Record<string, number> = {};
+  let totalCount = 0;
+
+  for (const r of rows) {
+    if (!r.customer || !r.currency) continue;
+    const amount = Number(r.net_amount ?? r.amount ?? 0);
+    const key = `${r.customer}|${r.currency}`;
+    let g = map.get(key);
+    if (!g) {
+      g = {
+        groupKey: key,
+        customer: r.customer,
+        customerName: r.customer_name || r.customer,
+        customerGroup: r.customer_group,
+        currency: r.currency,
+        totalQty: 0,
+        totalAmount: 0,
+        lineCount: 0,
+        invoiceCount: 0,
+        lines: [],
+        _invoices: new Set<string>(),
+      };
+      map.set(key, g);
+    }
+    g.totalQty += Number(r.stock_qty ?? r.qty ?? 0);
+    g.totalAmount += amount;
+    g.lineCount += 1;
+    g.lines.push(r);
+    if (r.invoice) g._invoices.add(r.invoice);
+
+    uniqueCustomers.add(r.customer);
+    totalsByCurrency[r.currency] = (totalsByCurrency[r.currency] ?? 0) + amount;
+    totalCount++;
+  }
+
+  const groups: SalesByCustomerDetailGroup[] = Array.from(map.values())
+    .map((g) => {
+      g.invoiceCount = g._invoices.size;
+      g.lines.sort((a, b) => (a.posting_date < b.posting_date ? 1 : -1));
+      const { _invoices: _omit, ...rest } = g;
+      void _omit;
+      return rest;
+    })
+    .sort((a, b) => b.totalAmount - a.totalAmount);
+
+  return {
+    groups,
     totalsByCurrency,
     totalCount,
     uniqueCustomerCount: uniqueCustomers.size,

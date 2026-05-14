@@ -35,3 +35,11 @@ export interface JournalEntryListItem {
   user_remark: string;
   docstatus: 0 | 1 | 2;
 }
+
+export interface JEAccountRow {
+  parent: string;
+  account: string;
+  account_currency: string;
+  debit_in_account_currency: number;
+  credit_in_account_currency: number;
+}

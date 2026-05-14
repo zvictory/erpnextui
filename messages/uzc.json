@@ -85,20 +85,39 @@
     "signIn": {
       "title": "Тизимга кириш",
       "subtitle": "Stable ERP тизимига кириш учун маълумотларингизни киритинг",
+      "email": "Email",
+      "emailPlaceholder": "you@company.com",
       "password": "Парол",
       "passwordPlaceholder": "Парол",
+      "showPassword": "Паролни кўрсатиш",
+      "hidePassword": "Паролни яшириш",
+      "forgotPassword": "Паролни унутдингизми?",
       "signInButton": "Кириш",
       "searching": "Ҳисоб қидирилмоқда...",
       "signingIn": "Кирилмоқда...",
       "noAccount": "Ҳисобингиз йўқми?",
-      "register": "Рўйхатдан ўтиш",
+      "register": "Савдо бўлимига мурожаат",
       "unexpectedError": "Кутилмаган хато юз берди. Қайтадан уриниб кўринг.",
       "networkError": "Тармоқ хатоси. Қайтадан уриниб кўринг.",
       "accountNotFound": "Ҳисобни топиб бўлмади",
       "selectCompany": "Компанияни танланг",
       "multipleCompanies": "Ҳисобингиз бир нечта компанияларда мавжуд. Бирини танланг.",
       "continue": "Давом этиш",
-      "back": "Орқага"
+      "back": "Орқага",
+      "themeToggle": "Мавзуни алмаштириш",
+      "brandTitle": "Бизнесни бошқаринг",
+      "brandHighlight": "ишонч билан",
+      "brandSubtitle": "Молия, омбор, ишлаб чиқариш, савдо — барчаси битта тизимда. Реал вақт маълумотлари асосида тезроқ қарор қабул қилинг.",
+      "tile": {
+        "warehouse": "Омбор",
+        "dashboard": "Дашбордлар",
+        "factory": "Ишлаб чиқариш",
+        "team": "Жамоа"
+      },
+      "stat1Value": "+25%",
+      "stat1Label": "Ой ёпилиши тезроқ",
+      "stat2Value": "4 тил",
+      "stat2Label": "EN · RU · UZ · UZC"
     },
     "register": {
       "title": "Рўйхатдан ўтиш",
@@ -126,6 +145,7 @@
       "passwordTooShort": "Парол камида 8 та белгидан иборат бўлиши керак",
       "passwordMismatch": "Паролlar мос келмайди"
     },
+    "settings": "Созламалар",
     "logout": "Чиқиш",
     "countries": {
       "Uzbekistan": "Ўзбекистон",
@@ -536,6 +556,14 @@
       "format": "Формат",
       "preview": "Кўриниш"
     },
+    "defaultPriceLists": {
+      "title": "Стандарт нарх рўйхатлари",
+      "description": "Янги ҳужжатларда нарх рўйхатини автоматик тўлдириш",
+      "selling": "Стандарт сотув нарх рўйхати",
+      "sellingPlaceholder": "Компания стандартидан",
+      "buying": "Стандарт харид нарх рўйхати",
+      "buyingPlaceholder": "Стандарт йўқ"
+    },
     "iceCreamSale": {
       "title": "Музқаймоқ сотиш",
       "description": "Ходим музқаймоқ савдоси учун стандарт ҳисоблар ва валюта",
@@ -589,7 +617,13 @@
     "swapAccounts": "Ҳисобларни алмаштириш",
     "selectAccount": "Ҳисобни танланг",
     "balanceUnavailable": "Қолдиқ мавжуд эмас",
-    "loading": "Юкланмоқда..."
+    "loading": "Юкланмоқда...",
+    "summary": {
+      "from": "Қаердан",
+      "to": "Қаерга",
+      "at": "курси бўйича",
+      "baseEquivalent": "Асосий валютада"
+    }
   },
   "accounts": {
     "title": "Ҳисоблар режаси",

@@ -1,11 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/hooks/query-keys";
 import { frappe } from "@/lib/frappe-client";
-import { parseSalesByItem, parseSalesByCustomer } from "@/lib/report-parsers";
+import {
+  parseSalesByItem,
+  parseSalesByCustomer,
+  groupRowsByItem,
+  groupRowsByCustomer,
+} from "@/lib/report-parsers";
 import type {
   SalesAnalyticsData,
   SalesAnalyticsDimension,
   SalesAnalyticsRow,
+  SalesRegisterLine,
 } from "@/types/reports";
 
 export type SalesBasis = "base" | "invoice";
@@ -83,6 +89,7 @@ interface JoinedRow {
   warehouse?: string;
   cost_center?: string;
   brand?: string;
+  rate: number;
   amount: number;
   net_amount: number;
   base_amount: number;
@@ -112,6 +119,7 @@ interface InvoiceItem {
   warehouse?: string;
   cost_center?: string;
   brand?: string;
+  rate?: number;
   amount: number;
   net_amount?: number;
   base_amount?: number;
@@ -177,6 +185,7 @@ async function fetchItemsByParents(
           "warehouse",
           "cost_center",
           "brand",
+          "rate",
           "amount",
           "net_amount",
           "base_amount",
@@ -299,6 +308,7 @@ async function fetchSalesRegisterRows(f: SalesRegisterFilters): Promise<JoinedRo
       warehouse: it.warehouse,
       cost_center: it.cost_center,
       brand: it.brand,
+      rate: Number(it.rate ?? 0),
       amount: Number(it.amount ?? 0),
       net_amount: Number(it.net_amount ?? it.amount ?? 0),
       base_amount: Number(it.base_amount ?? 0),
@@ -325,6 +335,28 @@ export function useSalesByCustomerReport(f: SalesRegisterFilters) {
     enabled: !!f.company && !!f.from && !!f.to,
     staleTime: 5 * 60 * 1000,
     select: (rows) => parseSalesByCustomer(rows),
+  });
+}
+
+// Detail variants — share the same fetch (and cache) as the summary hooks;
+// only the `select` transformer differs.
+export function useSalesByItemDetailReport(f: SalesRegisterFilters) {
+  return useQuery({
+    queryKey: queryKeys.reports.salesByItem(f.company, f.from, f.to, filterKey(f)),
+    queryFn: () => fetchSalesRegisterRows(f),
+    enabled: !!f.company && !!f.from && !!f.to,
+    staleTime: 5 * 60 * 1000,
+    select: (rows) => groupRowsByItem(rows as unknown as SalesRegisterLine[]),
+  });
+}
+
+export function useSalesByCustomerDetailReport(f: SalesRegisterFilters) {
+  return useQuery({
+    queryKey: queryKeys.reports.salesByCustomer(f.company, f.from, f.to, filterKey(f)),
+    queryFn: () => fetchSalesRegisterRows(f),
+    enabled: !!f.company && !!f.from && !!f.to,
+    staleTime: 5 * 60 * 1000,
+    select: (rows) => groupRowsByCustomer(rows as unknown as SalesRegisterLine[]),
   });
 }
 

@@ -85,20 +85,39 @@
     "signIn": {
       "title": "Sign In",
       "subtitle": "Enter your credentials to access Stable ERP",
+      "email": "Email",
+      "emailPlaceholder": "you@company.com",
       "password": "Password",
       "passwordPlaceholder": "Password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "forgotPassword": "Forgot password?",
       "signInButton": "Sign In",
       "searching": "Looking up account...",
       "signingIn": "Signing in...",
       "noAccount": "Don't have an account?",
-      "register": "Register",
+      "register": "Contact sales",
       "unexpectedError": "An unexpected error occurred. Please try again.",
       "networkError": "Network error. Please try again.",
       "accountNotFound": "Could not resolve your account",
       "selectCompany": "Select Company",
       "multipleCompanies": "Your account exists on multiple companies. Please select one.",
       "continue": "Continue",
-      "back": "Back"
+      "back": "Back",
+      "themeToggle": "Toggle theme",
+      "brandTitle": "Run your business",
+      "brandHighlight": "with confidence",
+      "brandSubtitle": "Finance, inventory, manufacturing, sales — all in one system. Real-time data, faster decisions.",
+      "tile": {
+        "warehouse": "Warehouse",
+        "dashboard": "Dashboards",
+        "factory": "Manufacturing",
+        "team": "Team"
+      },
+      "stat1Value": "+25%",
+      "stat1Label": "Faster month-end close",
+      "stat2Value": "4 langs",
+      "stat2Label": "EN · RU · UZ · UZC"
     },
     "register": {
       "title": "Register",
@@ -126,6 +145,7 @@
       "passwordTooShort": "Password must be at least 8 characters",
       "passwordMismatch": "Passwords do not match"
     },
+    "settings": "Settings",
     "logout": "Logout",
     "countries": {
       "Uzbekistan": "Uzbekistan",
@@ -576,6 +596,14 @@
       "format": "Format",
       "preview": "Preview"
     },
+    "defaultPriceLists": {
+      "title": "Default Price Lists",
+      "description": "Pre-fill price list on new sales and purchase documents",
+      "selling": "Default Selling Price List",
+      "sellingPlaceholder": "Use ERPNext company default",
+      "buying": "Default Buying Price List",
+      "buyingPlaceholder": "No default"
+    },
     "invoiceColumns": {
       "title": "Invoice Columns",
       "description": "Choose which columns to show in invoice item tables",
@@ -639,7 +667,13 @@
     "swapAccounts": "Swap accounts",
     "selectAccount": "Select account",
     "balanceUnavailable": "Balance unavailable",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "summary": {
+      "from": "From",
+      "to": "To",
+      "at": "at",
+      "baseEquivalent": "Base equivalent"
+    }
   },
   "accounts": {
     "title": "Chart of Accounts",

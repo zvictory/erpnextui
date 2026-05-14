@@ -1,16 +1,17 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { MoneyInput } from "@/components/ui/money-input";
 import type { AccountWithCurrency } from "@/types/account";
 
 interface ExpenseLineRowProps {
   id: string;
   account: string;
-  amount: string;
+  amount: number;
   memo: string;
   expenseAccounts: AccountWithCurrency[];
   onAccountChange: (id: string, value: string) => void;
-  onAmountChange: (id: string, value: string) => void;
+  onAmountChange: (id: string, value: number) => void;
   onMemoChange: (id: string, value: string) => void;
   onRemove: (id: string) => void;
   canRemove: boolean;
@@ -49,18 +50,11 @@ export function ExpenseLineRow({
           ))}
         </select>
 
-        <input
-          type="number"
-          step="0.01"
-          min="0"
+        <MoneyInput
           placeholder="0.00"
           value={amount}
-          onChange={(e) => onAmountChange(id, e.target.value)}
-          className={cn(
-            "h-9 w-32 rounded-md border border-input bg-transparent px-3 py-1 text-sm font-mono shadow-xs text-right",
-            "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none",
-            "disabled:cursor-not-allowed disabled:opacity-50",
-          )}
+          onChange={(v) => onAmountChange(id, v)}
+          className="h-9 w-32 font-mono text-right"
         />
 
         <button

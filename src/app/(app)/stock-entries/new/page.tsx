@@ -380,6 +380,7 @@ export default function NewStockEntryPage() {
                           <StockAvailabilityIndicator
                             itemCode={item.item_code}
                             isStockItem={item.is_stock_item}
+                            warehouse={showFrom ? fromWarehouse : undefined}
                           />
                         </TableCell>
                       </TableRow>

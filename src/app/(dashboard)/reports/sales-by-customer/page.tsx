@@ -3,8 +3,9 @@
 import { useState, useMemo, useCallback } from "react";
 import { format, startOfMonth } from "date-fns";
 import Link from "next/link";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { RefreshCw, Download, ArrowUpDown, ChevronDown } from "lucide-react";
+import { RefreshCw, Download, ArrowUpDown, ChevronDown, ChevronRight } from "lucide-react";
 import {
   type ColumnDef,
   type SortingState,
@@ -16,7 +17,10 @@ import {
 import * as XLSX from "xlsx";
 
 import { useCompanyStore } from "@/stores/company-store";
-import { useSalesByCustomerReport } from "@/hooks/use-sales-register-report";
+import {
+  useSalesByCustomerReport,
+  useSalesByCustomerDetailReport,
+} from "@/hooks/use-sales-register-report";
 import { useCurrencyMap } from "@/hooks/use-accounts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,11 +37,27 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatCurrency, formatNumber } from "@/lib/formatters";
-import type { SalesByCustomerRow, DateRange } from "@/types/reports";
+import { formatCurrency, formatNumber, formatDate } from "@/lib/formatters";
+import type {
+  SalesByCustomerRow,
+  DateRange,
+  SalesByCustomerDetailGroup,
+} from "@/types/reports";
 
 export default function SalesByCustomerPage() {
   const t = useTranslations("sbc");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const mode: "summary" | "detail" =
+    searchParams.get("mode") === "detail" ? "detail" : "summary";
+  const setMode = (next: "summary" | "detail") => {
+    const sp = new URLSearchParams(searchParams.toString());
+    if (next === "summary") sp.delete("mode");
+    else sp.set("mode", "detail");
+    const qs = sp.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+  };
   const {
     company,
     currencyCode: baseCurrencyCode,
@@ -66,7 +86,7 @@ export default function SalesByCustomerPage() {
   const from = format(dateRange.from, "yyyy-MM-dd");
   const to = format(dateRange.to, "yyyy-MM-dd");
 
-  const { data, isLoading, isRefetching, refetch } = useSalesByCustomerReport({
+  const filters = {
     company,
     from,
     to,
@@ -80,7 +100,14 @@ export default function SalesByCustomerPage() {
     project,
     costCenter,
     brand,
-  });
+  };
+  const summaryQ = useSalesByCustomerReport(filters);
+  const detailQ = useSalesByCustomerDetailReport(
+    mode === "detail" ? filters : { ...filters, company: "" },
+  );
+  const { data, isLoading, isRefetching, refetch } = summaryQ;
+  const detailData = mode === "detail" ? detailQ.data : undefined;
+  const detailLoading = mode === "detail" && detailQ.isLoading;
 
   const rows = data?.rows ?? [];
   const totalsByCurrency = data?.totalsByCurrency ?? {};
@@ -334,6 +361,24 @@ export default function SalesByCustomerPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-md border p-0.5">
+            <Button
+              variant={mode === "summary" ? "default" : "ghost"}
+              size="sm"
+              className="h-7"
+              onClick={() => setMode("summary")}
+            >
+              {t("summaryMode")}
+            </Button>
+            <Button
+              variant={mode === "detail" ? "default" : "ghost"}
+              size="sm"
+              className="h-7"
+              onClick={() => setMode("detail")}
+            >
+              {t("detailMode")}
+            </Button>
+          </div>
           <Button variant="outline" size="sm" onClick={exportExcel} disabled={rows.length === 0}>
             <Download className="mr-1 size-4" />
             Excel
@@ -497,6 +542,14 @@ export default function SalesByCustomerPage() {
         </Collapsible>
       </div>
 
+      {mode === "detail" ? (
+        <DetailView
+          groups={detailData?.groups ?? []}
+          loading={detailLoading}
+          getCurrencyInfo={getCurrencyInfo}
+          t={t}
+        />
+      ) : (<>
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -627,6 +680,139 @@ export default function SalesByCustomerPage() {
           </TableBody>
         </Table>
       </div>
+      </>)}
     </div>
+  );
+}
+
+function DetailView({
+  groups,
+  loading,
+  getCurrencyInfo,
+  t,
+}: {
+  groups: SalesByCustomerDetailGroup[];
+  loading: boolean;
+  getCurrencyInfo: (code: string) => { symbol: string; onRight: boolean };
+  t: (k: string) => string;
+}) {
+  if (loading) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-16" />
+        ))}
+      </div>
+    );
+  }
+  if (groups.length === 0) {
+    return (
+      <div className="rounded-md border p-12 text-center text-muted-foreground">{t("noData")}</div>
+    );
+  }
+  return (
+    <div className="space-y-2">
+      {groups.map((g) => (
+        <DetailGroupCard key={g.groupKey} group={g} getCurrencyInfo={getCurrencyInfo} t={t} />
+      ))}
+    </div>
+  );
+}
+
+function DetailGroupCard({
+  group,
+  getCurrencyInfo,
+  t,
+}: {
+  group: SalesByCustomerDetailGroup;
+  getCurrencyInfo: (code: string) => { symbol: string; onRight: boolean };
+  t: (k: string) => string;
+}) {
+  const [open, setOpen] = useState(false);
+  const info = getCurrencyInfo(group.currency);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} className="rounded-md border">
+      <CollapsibleTrigger asChild>
+        <button
+          type="button"
+          className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-muted/50"
+        >
+          <ChevronRight
+            className={`size-4 shrink-0 transition-transform ${open ? "rotate-90" : ""}`}
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/customers/${encodeURIComponent(group.customer)}`}
+                onClick={(e) => e.stopPropagation()}
+                className="font-medium hover:underline truncate"
+              >
+                {group.customer}
+              </Link>
+              <span className="text-muted-foreground text-sm truncate">{group.customerName}</span>
+            </div>
+          </div>
+          <span className="text-muted-foreground text-xs tabular-nums">
+            {group.invoiceCount} {t("invoices")}
+          </span>
+          <span className="text-muted-foreground text-xs tabular-nums">
+            {group.lineCount} {t("lines")}
+          </span>
+          <span className="font-semibold tabular-nums">
+            {formatCurrency(group.totalAmount, info.symbol, info.onRight)}
+          </span>
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="border-t">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("date")}</TableHead>
+                <TableHead>{t("invoice")}</TableHead>
+                <TableHead>{t("item")}</TableHead>
+                <TableHead className="text-right">{t("qty")}</TableHead>
+                <TableHead>{t("uom")}</TableHead>
+                <TableHead className="text-right">{t("rate")}</TableHead>
+                <TableHead className="text-right">{t("amount")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {group.lines.map((l, i) => (
+                <TableRow key={`${l.invoice}-${i}`}>
+                  <TableCell className="text-xs">{formatDate(l.posting_date)}</TableCell>
+                  <TableCell>
+                    <Link
+                      href={`/sales-invoices/${encodeURIComponent(l.invoice)}`}
+                      className="hover:underline font-mono text-xs"
+                    >
+                      {l.invoice}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <Link
+                      href={`/products/${encodeURIComponent(l.item_code)}`}
+                      className="hover:underline text-sm"
+                    >
+                      {l.item_name || l.item_code}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{formatNumber(l.qty)}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {l.stock_uom ?? ""}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {formatCurrency(l.rate, info.symbol, info.onRight)}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums font-medium">
+                    {formatCurrency(l.amount, info.symbol, info.onRight)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

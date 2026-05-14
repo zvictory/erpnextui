@@ -152,6 +152,13 @@ export function AppHeader() {
             <p className="text-sm font-medium">{displayName}</p>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link href="/settings">
+              <Settings className="mr-2 size-4" />
+              {t("settings")}
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout}>
             <LogOut className="mr-2 size-4" />
             {t("logout")}

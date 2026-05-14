@@ -85,20 +85,39 @@
     "signIn": {
       "title": "Tizimga kirish",
       "subtitle": "Stable ERP tizimiga kirish uchun ma'lumotlaringizni kiriting",
+      "email": "Email",
+      "emailPlaceholder": "you@company.com",
       "password": "Parol",
       "passwordPlaceholder": "Parol",
+      "showPassword": "Parolni ko'rsatish",
+      "hidePassword": "Parolni yashirish",
+      "forgotPassword": "Parolni unutdingizmi?",
       "signInButton": "Kirish",
       "searching": "Hisob qidirilmoqda...",
       "signingIn": "Kirilmoqda...",
       "noAccount": "Hisobingiz yo'qmi?",
-      "register": "Ro'yxatdan o'tish",
+      "register": "Savdo bo'limiga murojaat",
       "unexpectedError": "Kutilmagan xato yuz berdi. Qaytadan urinib ko'ring.",
       "networkError": "Tarmoq xatosi. Qaytadan urinib ko'ring.",
       "accountNotFound": "Hisobni topib bo'lmadi",
       "selectCompany": "Kompaniyani tanlang",
       "multipleCompanies": "Hisobingiz bir nechta kompaniyalarda mavjud. Birini tanlang.",
       "continue": "Davom etish",
-      "back": "Orqaga"
+      "back": "Orqaga",
+      "themeToggle": "Mavzuni almashtirish",
+      "brandTitle": "Biznesni boshqaring",
+      "brandHighlight": "ishonch bilan",
+      "brandSubtitle": "Moliya, ombor, ishlab chiqarish, savdo — barchasi bitta tizimda. Real vaqt ma'lumotlari asosida tezroq qaror qabul qiling.",
+      "tile": {
+        "warehouse": "Ombor",
+        "dashboard": "Dashbordlar",
+        "factory": "Ishlab chiqarish",
+        "team": "Jamoa"
+      },
+      "stat1Value": "+25%",
+      "stat1Label": "Oy yopilishi tezroq",
+      "stat2Value": "4 til",
+      "stat2Label": "EN · RU · UZ · UZC"
     },
     "register": {
       "title": "Ro'yxatdan o'tish",
@@ -126,6 +145,7 @@
       "passwordTooShort": "Parol kamida 8 ta belgidan iborat bo'lishi kerak",
       "passwordMismatch": "Parollar mos kelmaydi"
     },
+    "settings": "Sozlamalar",
     "logout": "Chiqish",
     "countries": {
       "Uzbekistan": "O'zbekiston",
@@ -536,6 +556,14 @@
       "format": "Format",
       "preview": "Ko'rinish"
     },
+    "defaultPriceLists": {
+      "title": "Standart narx ro'yxatlari",
+      "description": "Yangi hujjatlarda narx ro'yxatini avtomatik to'ldirish",
+      "selling": "Standart savdo narx ro'yxati",
+      "sellingPlaceholder": "Kompaniya standartidan",
+      "buying": "Standart xarid narx ro'yxati",
+      "buyingPlaceholder": "Standart yo'q"
+    },
     "iceCreamSale": {
       "title": "Muzqaymoq sotish",
       "description": "Xodim muzqaymoq savdosi uchun standart hisoblar va valyuta",
@@ -589,7 +617,13 @@
     "swapAccounts": "Hisoblarni almashtirish",
     "selectAccount": "Hisobni tanlang",
     "balanceUnavailable": "Qoldiq mavjud emas",
-    "loading": "Yuklanmoqda..."
+    "loading": "Yuklanmoqda...",
+    "summary": {
+      "from": "Qayerdan",
+      "to": "Qayerga",
+      "at": "kursi bo'yicha",
+      "baseEquivalent": "Asosiy valyutada"
+    }
   },
   "accounts": {
     "title": "Hisoblar rejasi",

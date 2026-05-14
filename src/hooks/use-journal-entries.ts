@@ -6,6 +6,7 @@ import type {
   JournalEntry,
   JournalEntryAccount,
   JournalEntryListItem,
+  JEAccountRow,
 } from "@/types/journal-entry";
 import type { SalesInvoice } from "@/types/sales-invoice";
 
@@ -48,6 +49,22 @@ export function useJournalEntryList(
       });
     },
     enabled: !!company,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Account rows (for multi-currency amount display in history)
+// ---------------------------------------------------------------------------
+
+export function useJournalEntryAccountRows(names: string[]) {
+  return useQuery({
+    queryKey: queryKeys.journalEntries.accountRows(names),
+    queryFn: () =>
+      frappe.call<JEAccountRow[]>("stable_app.api.transfer.get_je_account_rows", {
+        names: JSON.stringify(names),
+      }),
+    enabled: names.length > 0,
+    staleTime: 60_000,
   });
 }
 

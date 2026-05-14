@@ -20,6 +20,7 @@ export const queryKeys = {
     list: (company: string, voucherType = "Journal Entry") =>
       ["journalEntries", "list", company, voucherType] as const,
     detail: (name: string) => ["journalEntries", "detail", name] as const,
+    accountRows: (names: string[]) => ["journalEntries", "accountRows", ...names] as const,
   },
   dashboard: {
     all: (company: string) => ["dashboard", company] as const,

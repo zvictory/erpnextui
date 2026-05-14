@@ -11,7 +11,7 @@ import type { AccountWithCurrency } from "@/types/account";
 export interface ExpenseLine {
   id: string;
   account: string;
-  amount: string;
+  amount: number;
   memo: string;
 }
 
@@ -37,7 +37,7 @@ export function ExpenseLines({
     onUpdate(lines.map((line) => (line.id === id ? { ...line, account: value } : line)));
   };
 
-  const handleAmountChange = (id: string, value: string) => {
+  const handleAmountChange = (id: string, value: number) => {
     onUpdate(lines.map((line) => (line.id === id ? { ...line, amount: value } : line)));
   };
 
@@ -51,13 +51,10 @@ export function ExpenseLines({
   };
 
   const handleAddLine = () => {
-    onUpdate([...lines, { id: crypto.randomUUID(), account: "", amount: "", memo: "" }]);
+    onUpdate([...lines, { id: crypto.randomUUID(), account: "", amount: 0, memo: "" }]);
   };
 
-  const total = lines.reduce((sum, line) => {
-    const val = parseFloat(line.amount);
-    return sum + (isNaN(val) ? 0 : val);
-  }, 0);
+  const total = lines.reduce((sum, line) => sum + line.amount, 0);
 
   return (
     <div className="space-y-3">

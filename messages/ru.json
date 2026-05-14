@@ -85,20 +85,39 @@
     "signIn": {
       "title": "Вход в систему",
       "subtitle": "Введите данные для входа в Stable ERP",
+      "email": "Email",
+      "emailPlaceholder": "you@company.com",
       "password": "Пароль",
       "passwordPlaceholder": "Пароль",
+      "showPassword": "Показать пароль",
+      "hidePassword": "Скрыть пароль",
+      "forgotPassword": "Забыли пароль?",
       "signInButton": "Войти",
       "searching": "Поиск аккаунта...",
       "signingIn": "Вход...",
       "noAccount": "Нет аккаунта?",
-      "register": "Зарегистрироваться",
+      "register": "Связаться с отделом продаж",
       "unexpectedError": "Произошла непредвиденная ошибка. Попробуйте снова.",
       "networkError": "Ошибка сети. Попробуйте снова.",
       "accountNotFound": "Не удалось найти аккаунт",
       "selectCompany": "Выберите компанию",
       "multipleCompanies": "Ваш аккаунт существует в нескольких компаниях. Выберите одну.",
       "continue": "Продолжить",
-      "back": "Назад"
+      "back": "Назад",
+      "themeToggle": "Сменить тему",
+      "brandTitle": "Управляйте бизнесом",
+      "brandHighlight": "уверенно",
+      "brandSubtitle": "Финансы, склад, производство, продажи — всё в одной системе. Решения на основе данных в реальном времени.",
+      "tile": {
+        "warehouse": "Склад",
+        "dashboard": "Дашборды",
+        "factory": "Производство",
+        "team": "Команда"
+      },
+      "stat1Value": "+25%",
+      "stat1Label": "Быстрее закрытие периода",
+      "stat2Value": "4 языка",
+      "stat2Label": "EN · RU · UZ · UZC"
     },
     "register": {
       "title": "Регистрация",
@@ -126,6 +145,7 @@
       "passwordTooShort": "Пароль должен содержать не менее 8 символов",
       "passwordMismatch": "Пароли не совпадают"
     },
+    "settings": "Настройки",
     "logout": "Выйти",
     "countries": {
       "Uzbekistan": "Узбекистан",
@@ -541,6 +561,14 @@
       "format": "Формат",
       "preview": "Предпросмотр"
     },
+    "defaultPriceLists": {
+      "title": "Прайс-листы по умолчанию",
+      "description": "Автозаполнение прайс-листа в новых документах",
+      "selling": "Прайс-лист продаж",
+      "sellingPlaceholder": "Из настроек компании",
+      "buying": "Прайс-лист закупок",
+      "buyingPlaceholder": "Без значения по умолчанию"
+    },
     "invoiceColumns": {
       "title": "Колонки счёта",
       "description": "Выберите колонки для таблицы позиций",
@@ -604,7 +632,13 @@
     "swapAccounts": "Поменять счета",
     "selectAccount": "Выберите счёт",
     "balanceUnavailable": "Баланс недоступен",
-    "loading": "Загрузка..."
+    "loading": "Загрузка...",
+    "summary": {
+      "from": "Откуда",
+      "to": "Куда",
+      "at": "по курсу",
+      "baseEquivalent": "В базовой валюте"
+    }
   },
   "accounts": {
     "title": "План счетов",

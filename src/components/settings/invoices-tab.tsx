@@ -46,6 +46,8 @@ export function InvoicesTab() {
   const cs = useUISettingsStore((s) => s.getCompanySettings(company));
   const update = useUISettingsStore((s) => s.updateCompanySetting);
 
+  const defaultSellingPL = cs.defaultSellingPriceList;
+  const defaultBuyingPL = cs.defaultBuyingPriceList;
   const sellingWarehouse = cs.sellingWarehouse;
   const salaryPayable = cs.salaryPayableAccount;
   const salaryBank = cs.salaryBankAccount;
@@ -57,6 +59,41 @@ export function InvoicesTab() {
 
   return (
     <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("defaultPriceLists.title")}</CardTitle>
+          <CardDescription>{t("defaultPriceLists.description")}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>{t("defaultPriceLists.selling")}</Label>
+            <LinkField
+              doctype="Price List"
+              value={defaultSellingPL}
+              onChange={(v) => update(company, "defaultSellingPriceList", v)}
+              filters={[
+                ["selling", "=", 1],
+                ["enabled", "=", 1],
+              ]}
+              placeholder={t("defaultPriceLists.sellingPlaceholder")}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>{t("defaultPriceLists.buying")}</Label>
+            <LinkField
+              doctype="Price List"
+              value={defaultBuyingPL}
+              onChange={(v) => update(company, "defaultBuyingPriceList", v)}
+              filters={[
+                ["buying", "=", 1],
+                ["enabled", "=", 1],
+              ]}
+              placeholder={t("defaultPriceLists.buyingPlaceholder")}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Selling Warehouse</CardTitle>

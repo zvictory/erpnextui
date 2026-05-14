@@ -71,7 +71,7 @@ function getToday(): string {
 }
 
 function makeDefaultLine(): ExpenseLine {
-  return { id: crypto.randomUUID(), account: "", amount: "", memo: "" };
+  return { id: crypto.randomUUID(), account: "", amount: 0, memo: "" };
 }
 
 const WriteCheckFormInner: React.ForwardRefRenderFunction<
@@ -169,7 +169,7 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
     return isRateInverted ? 1 / display : display;
   }, [rateInput, isRateInverted]);
 
-  const expenseTotal = expenseLines.reduce((sum, l) => sum + (parseFloat(l.amount) || 0), 0);
+  const expenseTotal = expenseLines.reduce((sum, l) => sum + l.amount, 0);
 
   // Linking helpers — unified: convertedTotal = expenseTotal × canonicalRate
   // Round to 2 decimal places for accounting precision
@@ -273,7 +273,7 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
             debitAccounts.map((a, i) => ({
               id: crypto.randomUUID(),
               account: a.account,
-              amount: String(a.debit_in_account_currency || 0),
+              amount: a.debit_in_account_currency || 0,
               memo: hasPerLineMemos ? (a.user_remark ?? "") : (lineMemos[i] ?? ""),
             })),
           );
@@ -330,12 +330,12 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
     if (!postingDate) return "Date is required";
     if (!paymentFrom) return "Payment from account is required";
 
-    const validLines = expenseLines.filter((l) => l.account && parseFloat(l.amount) > 0);
+    const validLines = expenseLines.filter((l) => l.account && l.amount > 0);
     if (validLines.length === 0) {
       return "At least one expense line with account and positive amount is required";
     }
 
-    const total = validLines.reduce((sum, l) => sum + parseFloat(l.amount), 0);
+    const total = validLines.reduce((sum, l) => sum + l.amount, 0);
     if (total <= 0) return "Total must be greater than 0";
 
     if (isMultiCurrency && canonicalRate <= 0) {
@@ -369,10 +369,10 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
 
     try {
       const validLines = expenseLines
-        .filter((l) => l.account && parseFloat(l.amount) > 0)
+        .filter((l) => l.account && l.amount > 0)
         .map((l) => ({
           account: l.account,
-          amount: parseFloat(l.amount),
+          amount: l.amount,
           memo: l.memo.trim(),
         }));
 
