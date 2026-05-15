@@ -6,18 +6,22 @@ import { Label } from "@/components/ui/label";
 import { ExpenseLineRow } from "@/components/expenses/expense-line-row";
 import { useCompanyStore } from "@/stores/company-store";
 import { formatCurrency } from "@/lib/utils";
-import type { AccountWithCurrency } from "@/types/account";
+import type { AccountWithCurrency, AssetWithCurrency } from "@/types/account";
+import type { ExpenseMode } from "@/components/expenses/write-check-form";
 
 export interface ExpenseLine {
   id: string;
   account: string;
   amount: number;
   memo: string;
+  asset?: string;
 }
 
 interface ExpenseLinesProps {
   lines: ExpenseLine[];
   expenseAccounts: AccountWithCurrency[];
+  assets?: AssetWithCurrency[];
+  mode?: ExpenseMode;
   onUpdate: (lines: ExpenseLine[]) => void;
   onOpenNewAccount: () => void;
   hideTotal?: boolean;
@@ -27,6 +31,8 @@ interface ExpenseLinesProps {
 export function ExpenseLines({
   lines,
   expenseAccounts,
+  assets = [],
+  mode = "expense",
   onUpdate,
   onOpenNewAccount,
   hideTotal,
@@ -37,6 +43,14 @@ export function ExpenseLines({
 
   const handleAccountChange = (id: string, value: string) => {
     onUpdate(lines.map((line) => (line.id === id ? { ...line, account: value } : line)));
+  };
+
+  const handleAssetSelect = (id: string, assetName: string, accountName: string) => {
+    onUpdate(
+      lines.map((line) =>
+        line.id === id ? { ...line, asset: assetName, account: accountName } : line,
+      ),
+    );
   };
 
   const handleAmountChange = (id: string, value: number) => {
@@ -75,8 +89,12 @@ export function ExpenseLines({
             account={line.account}
             amount={line.amount}
             memo={line.memo}
+            asset={line.asset}
+            mode={mode}
+            assets={assets}
             expenseAccounts={expenseAccounts}
             onAccountChange={handleAccountChange}
+            onAssetSelect={handleAssetSelect}
             onAmountChange={handleAmountChange}
             onMemoChange={handleMemoChange}
             onRemove={handleRemove}

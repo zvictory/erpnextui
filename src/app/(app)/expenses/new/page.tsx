@@ -160,6 +160,31 @@ export default function WriteCheckPage() {
         toast.warning(`Created ${result.name} as draft (submit failed: ${result.error})`);
       }
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts.bankWithCurrency(company) });
+
+      // Asset mode: bump each linked Asset's gross_purchase_amount.
+      // Per-line tolerant: a failure on one asset must not roll back the JE.
+      if (data.mode === "asset" && result.submitted) {
+        const assetLines = data.expenseLines.filter((l) => l.asset && l.amount > 0);
+        for (const line of assetLines) {
+          try {
+            await frappe.call<{
+              asset: string;
+              old_gross_purchase_amount: number;
+              new_gross_purchase_amount: number;
+            }>("stable_app.api.expense.bump_asset_gross_value", {
+              asset: line.asset,
+              amount: line.amount,
+              journal_entry: result.name,
+            });
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : "Asset bump failed";
+            toast.warning(`${line.asset}: ${msg}`);
+          }
+        }
+        if (assetLines.length) {
+          queryClient.invalidateQueries({ queryKey: queryKeys.accounts.assetsWithCurrency(company) });
+        }
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Operation failed";
       toast.error(message);

@@ -17,6 +17,14 @@ export interface AccountWithCurrency {
   balance?: number;
 }
 
+export interface AssetWithCurrency {
+  name: string;
+  asset_name: string;
+  asset_account: string;
+  gross_purchase_amount: number;
+  account_currency: string;
+}
+
 export interface TransferAccount {
   name: string;
   account_currency: string;

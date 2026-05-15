@@ -32,6 +32,7 @@ import {
   useBankAccountsWithCurrency,
   useExpenseAccountsWithCurrency,
   useFixedAssetAccountsWithCurrency,
+  useAssetsWithCurrency,
   useCurrencyMap,
 } from "@/hooks/use-accounts";
 import { useExchangeRate } from "@/hooks/use-exchange-rate";
@@ -47,7 +48,7 @@ export interface WriteCheckFormData {
   postingDate: string;
   payee: string;
   paymentFrom: string;
-  expenseLines: { account: string; amount: number; memo: string }[];
+  expenseLines: { account: string; amount: number; memo: string; asset?: string }[];
   editingName: string | null;
   editingDocstatus: number | null;
   exchangeRate: number;
@@ -99,6 +100,7 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
   } = useBankAccountsWithCurrency(company);
   const { data: expenseAccounts = [] } = useExpenseAccountsWithCurrency(company);
   const { data: fixedAssetAccounts = [] } = useFixedAssetAccountsWithCurrency(company);
+  const { data: assets = [] } = useAssetsWithCurrency(company);
   const debitAccounts = isAsset ? fixedAssetAccounts : expenseAccounts;
   const { data: companies } = useCompanies();
 
@@ -149,20 +151,31 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
     ? debitAccounts.filter((a) => a.account_currency === paymentCurrency)
     : debitAccounts;
 
-  // When payee currency or mode changes, clear debit accounts that don't match
+  // Filter assets to those whose underlying account currency matches payment currency
+  const filteredAssets = paymentCurrency
+    ? assets.filter((a) => a.account_currency === paymentCurrency)
+    : assets;
+
+  // When payee currency or mode changes, clear debit accounts/assets that don't match
   useEffect(() => {
     if (!paymentCurrency) return;
     setExpenseLines((prev) =>
       prev.map((line) => {
+        if (line.asset) {
+          const a = assets.find((x) => x.name === line.asset);
+          if (a && a.account_currency !== paymentCurrency) {
+            return { ...line, asset: undefined, account: "" };
+          }
+        }
         if (!line.account) return line;
         const acctCurrency = debitAccounts.find((a) => a.name === line.account)?.account_currency;
         if (acctCurrency && acctCurrency !== paymentCurrency) {
-          return { ...line, account: "" };
+          return { ...line, account: "", asset: undefined };
         }
         return line;
       }),
     );
-  }, [paymentCurrency, debitAccounts]);
+  }, [paymentCurrency, debitAccounts, assets]);
 
   // Auto-fetch exchange rate for the selected date
   const { data: fetchedRate } = useExchangeRate(
@@ -401,6 +414,7 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
           account: l.account,
           amount: l.amount,
           memo: l.memo.trim(),
+          ...(l.asset ? { asset: l.asset } : {}),
         }));
 
       await onSubmit({
@@ -550,6 +564,8 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
           <ExpenseLines
             lines={expenseLines}
             expenseAccounts={filteredDebitAccounts}
+            assets={filteredAssets}
+            mode={mode}
             onUpdate={setExpenseLines}
             onOpenNewAccount={onOpenNewAccount}
             hideTotal={isMultiCurrency}

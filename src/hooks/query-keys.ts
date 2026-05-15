@@ -19,6 +19,8 @@ export const queryKeys = {
     incomeWithCurrency: (company: string) => ["accounts", "incomeWithCurrency", company] as const,
     fixedAssetWithCurrency: (company: string) =>
       ["accounts", "fixedAssetWithCurrency", company] as const,
+    assetsWithCurrency: (company: string) =>
+      ["accounts", "assetsWithCurrency", company] as const,
   },
   journalEntries: {
     list: (company: string, voucherType = "Journal Entry") =>
