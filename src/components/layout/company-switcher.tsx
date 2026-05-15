@@ -1,33 +1,35 @@
 "use client";
 
 import { useEffect } from "react";
+import { Building2, Check, ChevronsUpDown } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCompanies, useCurrencyLookup } from "@/hooks/use-companies";
 import { useCompanyStore } from "@/stores/company-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useCurrencyMap } from "@/hooks/use-accounts";
+import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-export function CompanySwitcher() {
+interface CompanySwitcherProps {
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function CompanySwitcher({ onOpenChange }: CompanySwitcherProps = {}) {
   const queryClient = useQueryClient();
   const { data: companies, isLoading } = useCompanies();
   const company = useCompanyStore((s) => s.company);
   const setCompany = useCompanyStore((s) => s.setCompany);
 
-  // Find the selected company to get its currency
   const selectedCompany = companies?.find((c) => c.name === company);
   const currencyCode = selectedCompany?.default_currency ?? "";
 
-  // Fetch currency details whenever the selected company's currency changes
   useCurrencyLookup(currencyCode);
 
-  // Set currency in store immediately from currencyMap (faster than useCurrencyLookup)
   const { data: currencyMap } = useCurrencyMap();
   const setCurrency = useCompanyStore((s) => s.setCurrency);
   useEffect(() => {
@@ -39,15 +41,12 @@ export function CompanySwitcher() {
     }
   }, [currencyCode, currencyMap, setCurrency]);
 
-  // Auto-select company: restore per-user preference or fall back to first
   useEffect(() => {
     if (!companies || companies.length === 0) return;
     const companyNames = companies.map((c) => c.name);
 
-    // Current company is valid for this user — keep it
     if (company && companyNames.includes(company)) return;
 
-    // Try to restore this user's last-used company
     const user = useAuthStore.getState().user;
     const saved = user ? localStorage.getItem(`erpnext-company-${user}`) : null;
 
@@ -62,32 +61,46 @@ export function CompanySwitcher() {
     setCompany(value);
     const user = useAuthStore.getState().user;
     if (user) localStorage.setItem(`erpnext-company-${user}`, value);
-    // Invalidate all company-dependent queries
     queryClient.invalidateQueries({ queryKey: ["accounts"] });
     queryClient.invalidateQueries({ queryKey: ["journalEntries"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   }
 
   if (isLoading) {
-    return <div className="h-9 w-48 animate-pulse rounded-md bg-muted" />;
+    return <div className="h-7 w-full animate-pulse rounded-md bg-muted/60" />;
   }
 
   if (!companies || companies.length === 0) {
-    return <p className="text-sm text-muted-foreground">No companies found</p>;
+    return null;
+  }
+
+  if (companies.length === 1) {
+    return null;
   }
 
   return (
-    <Select value={company} onValueChange={handleCompanyChange}>
-      <SelectTrigger className="w-48">
-        <SelectValue placeholder="Select company" />
-      </SelectTrigger>
-      <SelectContent>
+    <DropdownMenu onOpenChange={onOpenChange}>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 w-full justify-between px-2 text-xs font-medium"
+        >
+          <span className="flex items-center gap-1.5 min-w-0">
+            <Building2 className="size-3.5 shrink-0 text-muted-foreground" />
+            <span className="truncate">{company || "Company"}</span>
+          </span>
+          <ChevronsUpDown className="size-3 shrink-0 text-muted-foreground" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-[200px]">
         {companies.map((c) => (
-          <SelectItem key={c.name} value={c.name}>
-            {c.name}
-          </SelectItem>
+          <DropdownMenuItem key={c.name} onClick={() => handleCompanyChange(c.name)}>
+            <span className="flex-1 truncate">{c.name}</span>
+            {company === c.name && <Check className="size-3.5" />}
+          </DropdownMenuItem>
         ))}
-      </SelectContent>
-    </Select>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

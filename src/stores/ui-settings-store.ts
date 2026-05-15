@@ -40,9 +40,6 @@ export const DEFAULT_COMPANY_SETTINGS: CompanySpecificSettings = {
 };
 
 interface UISettingsState {
-  // Existing
-  autoCollapseSidebar: boolean;
-  setAutoCollapseSidebar: (v: boolean) => void;
   // Appearance
   theme: Theme;
   setTheme: (v: Theme) => void;
@@ -74,8 +71,6 @@ interface UISettingsState {
 export const useUISettingsStore = create<UISettingsState>()(
   persist(
     (set, get) => ({
-      autoCollapseSidebar: false,
-      setAutoCollapseSidebar: (autoCollapseSidebar) => set({ autoCollapseSidebar }),
       theme: "light",
       setTheme: (theme) => set({ theme }),
       dateFormat: "dd MMM yyyy",
@@ -110,7 +105,7 @@ export const useUISettingsStore = create<UISettingsState>()(
     }),
     {
       name: "erpnext-ui-settings",
-      version: 10,
+      version: 11,
       merge: (persisted, current) => ({
         ...current,
         ...(persisted as Partial<UISettingsState>),
@@ -176,6 +171,12 @@ export const useUISettingsStore = create<UISettingsState>()(
         // v8 → v9: default theme system → light
         if ((version ?? 0) < 9 && s.theme === "system") {
           s.theme = "light";
+        }
+
+        // v10 → v11: drop autoCollapseSidebar (sidebar is unconditionally hover-driven now)
+        if ((version ?? 0) < 11) {
+          delete s.autoCollapseSidebar;
+          delete s.setAutoCollapseSidebar;
         }
 
         return s as unknown as UISettingsState;

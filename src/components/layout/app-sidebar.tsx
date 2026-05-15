@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import {
   LayoutDashboard,
   FileText,
   ArrowLeftRight,
+  ArrowDownLeft,
   Package,
   Users,
   Truck,
@@ -54,20 +56,9 @@ import {
   AlertTriangle,
   CalendarDays,
 } from "lucide-react";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar";
 import { useTranslations } from "next-intl";
 import { useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 import { prefetchRoute } from "@/lib/route-prefetch";
 import { useCompanyStore } from "@/stores/company-store";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -76,6 +67,23 @@ import { useEnabledModules } from "@/hooks/use-enabled-modules";
 import { isSidebarGroupEnabled } from "@/lib/module-groups";
 import type { CapabilityId, BuiltinCapabilityId } from "@/lib/permissions/capabilities";
 import { ALL_NAV_CAPABILITY_IDS } from "@/lib/permissions/nav-items";
+import { CompanySwitcher } from "@/components/layout/company-switcher";
+import { UserMenu } from "@/components/layout/user-menu";
+
+const COLLAPSED_W = 56;
+const EXPANDED_W = 240;
+const SPRING = { type: "spring" as const, stiffness: 320, damping: 32 };
+
+type NavItem = {
+  tKey: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  disabled?: boolean;
+  doctype?: string;
+  capability?: CapabilityId;
+  scopeDim?: "line" | "warehouse" | "company";
+  navCapability?: BuiltinCapabilityId;
+};
 
 const mainNav: NavItem[] = [
   { tKey: "dashboard", href: "/dashboard", icon: LayoutDashboard, navCapability: "nav.dashboard" },
@@ -85,6 +93,13 @@ const mainNav: NavItem[] = [
     icon: FileText,
     doctype: "Journal Entry",
     navCapability: "nav.expense",
+  },
+  {
+    tKey: "income",
+    href: "/incomes/new",
+    icon: ArrowDownLeft,
+    doctype: "Journal Entry",
+    navCapability: "nav.income",
   },
   {
     tKey: "fundTransfer",
@@ -486,29 +501,15 @@ const reportNav: NavItem[] = [
   },
 ];
 
-type NavItem = {
-  tKey: string;
-  href: string;
-  icon: React.ComponentType;
-  disabled?: boolean;
-  doctype?: string;
-  capability?: CapabilityId;
-  scopeDim?: "line" | "warehouse" | "company";
-  navCapability?: BuiltinCapabilityId;
-};
-
-function NavGroup({ labelKey, items }: { labelKey: string; items: NavItem[] }) {
-  const t = useTranslations("nav");
-  const pathname = usePathname();
+/**
+ * Single-source-of-truth permission filter for all nav groups.
+ * Bootstrap rule: zero `nav.*` grants → fall back to legacy doctype + capability checks
+ * so unmigrated users don't lose access.
+ */
+function useNavFilter() {
   const { isLoading, canRead } = usePermissions();
   const { data: myPerms, isLoading: grantsLoading } = useMyPermissions();
-  const qc = useQueryClient();
-  const { company } = useCompanyStore();
 
-  const handlePrefetch = (href: string) => prefetchRoute(qc, href, company);
-
-  // Bootstrap detection: if the user has zero nav.* grants, fall back to old logic
-  // so unmigrated users don't lose access.
   const hasAnyNavGrants = useMemo(() => {
     if (myPerms.isSuperuser) return true;
     for (const cap of myPerms.capabilities) {
@@ -517,128 +518,309 @@ function NavGroup({ labelKey, items }: { labelKey: string; items: NavItem[] }) {
     return false;
   }, [myPerms.capabilities, myPerms.isSuperuser]);
 
-  const hasCapability = (item: NavItem): boolean => {
-    if (!item.capability) return true;
-    if (myPerms.isSuperuser) return true;
-    if (!myPerms.capabilities.has(item.capability)) return false;
-    if (!item.scopeDim) return true;
-    const scope = myPerms.allowedScopes[item.scopeDim];
-    if (!scope || scope.size === 0) return false;
-    return true;
-  };
+  return useMemo(() => {
+    const hasCapability = (item: NavItem): boolean => {
+      if (!item.capability) return true;
+      if (myPerms.isSuperuser) return true;
+      if (!myPerms.capabilities.has(item.capability)) return false;
+      if (!item.scopeDim) return true;
+      const scope = myPerms.allowedScopes[item.scopeDim];
+      if (!scope || scope.size === 0) return false;
+      return true;
+    };
 
-  const hasNavAccess = (item: NavItem): boolean => {
-    if (!item.navCapability) return true;
-    if (myPerms.isSuperuser) return true;
-    return myPerms.capabilities.has(item.navCapability);
-  };
+    const hasNavAccess = (item: NavItem): boolean => {
+      if (!item.navCapability) return true;
+      if (myPerms.isSuperuser) return true;
+      return myPerms.capabilities.has(item.navCapability);
+    };
 
-  // While loading, show all items to avoid a flash of empty sidebar.
-  // Once loaded: if user has nav.* grants, use nav capability checks;
-  // otherwise fall back to old doctype + capability logic (bootstrap).
-  const visibleItems =
-    isLoading || grantsLoading
-      ? items
-      : hasAnyNavGrants
-        ? items.filter((item) => hasNavAccess(item))
-        : items.filter((item) => (!item.doctype || canRead(item.doctype)) && hasCapability(item));
+    return (items: NavItem[]): NavItem[] => {
+      if (isLoading || grantsLoading) return items;
+      if (hasAnyNavGrants) return items.filter(hasNavAccess);
+      return items.filter(
+        (item) => (!item.doctype || canRead(item.doctype)) && hasCapability(item),
+      );
+    };
+  }, [isLoading, grantsLoading, hasAnyNavGrants, myPerms, canRead]);
+}
 
-  if (visibleItems.length === 0) return null;
+interface NavRowProps {
+  item: NavItem;
+  open: boolean;
+  pathname: string;
+  onPrefetch: (href: string) => void;
+}
+
+function NavRow({ item, open, pathname, onPrefetch }: NavRowProps) {
+  const t = useTranslations("nav");
+  const Icon = item.icon;
+  const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+
+  const baseClass = cn(
+    "flex h-9 items-center gap-3 rounded-md px-2 text-sm transition-colors",
+    isActive && "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
+    !isActive &&
+      !item.disabled &&
+      "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+    item.disabled && "opacity-40 pointer-events-none",
+  );
+
+  const label = (
+    <motion.span
+      animate={{ opacity: open ? 1 : 0 }}
+      transition={SPRING}
+      className="truncate whitespace-nowrap"
+    >
+      {t(item.tKey)}
+    </motion.span>
+  );
+
+  if (item.disabled) {
+    return (
+      <li>
+        <div className={baseClass} aria-disabled="true">
+          <Icon className="size-4 shrink-0" />
+          {label}
+        </div>
+      </li>
+    );
+  }
 
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel>{t(`groups.${labelKey}`)}</SidebarGroupLabel>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {visibleItems.map((item) => (
-            <SidebarMenuItem key={item.tKey}>
-              {item.disabled ? (
-                <SidebarMenuButton disabled>
-                  <item.icon />
-                  <span>{t(item.tKey)}</span>
-                </SidebarMenuButton>
-              ) : (
-                <SidebarMenuButton
-                  asChild
-                  isActive={item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)}
-                >
-                  <Link
-                    href={item.href}
-                    onMouseEnter={() => handlePrefetch(item.href)}
-                    onFocus={() => handlePrefetch(item.href)}
-                  >
-                    <item.icon />
-                    <span>{t(item.tKey)}</span>
-                  </Link>
-                </SidebarMenuButton>
-              )}
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
+    <li>
+      <Link
+        href={item.href}
+        className={baseClass}
+        aria-current={isActive ? "page" : undefined}
+        onMouseEnter={() => onPrefetch(item.href)}
+        onFocus={() => onPrefetch(item.href)}
+      >
+        <Icon className="size-4 shrink-0" />
+        {label}
+      </Link>
+    </li>
+  );
+}
+
+interface NavGroupProps {
+  labelKey: string;
+  items: NavItem[];
+  open: boolean;
+  pathname: string;
+  onPrefetch: (href: string) => void;
+}
+
+function NavGroup({ labelKey, items, open, pathname, onPrefetch }: NavGroupProps) {
+  const t = useTranslations("nav");
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="pb-2">
+      <motion.div
+        animate={{ opacity: open ? 1 : 0 }}
+        transition={SPRING}
+        className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/50"
+      >
+        {t(`groups.${labelKey}`)}
+      </motion.div>
+      <ul className="space-y-0.5 px-2">
+        {items.map((item) => (
+          <NavRow
+            key={item.tKey}
+            item={item}
+            open={open}
+            pathname={pathname}
+            onPrefetch={onPrefetch}
+          />
+        ))}
+      </ul>
+    </div>
   );
 }
 
 export function AppSidebar() {
+  const pathname = usePathname();
+  const [hovered, setHovered] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const enabledModules = useEnabledModules();
+  const filter = useNavFilter();
+  const qc = useQueryClient();
+  const { company } = useCompanyStore();
+
+  const handlePrefetch = (href: string) => prefetchRoute(qc, href, company);
+
+  // Stay expanded while a dropdown inside the sidebar is open, even if the
+  // cursor leaves the aside to reach the popover content.
+  const open = hovered || menuOpen;
+
+  const main = filter(mainNav);
+  const masterData = filter(masterDataNav);
+  const transactions = filter(transactionNav);
+  const stock = filter(stockNav);
+  const accounting = filter(accountingNav);
+  const warehouse = filter(warehouseNav);
+  const factory = filter(factoryNav);
+  const oee = filter(oeeNav);
+  const manufacturing = filter(manufacturingNav);
+  const assetMaintenance = filter(assetMaintenanceNav);
+  const reports = filter(reportNav);
+  const admin = filter(adminNav);
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-border/60">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link href="/dashboard">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <Scale className="size-4" />
-                </div>
-                <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-semibold">Stable ERP</span>
-                  <span className="text-xs text-muted-foreground">Finance</span>
-                </div>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
+    <motion.aside
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setHovered(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) setHovered(false);
+      }}
+      animate={{ width: open ? EXPANDED_W : COLLAPSED_W }}
+      transition={SPRING}
+      initial={false}
+      className="fixed inset-y-0 left-0 z-50 flex flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground overflow-hidden"
+      aria-label="Sidebar navigation"
+    >
+      {/* Header */}
+      <div className="flex items-center gap-2 border-b border-sidebar-border px-2 py-3">
+        <Link
+          href="/dashboard"
+          className="flex aspect-square size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground"
+          aria-label="Stable ERP home"
+        >
+          <Scale className="size-4" />
+        </Link>
+        <motion.div
+          animate={{ opacity: open ? 1 : 0 }}
+          transition={SPRING}
+          className="flex flex-1 flex-col gap-0.5 leading-none overflow-hidden whitespace-nowrap"
+        >
+          <span className="text-sm font-semibold">Stable ERP</span>
+          <span className="text-[10px] text-sidebar-foreground/60">Finance</span>
+        </motion.div>
+      </div>
 
-      <SidebarContent>
-        <NavGroup labelKey="main" items={mainNav} />
+      <motion.div
+        animate={{ opacity: open ? 1 : 0, height: open ? "auto" : 0 }}
+        transition={SPRING}
+        className="border-b border-sidebar-border px-2 py-2 overflow-hidden"
+      >
+        <CompanySwitcher onOpenChange={setMenuOpen} />
+      </motion.div>
+
+      {/* Scrollable nav */}
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2">
+        <NavGroup
+          labelKey="main"
+          items={main}
+          open={open}
+          pathname={pathname}
+          onPrefetch={handlePrefetch}
+        />
         {isSidebarGroupEnabled("masterData", enabledModules) && (
-          <NavGroup labelKey="masterData" items={masterDataNav} />
+          <NavGroup
+            labelKey="masterData"
+            items={masterData}
+            open={open}
+            pathname={pathname}
+            onPrefetch={handlePrefetch}
+          />
         )}
         {isSidebarGroupEnabled("transactions", enabledModules) && (
-          <NavGroup labelKey="transactions" items={transactionNav} />
+          <NavGroup
+            labelKey="transactions"
+            items={transactions}
+            open={open}
+            pathname={pathname}
+            onPrefetch={handlePrefetch}
+          />
         )}
         {isSidebarGroupEnabled("stock", enabledModules) && (
-          <NavGroup labelKey="stock" items={stockNav} />
+          <NavGroup
+            labelKey="stock"
+            items={stock}
+            open={open}
+            pathname={pathname}
+            onPrefetch={handlePrefetch}
+          />
         )}
         {isSidebarGroupEnabled("accounting", enabledModules) && (
-          <NavGroup labelKey="accounting" items={accountingNav} />
+          <NavGroup
+            labelKey="accounting"
+            items={accounting}
+            open={open}
+            pathname={pathname}
+            onPrefetch={handlePrefetch}
+          />
         )}
         {isSidebarGroupEnabled("warehouse", enabledModules) && (
-          <NavGroup labelKey="warehouse" items={warehouseNav} />
+          <NavGroup
+            labelKey="warehouse"
+            items={warehouse}
+            open={open}
+            pathname={pathname}
+            onPrefetch={handlePrefetch}
+          />
         )}
         {isSidebarGroupEnabled("factory", enabledModules) && (
-          <NavGroup labelKey="factory" items={factoryNav} />
+          <NavGroup
+            labelKey="factory"
+            items={factory}
+            open={open}
+            pathname={pathname}
+            onPrefetch={handlePrefetch}
+          />
         )}
         {isSidebarGroupEnabled("manufacturing", enabledModules) && (
           <>
-            <NavGroup labelKey="oee" items={oeeNav} />
-            <NavGroup labelKey="manufacturing" items={manufacturingNav} />
+            <NavGroup
+              labelKey="oee"
+              items={oee}
+              open={open}
+              pathname={pathname}
+              onPrefetch={handlePrefetch}
+            />
+            <NavGroup
+              labelKey="manufacturing"
+              items={manufacturing}
+              open={open}
+              pathname={pathname}
+              onPrefetch={handlePrefetch}
+            />
           </>
         )}
         {isSidebarGroupEnabled("assetMaintenance", enabledModules) && (
-          <NavGroup labelKey="assetMaintenance" items={assetMaintenanceNav} />
+          <NavGroup
+            labelKey="assetMaintenance"
+            items={assetMaintenance}
+            open={open}
+            pathname={pathname}
+            onPrefetch={handlePrefetch}
+          />
         )}
         {isSidebarGroupEnabled("reports", enabledModules) && (
-          <NavGroup labelKey="reports" items={reportNav} />
+          <NavGroup
+            labelKey="reports"
+            items={reports}
+            open={open}
+            pathname={pathname}
+            onPrefetch={handlePrefetch}
+          />
         )}
-        <NavGroup labelKey="admin" items={adminNav} />
-      </SidebarContent>
+        <NavGroup
+          labelKey="admin"
+          items={admin}
+          open={open}
+          pathname={pathname}
+          onPrefetch={handlePrefetch}
+        />
+      </nav>
 
-      <SidebarFooter className="border-t border-border/60" />
-    </Sidebar>
+      {/* Footer */}
+      <div className="border-t border-sidebar-border p-2">
+        <UserMenu open={open} onOpenChange={setMenuOpen} />
+      </div>
+    </motion.aside>
   );
 }

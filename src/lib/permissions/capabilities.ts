@@ -136,6 +136,7 @@ export const BUILTIN_CAPABILITIES = {
   // Each maps 1:1 to a sidebar menu item. Module "nav" groups them separately.
   "nav.dashboard": { module: "nav", labelKey: "nav.dashboard", scopeDim: null },
   "nav.expense": { module: "nav", labelKey: "nav.expense", scopeDim: null },
+  "nav.income": { module: "nav", labelKey: "nav.income", scopeDim: null },
   "nav.fundTransfer": { module: "nav", labelKey: "nav.fundTransfer", scopeDim: null },
 
   "nav.products": { module: "nav", labelKey: "nav.products", scopeDim: null },

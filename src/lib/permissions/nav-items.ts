@@ -17,6 +17,7 @@ export const NAV_GROUPS: NavGroupDef[] = [
     items: [
       { tKey: "dashboard", navCapability: "nav.dashboard" },
       { tKey: "expense", navCapability: "nav.expense" },
+      { tKey: "income", navCapability: "nav.income" },
       { tKey: "fundTransfer", navCapability: "nav.fundTransfer" },
     ],
   },

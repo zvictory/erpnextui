@@ -71,8 +71,6 @@
     "bom": "Spetsifikatsiyalar",
     "jobCards": "Topshiriqlar",
     "workstations": "Stansiyalar",
-    "autoCollapse": "Avtoyig'ish",
-    "autoCollapseTooltip": "Tafsilot sahifalarida yon panelni avtomatik yig'ish",
     "priceLists": "Narx ro'yxatlari",
     "costingDashboard": "Tannarx",
     "laborReport": "Mehnat hisoboti",
@@ -558,11 +556,7 @@
       "themeDesc": "Ilovaning ko'rinishini tanlang",
       "light": "Yorug'",
       "dark": "Qorong'u",
-      "system": "Tizim",
-      "sidebar": "Yon panel",
-      "sidebarDesc": "Yon panel xatti-harakatini boshqarish",
-      "autoCollapse": "Tafsilot sahifalarida avtomatik yig'ish",
-      "autoCollapseDesc": "Tafsilot sahifalarini ko'rishda yon panelni avtomatik yig'ish"
+      "system": "Tizim"
     },
     "regional": {
       "language": "Til",

@@ -71,8 +71,6 @@
     "bom": "Bills of Material",
     "jobCards": "Job Cards",
     "workstations": "Workstations",
-    "autoCollapse": "Auto-collapse",
-    "autoCollapseTooltip": "Auto-collapse sidebar on detail pages",
     "priceLists": "Price Lists",
     "costingDashboard": "Costing",
     "laborReport": "Labor Report",
@@ -598,11 +596,7 @@
       "themeDesc": "Choose how the app looks",
       "light": "Light",
       "dark": "Dark",
-      "system": "System",
-      "sidebar": "Sidebar",
-      "sidebarDesc": "Control sidebar behavior",
-      "autoCollapse": "Auto-collapse on detail pages",
-      "autoCollapseDesc": "Automatically collapse the sidebar when viewing detail pages"
+      "system": "System"
     },
     "regional": {
       "language": "Language",

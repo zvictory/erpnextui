@@ -6,10 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { useEnabledModules } from "@/hooks/use-enabled-modules";
 import { isRouteEnabled } from "@/lib/module-groups";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
-import { AppHeader } from "@/components/layout/app-header";
-import { SidebarAutoCollapse } from "@/components/layout/sidebar-auto-collapse";
 import { GlobalSearch } from "@/components/shared/global-search";
 import { KeyboardShortcutsDialog } from "@/components/shared/keyboard-shortcuts-dialog";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
@@ -53,20 +50,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <AuthGuard>
       <RealtimeProvider>
-        <SidebarProvider>
         <ShortcutsProvider>
-          <AppSidebar />
-          <SidebarAutoCollapse />
-          <RateSyncTrigger />
-          <SidebarInset>
-            <AppHeader />
-            <main className="flex-1 min-h-0 p-4 md:p-6">
+          <div className="flex min-h-svh pl-14">
+            <AppSidebar />
+            <RateSyncTrigger />
+            <main className="flex-1 min-w-0 p-4 md:p-6">
               <ModuleGuard>{children}</ModuleGuard>
             </main>
-          </SidebarInset>
+          </div>
           <GlobalSearch />
         </ShortcutsProvider>
-      </SidebarProvider>
       </RealtimeProvider>
     </AuthGuard>
   );

@@ -8,7 +8,6 @@ import { Home, GitBranch, Droplets } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { useSidebar } from "@/components/ui/sidebar";
 import { FACTORY_LAYOUT } from "@/config/factory-layout";
 import { useActiveWorkOrders, useRecentStockEntries } from "@/hooks/use-factory-twin";
 import { useCompanyStore } from "@/stores/company-store";
@@ -41,7 +40,6 @@ export default function FactoryPage() {
   const t = useTranslations("factory");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selectedEquipment = FACTORY_LAYOUT.find((e) => e.id === selectedId);
-  const { setOpen } = useSidebar();
   const { company } = useCompanyStore();
   const { data: workOrders = [] } = useActiveWorkOrders(company);
   const { data: recentEntries = [] } = useRecentStockEntries(company);
@@ -61,12 +59,6 @@ export default function FactoryPage() {
     const start = events.length > 0 ? events[0].timestamp : now - 2 * 3600_000;
     useFactoryTwinStore.getState().setTimeline(start, now, events);
   }, [timelineKey, workOrders, recentEntries]);
-
-  // Collapse sidebar on mount, restore on unmount
-  useEffect(() => {
-    setOpen(false);
-    return () => setOpen(true);
-  }, [setOpen]);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
