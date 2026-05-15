@@ -2,6 +2,7 @@
   "nav": {
     "dashboard": "Бош саҳифа",
     "expense": "Харажат",
+    "income": "Даромад",
     "fundTransfer": "Маблағ ўтказиш",
     "products": "Маҳсулотлар",
     "customers": "Мижозлар",
@@ -277,11 +278,18 @@
     "apAging": "Кредиторлик қарздорлик",
     "totalReceivable": "Жами олинадиган",
     "totalPayable": "Жами тўланадиган",
-    "totalCash": "Жами нақд пул"
+    "totalCash": "Жами нақд пул",
+    "newOrder": "Янги буюртма"
   },
   "expenses": {
     "title": "Харажат",
+    "titleAsset": "Актив хариди",
     "newExpense": "Янги харажат",
+    "newAsset": "Янги актив хариди",
+    "subtitleExpense": "Тўлов ёки харажатни қайд қилиш",
+    "subtitleAsset": "Асосий воситанинг келишини қайд қилиш",
+    "modeExpense": "Харажат",
+    "modeAsset": "Актив хариди",
     "payeeAccount": "Олувчи ҳисоби",
     "postingDate": "Сана",
     "amount": "Сумма",
@@ -289,8 +297,18 @@
     "addLine": "Қатор қўшиш",
     "totalAmount": "Жами",
     "account": "Ҳисоб",
+    "accountAsset": "Асосий восита ҳисоби",
     "history": "Тарих",
     "noHistory": "Ҳали харажатлар йўқ"
+  },
+  "income": {
+    "title": "Даромад",
+    "payer": "Тўловчи",
+    "payerAccount": "Ҳисобга ўтказиш",
+    "postingDate": "Сана",
+    "addLine": "Қатор қўшиш",
+    "totalAmount": "Жами",
+    "account": "Даромад ҳисоби"
   },
   "invoices": {
     "salesInvoices": "Ҳисоб-фактуралар",
@@ -932,7 +950,18 @@
       "attendance": "Давомат",
       "payroll": "Ҳисоб"
     },
-    "attendanceSettings": "Давомат созламалари"
+    "attendanceSettings": "Давомат созламалари",
+    "newEmployee": "Янги ходим",
+    "gender": "Жинс",
+    "dateOfBirth": "Туғилган сана",
+    "male": "Эркак",
+    "female": "Аёл",
+    "other": "Бошқа",
+    "createEmployee": "Ходим яратиш",
+    "creating": "Яратилмоқда...",
+    "createSuccess": "Ходим муваффақиятли яратилди",
+    "createError": "Ходим яратишда хатолик",
+    "requiredField": "Мажбурий майдон"
   },
   "receipt": {
     "invoice": "Ҳисоб-фактура",
@@ -984,7 +1013,9 @@
     "searchWarehouses": "Омборхоналарни қидириш...",
     "itemStock": "Маҳсулот захираси",
     "warehouseStock": "Омборхона захираси",
-    "noStock": "Захира маълумотлари топилмади."
+    "noStock": "Захира маълумотлари топилмади.",
+    "allTypes": "Барча турлар",
+    "allWarehouses": "Барча омборлар"
   },
   "workflow": {
     "draft": "Қоралама",

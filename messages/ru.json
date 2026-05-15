@@ -2,6 +2,7 @@
   "nav": {
     "dashboard": "Главная",
     "expense": "Расход",
+    "income": "Доход",
     "fundTransfer": "Перевод средств",
     "products": "Товары",
     "customers": "Клиенты",
@@ -277,11 +278,18 @@
     "apAging": "Кредиторская задолженность",
     "totalReceivable": "Итого к получению",
     "totalPayable": "Итого к оплате",
-    "totalCash": "Итого наличные"
+    "totalCash": "Итого наличные",
+    "newOrder": "Новый заказ"
   },
   "expenses": {
     "title": "Расход",
+    "titleAsset": "Покупка актива",
     "newExpense": "Новый расход",
+    "newAsset": "Новая покупка актива",
+    "subtitleExpense": "Зафиксировать платёж или расход",
+    "subtitleAsset": "Зафиксировать поступление основного средства",
+    "modeExpense": "Расход",
+    "modeAsset": "Покупка актива",
     "payeeAccount": "Счёт получателя",
     "postingDate": "Дата",
     "amount": "Сумма",
@@ -289,8 +297,18 @@
     "addLine": "Добавить строку",
     "totalAmount": "Итого",
     "account": "Счёт",
+    "accountAsset": "Счёт основного средства",
     "history": "История",
     "noHistory": "Расходов пока нет"
+  },
+  "income": {
+    "title": "Доход",
+    "payer": "Плательщик",
+    "payerAccount": "Счёт зачисления",
+    "postingDate": "Дата",
+    "addLine": "Добавить строку",
+    "totalAmount": "Итого",
+    "account": "Счёт дохода"
   },
   "invoices": {
     "salesInvoices": "Счета-фактуры",
@@ -947,7 +965,18 @@
       "attendance": "Посещаемость",
       "payroll": "Расчёт"
     },
-    "attendanceSettings": "Настройки посещаемости"
+    "attendanceSettings": "Настройки посещаемости",
+    "newEmployee": "Новый сотрудник",
+    "gender": "Пол",
+    "dateOfBirth": "Дата рождения",
+    "male": "Мужской",
+    "female": "Женский",
+    "other": "Другой",
+    "createEmployee": "Создать сотрудника",
+    "creating": "Создание...",
+    "createSuccess": "Сотрудник успешно создан",
+    "createError": "Не удалось создать сотрудника",
+    "requiredField": "Обязательное поле"
   },
   "receipt": {
     "invoice": "Счёт",
@@ -999,7 +1028,9 @@
     "searchWarehouses": "Поиск складов...",
     "itemStock": "Запасы по товару",
     "warehouseStock": "Запасы на складе",
-    "noStock": "Данные о запасах не найдены."
+    "noStock": "Данные о запасах не найдены.",
+    "allTypes": "Все типы",
+    "allWarehouses": "Все склады"
   },
   "workflow": {
     "draft": "Черновик",

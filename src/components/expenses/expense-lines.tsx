@@ -21,6 +21,7 @@ interface ExpenseLinesProps {
   onUpdate: (lines: ExpenseLine[]) => void;
   onOpenNewAccount: () => void;
   hideTotal?: boolean;
+  accountLabel?: string;
 }
 
 export function ExpenseLines({
@@ -29,6 +30,7 @@ export function ExpenseLines({
   onUpdate,
   onOpenNewAccount,
   hideTotal,
+  accountLabel,
 }: ExpenseLinesProps) {
   const t = useTranslations("expenses");
   const { currencySymbol, symbolOnRight } = useCompanyStore();
@@ -59,7 +61,7 @@ export function ExpenseLines({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <Label>{t("account")}</Label>
+        <Label>{accountLabel ?? t("account")}</Label>
         <Button type="button" variant="ghost" size="xs" onClick={onOpenNewAccount}>
           + New Account
         </Button>

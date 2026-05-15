@@ -2,6 +2,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "expense": "Expense",
+    "income": "Income",
     "fundTransfer": "Fund Transfer",
     "products": "Products",
     "customers": "Customers",
@@ -277,11 +278,18 @@
     "apAging": "Payable Aging",
     "totalReceivable": "Total Receivable",
     "totalPayable": "Total Payable",
-    "totalCash": "Total Cash"
+    "totalCash": "Total Cash",
+    "newOrder": "New Order"
   },
   "expenses": {
     "title": "Expense",
+    "titleAsset": "Asset Purchase",
     "newExpense": "New Expense",
+    "newAsset": "New Asset Purchase",
+    "subtitleExpense": "Record a payment or expense",
+    "subtitleAsset": "Record a fixed-asset addition",
+    "modeExpense": "Expense",
+    "modeAsset": "Asset purchase",
     "payeeAccount": "Payee Account",
     "postingDate": "Date",
     "amount": "Amount",
@@ -289,8 +297,18 @@
     "addLine": "Add Line",
     "totalAmount": "Total",
     "account": "Account",
+    "accountAsset": "Fixed Asset Account",
     "history": "History",
     "noHistory": "No expenses yet"
+  },
+  "income": {
+    "title": "Income",
+    "payer": "Payer",
+    "payerAccount": "Deposit To",
+    "postingDate": "Date",
+    "addLine": "Add Line",
+    "totalAmount": "Total",
+    "account": "Income Account"
   },
   "invoices": {
     "salesInvoices": "Sales Invoices",
@@ -994,7 +1012,18 @@
       "attendance": "Attendance",
       "payroll": "Payroll"
     },
-    "attendanceSettings": "Attendance settings"
+    "attendanceSettings": "Attendance settings",
+    "newEmployee": "New Employee",
+    "gender": "Gender",
+    "dateOfBirth": "Date of Birth",
+    "male": "Male",
+    "female": "Female",
+    "other": "Other",
+    "createEmployee": "Create Employee",
+    "creating": "Creating...",
+    "createSuccess": "Employee created successfully",
+    "createError": "Failed to create employee",
+    "requiredField": "Required"
   },
   "receipt": {
     "invoice": "Invoice",
@@ -1046,7 +1075,9 @@
     "searchWarehouses": "Search warehouses...",
     "itemStock": "Item Stock",
     "warehouseStock": "Warehouse Stock",
-    "noStock": "No stock data found."
+    "noStock": "No stock data found.",
+    "allTypes": "All Types",
+    "allWarehouses": "All Warehouses"
   },
   "workflow": {
     "draft": "Draft",

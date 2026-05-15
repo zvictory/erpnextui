@@ -2,6 +2,7 @@
   "nav": {
     "dashboard": "Bosh sahifa",
     "expense": "Xarajat",
+    "income": "Daromad",
     "fundTransfer": "Mablag' o'tkazish",
     "products": "Mahsulotlar",
     "customers": "Mijozlar",
@@ -277,11 +278,18 @@
     "apAging": "Kreditorlik qarzdorlik",
     "totalReceivable": "Jami olinadigan",
     "totalPayable": "Jami to'lanadigan",
-    "totalCash": "Jami naqd pul"
+    "totalCash": "Jami naqd pul",
+    "newOrder": "Yangi buyurtma"
   },
   "expenses": {
     "title": "Xarajat",
+    "titleAsset": "Aktiv xaridi",
     "newExpense": "Yangi xarajat",
+    "newAsset": "Yangi aktiv xaridi",
+    "subtitleExpense": "To'lov yoki xarajatni qayd qilish",
+    "subtitleAsset": "Asosiy vositaning kelishini qayd qilish",
+    "modeExpense": "Xarajat",
+    "modeAsset": "Aktiv xaridi",
     "payeeAccount": "Oluvchi hisobi",
     "postingDate": "Sana",
     "amount": "Summa",
@@ -289,8 +297,18 @@
     "addLine": "Qator qo'shish",
     "totalAmount": "Jami",
     "account": "Hisob",
+    "accountAsset": "Asosiy vosita hisobi",
     "history": "Tarix",
     "noHistory": "Hali xarajatlar yo'q"
+  },
+  "income": {
+    "title": "Daromad",
+    "payer": "To'lovchi",
+    "payerAccount": "Hisobga o'tkazish",
+    "postingDate": "Sana",
+    "addLine": "Qator qo'shish",
+    "totalAmount": "Jami",
+    "account": "Daromad hisobi"
   },
   "invoices": {
     "salesInvoices": "Hisob-fakturalar",
@@ -932,7 +950,18 @@
       "attendance": "Davomat",
       "payroll": "Hisob"
     },
-    "attendanceSettings": "Davomat sozlamalari"
+    "attendanceSettings": "Davomat sozlamalari",
+    "newEmployee": "Yangi xodim",
+    "gender": "Jins",
+    "dateOfBirth": "Tug'ilgan sana",
+    "male": "Erkak",
+    "female": "Ayol",
+    "other": "Boshqa",
+    "createEmployee": "Xodim yaratish",
+    "creating": "Yaratilmoqda...",
+    "createSuccess": "Xodim muvaffaqiyatli yaratildi",
+    "createError": "Xodim yaratishda xatolik",
+    "requiredField": "Majburiy maydon"
   },
   "receipt": {
     "invoice": "Hisob-faktura",
@@ -984,7 +1013,9 @@
     "searchWarehouses": "Omborxonalarni qidirish...",
     "itemStock": "Mahsulot zaxirasi",
     "warehouseStock": "Omborxona zaxirasi",
-    "noStock": "Zaxira ma'lumotlari topilmadi."
+    "noStock": "Zaxira ma'lumotlari topilmadi.",
+    "allTypes": "Barcha turlar",
+    "allWarehouses": "Barcha omborlar"
   },
   "workflow": {
     "draft": "Qoralama",

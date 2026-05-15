@@ -28,13 +28,20 @@ import { EditModeBar } from "@/components/expenses/edit-mode-bar";
 import { InsufficientBalanceWarning } from "@/components/shared/insufficient-balance-warning";
 import { ExpenseLines } from "@/components/expenses/expense-lines";
 import type { ExpenseLine } from "@/components/expenses/expense-lines";
-import { useBankAccountsWithCurrency, useExpenseAccountsWithCurrency, useCurrencyMap } from "@/hooks/use-accounts";
+import {
+  useBankAccountsWithCurrency,
+  useExpenseAccountsWithCurrency,
+  useFixedAssetAccountsWithCurrency,
+  useCurrencyMap,
+} from "@/hooks/use-accounts";
 import { useExchangeRate } from "@/hooks/use-exchange-rate";
 import { useCompanyStore } from "@/stores/company-store";
 import { useCompanies } from "@/hooks/use-companies";
 import { cn, formatCurrency } from "@/lib/utils";
 import { formatNumber } from "@/lib/formatters";
 import type { JournalEntry } from "@/types/journal-entry";
+
+export type ExpenseMode = "expense" | "asset";
 
 export interface WriteCheckFormData {
   postingDate: string;
@@ -46,6 +53,7 @@ export interface WriteCheckFormData {
   exchangeRate: number;
   convertedTotal: number;
   isMultiCurrency: boolean;
+  mode: ExpenseMode;
 }
 
 export interface WriteCheckFormHandle {
@@ -61,6 +69,8 @@ interface WriteCheckFormProps {
   onLoadEntry: (name: string) => Promise<JournalEntry>;
   isSubmitting: boolean;
   onOpenNewAccount: () => void;
+  mode: ExpenseMode;
+  onModeChange: (mode: ExpenseMode) => void;
 }
 
 function getToday(): string {
@@ -78,8 +88,9 @@ function makeDefaultLine(): ExpenseLine {
 const WriteCheckFormInner: React.ForwardRefRenderFunction<
   WriteCheckFormHandle,
   WriteCheckFormProps
-> = ({ onSubmit, onLoadEntry, isSubmitting, onOpenNewAccount }, ref) => {
+> = ({ onSubmit, onLoadEntry, isSubmitting, onOpenNewAccount, mode, onModeChange }, ref) => {
   const t = useTranslations("expenses");
+  const isAsset = mode === "asset";
   const { company } = useCompanyStore();
   const {
     data: bankAccounts = [],
@@ -87,6 +98,8 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
     isError: isAccountsError,
   } = useBankAccountsWithCurrency(company);
   const { data: expenseAccounts = [] } = useExpenseAccountsWithCurrency(company);
+  const { data: fixedAssetAccounts = [] } = useFixedAssetAccountsWithCurrency(company);
+  const debitAccounts = isAsset ? fixedAssetAccounts : expenseAccounts;
   const { data: companies } = useCompanies();
 
   const companyCurrency = companies?.find((c) => c.name === company)?.default_currency ?? "";
@@ -129,29 +142,27 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
 
   // When company is the stronger currency (e.g. USD), show "1 USD = ? UZS" not "1 UZS = 0.000083 USD"
   const isRateInverted =
-    isMultiCurrency &&
-    STRONG.includes(companyCurrency) &&
-    !STRONG.includes(foreignCurrency ?? "");
+    isMultiCurrency && STRONG.includes(companyCurrency) && !STRONG.includes(foreignCurrency ?? "");
 
-  // Filter expense accounts to match the payee account's currency
-  const filteredExpenseAccounts = paymentCurrency
-    ? expenseAccounts.filter((a) => a.account_currency === paymentCurrency)
-    : expenseAccounts;
+  // Filter debit accounts to match the payee account's currency
+  const filteredDebitAccounts = paymentCurrency
+    ? debitAccounts.filter((a) => a.account_currency === paymentCurrency)
+    : debitAccounts;
 
-  // When payee currency changes, clear expense accounts that don't match
+  // When payee currency or mode changes, clear debit accounts that don't match
   useEffect(() => {
     if (!paymentCurrency) return;
     setExpenseLines((prev) =>
       prev.map((line) => {
         if (!line.account) return line;
-        const acctCurrency = expenseAccounts.find((a) => a.name === line.account)?.account_currency;
+        const acctCurrency = debitAccounts.find((a) => a.name === line.account)?.account_currency;
         if (acctCurrency && acctCurrency !== paymentCurrency) {
           return { ...line, account: "" };
         }
         return line;
       }),
     );
-  }, [paymentCurrency, expenseAccounts]);
+  }, [paymentCurrency, debitAccounts]);
 
   // Auto-fetch exchange rate for the selected date
   const { data: fetchedRate } = useExchangeRate(
@@ -242,11 +253,16 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
         setPostingDate(entry.posting_date);
 
         // Parse payee + per-line memos from user_remark
-        // Format: "[Expense] Paid to X | memo1; memo2" or "[Expense] memo1; memo2"
+        // Format: "[Expense|Asset Purchase] Paid to X | memo1; memo2"
         const rawRemark = entry.user_remark || "";
-        const remark = rawRemark.startsWith("[Expense] ")
-          ? rawRemark.slice("[Expense] ".length)
-          : rawRemark;
+        let remark = rawRemark;
+        if (rawRemark.startsWith("[Asset Purchase] ")) {
+          onModeChange("asset");
+          remark = rawRemark.slice("[Asset Purchase] ".length);
+        } else if (rawRemark.startsWith("[Expense] ")) {
+          onModeChange("expense");
+          remark = rawRemark.slice("[Expense] ".length);
+        }
 
         let memosStr = "";
         if (remark.startsWith("Paid to ")) {
@@ -322,7 +338,7 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
         setStatus({ type: "error", message });
       }
     },
-    [onLoadEntry, bankAccounts, companyCurrency],
+    [onLoadEntry, bankAccounts, companyCurrency, onModeChange],
   );
 
   useImperativeHandle(ref, () => ({
@@ -397,6 +413,7 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
         exchangeRate: isMultiCurrency ? canonicalRate : 1,
         convertedTotal: isMultiCurrency ? parseFloat(convertedTotal) || 0 : 0,
         isMultiCurrency: isMultiCurrency,
+        mode,
       });
 
       setStatus({ type: "success", message: "Entry posted successfully" });
@@ -434,8 +451,40 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
         <div className="h-1 bg-gradient-to-r from-emerald-500 to-green-400" />
 
         <CardHeader className="pb-3 pt-4">
-          <CardTitle className="text-base">Write Check</CardTitle>
-          <CardDescription>Record a payment or expense</CardDescription>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-base">
+                {isAsset ? t("newAsset") : t("newExpense")}
+              </CardTitle>
+              <CardDescription>
+                {isAsset ? t("subtitleAsset") : t("subtitleExpense")}
+              </CardDescription>
+            </div>
+            <div
+              className="inline-flex shrink-0 rounded-lg border bg-muted/40 p-0.5"
+              role="tablist"
+              aria-label="Entry kind"
+            >
+              <Button
+                type="button"
+                variant={mode === "expense" ? "default" : "ghost"}
+                size="sm"
+                disabled={!!editingName}
+                onClick={() => onModeChange("expense")}
+              >
+                {t("modeExpense")}
+              </Button>
+              <Button
+                type="button"
+                variant={mode === "asset" ? "default" : "ghost"}
+                size="sm"
+                disabled={!!editingName}
+                onClick={() => onModeChange("asset")}
+              >
+                {t("modeAsset")}
+              </Button>
+            </div>
+          </div>
         </CardHeader>
 
         <CardContent className="space-y-4 pt-0">
@@ -497,13 +546,14 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
             )}
           </div>
 
-          {/* Expense Lines */}
+          {/* Expense / Fixed-Asset Lines */}
           <ExpenseLines
             lines={expenseLines}
-            expenseAccounts={filteredExpenseAccounts}
+            expenseAccounts={filteredDebitAccounts}
             onUpdate={setExpenseLines}
             onOpenNewAccount={onOpenNewAccount}
             hideTotal={isMultiCurrency}
+            accountLabel={isAsset ? t("accountAsset") : t("account")}
           />
 
           {/* Exchange rate — compact 2-col */}
@@ -524,7 +574,13 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
                   </Label>
                   <div className="flex items-center gap-1">
                     <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
-                      1&nbsp;{getSym(isRateInverted ? companyCurrency : (foreignCurrency ?? companyCurrency)).symbol} =
+                      1&nbsp;
+                      {
+                        getSym(
+                          isRateInverted ? companyCurrency : (foreignCurrency ?? companyCurrency),
+                        ).symbol
+                      }{" "}
+                      =
                     </span>
                     <MoneyInput
                       id="exchangeRate"
@@ -560,9 +616,17 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
               {/* Conversion summary */}
               {expenseTotal > 0 && parseFloat(convertedTotal) > 0 && (
                 <p className="text-[11px] text-muted-foreground text-center">
-                  {formatCurrency(expenseTotal, getSym(paymentCurrency).symbol, getSym(paymentCurrency).onRight)}
+                  {formatCurrency(
+                    expenseTotal,
+                    getSym(paymentCurrency).symbol,
+                    getSym(paymentCurrency).onRight,
+                  )}
                   <span className="mx-1.5 opacity-40">→</span>
-                  {formatCurrency(parseFloat(convertedTotal), getSym(companyCurrency).symbol, getSym(companyCurrency).onRight)}
+                  {formatCurrency(
+                    parseFloat(convertedTotal),
+                    getSym(companyCurrency).symbol,
+                    getSym(companyCurrency).onRight,
+                  )}
                 </p>
               )}
             </div>

@@ -7,6 +7,7 @@ import {
   WriteCheckForm,
   type WriteCheckFormHandle,
   type WriteCheckFormData,
+  type ExpenseMode,
 } from "@/components/expenses/write-check-form";
 import { CreateAccountDialog } from "@/components/accounts/create-account-dialog";
 import { HistoryPanel } from "@/components/expenses/history-panel";
@@ -92,7 +93,9 @@ export default function WriteCheckPage() {
   const formRef = useRef<WriteCheckFormHandle>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createAccountOpen, setCreateAccountOpen] = useState(false);
+  const [mode, setMode] = useState<ExpenseMode>("expense");
   const queryClient = useQueryClient();
+  const remarkPrefix = mode === "asset" ? "[Asset Purchase]" : "[Expense]";
 
   const createAndSubmit = useCreateAndSubmitJournalEntry();
   const amend = useAmendJournalEntry();
@@ -101,7 +104,8 @@ export default function WriteCheckPage() {
 
   const handleSubmit = async (data: WriteCheckFormData) => {
     const accounts = buildAccounts(data);
-    const remark = `[Expense] ${buildRemark(data.payee, data.expenseLines)}`;
+    const prefix = data.mode === "asset" ? "[Asset Purchase]" : "[Expense]";
+    const remark = `${prefix} ${buildRemark(data.payee, data.expenseLines)}`;
 
     setIsSubmitting(true);
     try {
@@ -148,7 +152,7 @@ export default function WriteCheckPage() {
         userRemark: remark,
         accounts,
         multiCurrency,
-        listKeySuffix: "[Expense]",
+        listKeySuffix: prefix,
       });
       if (result.submitted) {
         toast.success(`Submitted ${result.name}`);
@@ -184,18 +188,20 @@ export default function WriteCheckPage() {
             onLoadEntry={handleLoadEntry}
             isSubmitting={isSubmitting}
             onOpenNewAccount={() => setCreateAccountOpen(true)}
+            mode={mode}
+            onModeChange={setMode}
           />
         </div>
 
         {/* History — desktop */}
         <div className="hidden lg:flex h-full min-h-0 flex-col rounded-xl border bg-card p-4 shadow-sm">
-          <HistoryPanel onEdit={handleEditFromHistory} remarkFilter="[Expense]" />
+          <HistoryPanel onEdit={handleEditFromHistory} remarkFilter={remarkPrefix} />
         </div>
       </div>
 
       {/* Mobile: history below */}
       <div className="mt-6 lg:hidden rounded-xl border bg-card p-4 shadow-sm">
-        <HistoryPanel onEdit={handleEditFromHistory} remarkFilter="[Expense]" />
+        <HistoryPanel onEdit={handleEditFromHistory} remarkFilter={remarkPrefix} />
       </div>
 
       <CreateAccountDialog

@@ -1,12 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  useInfiniteQuery,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { frappe } from "@/lib/frappe-client";
 import { queryKeys } from "@/hooks/query-keys";
 import { getToday } from "@/lib/utils";
@@ -198,6 +193,45 @@ export function useExpenseAccountsWithCurrency(company: string) {
       return frappe.getList<AccountWithCurrency>("Account", {
         filters: [
           ["root_type", "=", "Expense"],
+          ["is_group", "=", 0],
+          ["disabled", "=", 0],
+          ["company", "=", company],
+        ],
+        fields: ["name", "account_currency"],
+        limitPageLength: 0,
+      });
+    },
+    enabled: !!company,
+  });
+}
+
+export function useFixedAssetAccountsWithCurrency(company: string) {
+  return useQuery({
+    queryKey: queryKeys.accounts.fixedAssetWithCurrency(company),
+    queryFn: async () => {
+      return frappe.getList<AccountWithCurrency>("Account", {
+        filters: [
+          ["root_type", "=", "Asset"],
+          ["account_type", "=", "Fixed Asset"],
+          ["is_group", "=", 0],
+          ["disabled", "=", 0],
+          ["company", "=", company],
+        ],
+        fields: ["name", "account_currency"],
+        limitPageLength: 0,
+      });
+    },
+    enabled: !!company,
+  });
+}
+
+export function useIncomeAccountsWithCurrency(company: string) {
+  return useQuery({
+    queryKey: queryKeys.accounts.incomeWithCurrency(company),
+    queryFn: async () => {
+      return frappe.getList<AccountWithCurrency>("Account", {
+        filters: [
+          ["root_type", "in", ["Income", "Expense"]],
           ["is_group", "=", 0],
           ["disabled", "=", 0],
           ["company", "=", company],

@@ -11,10 +11,14 @@ export const queryKeys = {
   accounts: {
     bank: (company: string) => ["accounts", "bank", company] as const,
     bankWithCurrency: (company: string) => ["accounts", "bankWithCurrency", company] as const,
-    transferWithCurrency: (company: string) => ["accounts", "transferWithCurrency", company] as const,
+    transferWithCurrency: (company: string) =>
+      ["accounts", "transferWithCurrency", company] as const,
     expense: (company: string) => ["accounts", "expense", company] as const,
     expenseWithCurrency: (company: string) => ["accounts", "expenseWithCurrency", company] as const,
     expenseGroups: (company: string) => ["accounts", "expenseGroups", company] as const,
+    incomeWithCurrency: (company: string) => ["accounts", "incomeWithCurrency", company] as const,
+    fixedAssetWithCurrency: (company: string) =>
+      ["accounts", "fixedAssetWithCurrency", company] as const,
   },
   journalEntries: {
     list: (company: string, voucherType = "Journal Entry") =>
@@ -167,18 +171,10 @@ export const queryKeys = {
       ["reports", "generalLedger", company, from, to, account, party] as const,
     salesByItem: (company: string, from: string, to: string, filters: Record<string, string>) =>
       ["reports", "salesByItem", company, from, to, filters] as const,
-    salesByCustomer: (
-      company: string,
-      from: string,
-      to: string,
-      filters: Record<string, string>,
-    ) => ["reports", "salesByCustomer", company, from, to, filters] as const,
-    salesAnalytics: (
-      company: string,
-      from: string,
-      to: string,
-      filters: Record<string, string>,
-    ) => ["reports", "salesAnalytics", company, from, to, filters] as const,
+    salesByCustomer: (company: string, from: string, to: string, filters: Record<string, string>) =>
+      ["reports", "salesByCustomer", company, from, to, filters] as const,
+    salesAnalytics: (company: string, from: string, to: string, filters: Record<string, string>) =>
+      ["reports", "salesAnalytics", company, from, to, filters] as const,
   },
   bankAccounts: {
     list: (company: string, page: number, search: string, sort: string) =>
@@ -222,9 +218,15 @@ export const queryKeys = {
     detail: (name: string) => ["warehouses", "detail", name] as const,
   },
   stockEntries: {
-    list: (company: string, page: number, search: string, sort: string) =>
-      ["stockEntries", "list", company, page, search, sort] as const,
-    count: (company: string, search: string) => ["stockEntries", "count", company, search] as const,
+    list: (
+      company: string,
+      page: number,
+      search: string,
+      sort: string,
+      activeFilters?: Record<string, string | undefined>,
+    ) => ["stockEntries", "list", company, page, search, sort, activeFilters] as const,
+    count: (company: string, search: string, activeFilters?: Record<string, string | undefined>) =>
+      ["stockEntries", "count", company, search, activeFilters] as const,
     detail: (name: string) => ["stockEntries", "detail", name] as const,
   },
   stockLedger: {
