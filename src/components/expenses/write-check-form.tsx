@@ -100,7 +100,10 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
   } = useBankAccountsWithCurrency(company);
   const { data: expenseAccounts = [] } = useExpenseAccountsWithCurrency(company);
   const { data: fixedAssetAccounts = [] } = useFixedAssetAccountsWithCurrency(company);
-  const { data: assets = [] } = useAssetsWithCurrency(company);
+  const { data: assetsData } = useAssetsWithCurrency(company);
+  // Stable reference — inline `= []` default creates a new array each render when data is undefined,
+  // triggering the useEffect dep and causing an infinite setExpenseLines loop.
+  const assets = useMemo(() => assetsData ?? [], [assetsData]);
   const debitAccounts = isAsset ? fixedAssetAccounts : expenseAccounts;
   const { data: companies } = useCompanies();
 

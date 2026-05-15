@@ -230,40 +230,15 @@ export function useAssetsWithCurrency(company: string) {
   return useQuery({
     queryKey: queryKeys.accounts.assetsWithCurrency(company),
     queryFn: async (): Promise<AssetWithCurrency[]> => {
-      const assets = await frappe.getList<{
-        name: string;
-        asset_name: string;
-        asset_account: string;
-        gross_purchase_amount: number;
-      }>("Asset", {
-        filters: [
-          ["company", "=", company],
-          ["docstatus", "=", 1],
-        ],
-        fields: ["name", "asset_name", "asset_account", "gross_purchase_amount"],
-        limitPageLength: 0,
-      });
-
-      const uniqueAccountNames = Array.from(
-        new Set(assets.map((a) => a.asset_account).filter(Boolean)),
+      // Use whitelist endpoint to avoid 417 from /api/resource/Asset REST path;
+      // also resolves account_currency server-side in one round trip.
+      const list = await frappe.call<AssetWithCurrency[]>(
+        "stable_app.api.expense.list_assets",
+        { company },
       );
-      if (!uniqueAccountNames.length) return [];
-
-      const accountRows = await frappe.getList<AccountWithCurrency>("Account", {
-        filters: [["name", "in", uniqueAccountNames]],
-        fields: ["name", "account_currency"],
-        limitPageLength: 0,
-      });
-      const currencyByAccount = new Map(
-        accountRows.map((row) => [row.name, row.account_currency]),
-      );
-
-      return assets.map((a) => ({
-        name: a.name,
-        asset_name: a.asset_name,
-        asset_account: a.asset_account,
+      return (list ?? []).map((a) => ({
+        ...a,
         gross_purchase_amount: Number(a.gross_purchase_amount) || 0,
-        account_currency: currencyByAccount.get(a.asset_account) ?? "",
       }));
     },
     enabled: !!company,
