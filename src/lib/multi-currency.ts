@@ -29,39 +29,26 @@ export async function ensureMultiCurrencyEnabled(
   const needsMultiCurrency = filtered.some((c) => c !== company.default_currency);
   if (!needsMultiCurrency) return false;
 
+  // If the field doesn't exist in this ERPNext version (undefined), multi-currency
+  // is controlled at the JE level only — no Company flag needed, skip the update.
+  if (company.enable_multi_currency === undefined) return true;
   if (company.enable_multi_currency === 1) return true;
 
-  // Build the update payload — also fix write_off_account if its currency
-  // doesn't match the company default, since that blocks Company.save().
-  const updates: Record<string, unknown> = { enable_multi_currency: 1 };
-
-  if (company.write_off_account) {
-    try {
-      const acct = await frappe.getDoc<{ account_currency: string }>(
-        "Account",
-        company.write_off_account,
-      );
-      if (acct.account_currency !== company.default_currency) {
-        updates.write_off_account = "";
-      }
-    } catch {
-      // Can't read account — clear it to be safe
-      updates.write_off_account = "";
-    }
-  }
-
+  // Field exists but is 0 — use a whitelist that calls frappe.db.set_value directly.
+  // frappe.updateDoc triggers Company.validate() which checks ALL default accounts
+  // and fails if any unrelated account has the wrong currency.
   try {
-    await frappe.updateDoc("Company", companyName, updates);
+    await frappe.call("stable_app.api.account.enable_company_multi_currency", {
+      company: companyName,
+    });
   } catch (err) {
     if (err instanceof FrappeAPIError && err.status === 403) {
       throw new Error(
         "Multi-currency is not enabled for this company. Please contact an administrator to enable it in ERPNext (Company Settings).",
       );
     }
-    // Other validation errors should not block the JE. The JE's own
-    // multi_currency field is what ERPNext uses for row-level exchange rates.
     console.warn(
-      "[multi-currency] Could not auto-enable multi_currency on Company doc — proceeding anyway. Error:",
+      "[multi-currency] Could not auto-enable multi_currency on Company — proceeding anyway. Error:",
       err instanceof Error ? err.message : err,
     );
   }
