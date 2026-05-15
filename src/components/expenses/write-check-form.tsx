@@ -154,26 +154,21 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
     ? debitAccounts.filter((a) => a.account_currency === paymentCurrency)
     : debitAccounts;
 
-  // Filter assets to those whose underlying account currency matches payment currency
-  const filteredAssets = paymentCurrency
-    ? assets.filter((a) => a.account_currency === paymentCurrency)
-    : assets;
+  // Assets are always shown regardless of payment currency — a UZS cash payment for a
+  // USD fixed asset is a valid multi-currency JE; the exchange rate row handles the FX.
+  const filteredAssets = assets;
 
   // When payee currency or mode changes, clear debit accounts/assets that don't match
   useEffect(() => {
     if (!paymentCurrency) return;
     setExpenseLines((prev) =>
       prev.map((line) => {
-        if (line.asset) {
-          const a = assets.find((x) => x.name === line.asset);
-          if (a && a.account_currency !== paymentCurrency) {
-            return { ...line, asset: undefined, account: "" };
-          }
-        }
+        // Asset lines are not currency-filtered — cross-currency asset purchases are valid.
+        if (line.asset) return line;
         if (!line.account) return line;
         const acctCurrency = debitAccounts.find((a) => a.name === line.account)?.account_currency;
         if (acctCurrency && acctCurrency !== paymentCurrency) {
-          return { ...line, account: "", asset: undefined };
+          return { ...line, account: "" };
         }
         return line;
       }),
