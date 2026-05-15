@@ -13,6 +13,7 @@ import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Label } from "@/components/ui/label";
 import { DateInput } from "@/components/shared/date-input";
 import {
@@ -27,7 +28,7 @@ import { EditModeBar } from "@/components/expenses/edit-mode-bar";
 import { InsufficientBalanceWarning } from "@/components/shared/insufficient-balance-warning";
 import { ExpenseLines } from "@/components/expenses/expense-lines";
 import type { ExpenseLine } from "@/components/expenses/expense-lines";
-import { useBankAccountsWithCurrency, useExpenseAccountsWithCurrency } from "@/hooks/use-accounts";
+import { useBankAccountsWithCurrency, useExpenseAccountsWithCurrency, useCurrencyMap } from "@/hooks/use-accounts";
 import { useExchangeRate } from "@/hooks/use-exchange-rate";
 import { useCompanyStore } from "@/stores/company-store";
 import { useCompanies } from "@/hooks/use-companies";
@@ -90,6 +91,16 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
 
   const companyCurrency = companies?.find((c) => c.name === company)?.default_currency ?? "";
   const STRONG = ["USD", "EUR", "GBP", "CNY", "RUB"];
+
+  // Currency symbol lookup
+  const { data: currencyMap } = useCurrencyMap();
+  const getSym = useCallback(
+    (code: string) => {
+      const e = currencyMap?.get(code);
+      return e ? { symbol: e.symbol, onRight: e.onRight } : { symbol: code, onRight: false };
+    },
+    [currencyMap],
+  );
 
   const [postingDate, setPostingDate] = useState(getToday);
   const [payee, setPayee] = useState("");
@@ -513,19 +524,18 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
                   </Label>
                   <div className="flex items-center gap-1">
                     <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
-                      1&nbsp;{isRateInverted ? companyCurrency : (foreignCurrency ?? companyCurrency)} =
+                      1&nbsp;{getSym(isRateInverted ? companyCurrency : (foreignCurrency ?? companyCurrency)).symbol} =
                     </span>
-                    <Input
+                    <MoneyInput
                       id="exchangeRate"
-                      type="number"
-                      step="any"
-                      min="0"
-                      value={rateInput}
-                      onChange={(e) => handleRateInputChange(e.target.value)}
+                      value={parseFloat(rateInput)}
+                      onChange={(v) => handleRateInputChange(String(v))}
+                      min={0}
+                      decimals={6}
                       className="h-8 min-w-0"
                     />
                     <span className="text-xs text-muted-foreground shrink-0">
-                      {isRateInverted ? (foreignCurrency ?? "") : companyCurrency}
+                      {getSym(isRateInverted ? (foreignCurrency ?? "") : companyCurrency).symbol}
                     </span>
                   </div>
                 </div>
@@ -533,16 +543,15 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
                 {/* Total in company currency */}
                 <div className="space-y-1.5">
                   <Label htmlFor="convertedTotal" className="text-xs">
-                    Total ({companyCurrency})
+                    Total ({getSym(companyCurrency).symbol})
                   </Label>
-                  <Input
+                  <MoneyInput
                     id="convertedTotal"
-                    type="number"
-                    step="any"
-                    min="0"
+                    value={parseFloat(convertedTotal) || undefined}
+                    onChange={(v) => handleConvertedTotalChange(String(v))}
+                    min={0}
+                    decimals={2}
                     placeholder="0.00"
-                    value={convertedTotal}
-                    onChange={(e) => handleConvertedTotalChange(e.target.value)}
                     className="h-8"
                   />
                 </div>
@@ -551,10 +560,9 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
               {/* Conversion summary */}
               {expenseTotal > 0 && parseFloat(convertedTotal) > 0 && (
                 <p className="text-[11px] text-muted-foreground text-center">
-                  {formatNumber(expenseTotal, 2)}&nbsp;
-                  {paymentCurrency}
+                  {formatCurrency(expenseTotal, getSym(paymentCurrency).symbol, getSym(paymentCurrency).onRight)}
                   <span className="mx-1.5 opacity-40">→</span>
-                  {formatNumber(parseFloat(convertedTotal), 2)}&nbsp;{companyCurrency}
+                  {formatCurrency(parseFloat(convertedTotal), getSym(companyCurrency).symbol, getSym(companyCurrency).onRight)}
                 </p>
               )}
             </div>

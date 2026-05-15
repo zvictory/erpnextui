@@ -88,16 +88,23 @@ export function HistoryRow({
             sameCurrency ? (
               formatCurrency(toRow.debit_in_account_currency, ...currSymbol(toRow.account_currency))
             ) : (
-              <span className="flex items-center gap-1.5 flex-wrap">
-                <span>{formatCurrency(fromRow.credit_in_account_currency, ...currSymbol(fromRow.account_currency))}</span>
-                <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                <span>{formatCurrency(toRow.debit_in_account_currency, ...currSymbol(toRow.account_currency))}</span>
-              </span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="flex items-center gap-1.5">
+                  <span>{formatCurrency(fromRow.credit_in_account_currency, ...currSymbol(fromRow.account_currency))}</span>
+                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                  <span>{formatCurrency(toRow.debit_in_account_currency, ...currSymbol(toRow.account_currency))}</span>
+                </span>
+              </div>
             )
           ) : (
             formatCurrency(entry.total_debit, currencySymbol, symbolOnRight)
           )}
         </span>
+        {fromRow && toRow && !sameCurrency && (
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            1 {currSymbol(fromRow.account_currency)[0]} = {formatNumber(toRow.debit_in_account_currency / fromRow.credit_in_account_currency, 4)} {currSymbol(toRow.account_currency)[0]}
+          </p>
+        )}
       </div>
 
       {/* Row 2: Date · ID · Badge */}

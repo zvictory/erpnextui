@@ -13,7 +13,7 @@ import { ArrowLeftRight, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NumberInput } from "@/components/ui/number-input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Label } from "@/components/ui/label";
 import { DateInput } from "@/components/shared/date-input";
 import { Textarea } from "@/components/ui/textarea";
@@ -248,18 +248,6 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
     },
     [parsedAmount, isDisplayInverted],
   );
-
-  const handleRateBlur = useCallback(() => {
-    const r = parseFloat(effectiveRateStr) || 1;
-    if (parsedAmount <= 0 || r <= 0) return;
-    const rawReceived = isDisplayInverted ? parsedAmount / r : parsedAmount * r;
-    const rounded = roundTo2(rawReceived);
-    if (rounded <= 0) return;
-    const correctedRate = isDisplayInverted ? parsedAmount / rounded : rounded / parsedAmount;
-    setRate(rateStr(correctedRate));
-    setRateManuallyEdited(true);
-    setReceivedInput(String(rounded));
-  }, [effectiveRateStr, parsedAmount, isDisplayInverted]);
 
   const handleReceivedChange = useCallback(
     (value: string) => {
@@ -609,7 +597,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
                 {fromCurrency ? ` (${fromSym.symbol})` : ""}{" "}
                 <span className="text-destructive">*</span>
               </Label>
-              <NumberInput
+              <MoneyInput
                 id="amount"
                 value={amount ? parseFloat(amount) : undefined}
                 onChange={(v) => setAmount(String(v))}
@@ -633,14 +621,12 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
                     <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
                       1 {baseSym.symbol} =
                     </span>
-                    <Input
+                    <MoneyInput
                       id="exchangeRate"
-                      type="number"
-                      step="any"
-                      min="0"
-                      value={effectiveRateStr}
-                      onChange={(e) => handleRateChange(e.target.value)}
-                      onBlur={handleRateBlur}
+                      value={parseFloat(effectiveRateStr)}
+                      onChange={(v) => handleRateChange(String(v))}
+                      min={0}
+                      decimals={6}
                       className="h-8 min-w-0"
                     />
                     <span className="text-xs text-muted-foreground shrink-0">{quoteSym.symbol}</span>
@@ -652,14 +638,13 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
                   <Label htmlFor="receivedInput" className="text-xs">
                     {t("received")} ({toSym.symbol})
                   </Label>
-                  <Input
+                  <MoneyInput
                     id="receivedInput"
-                    type="number"
-                    step="any"
-                    min="0"
+                    value={parseFloat(effectiveReceivedInput) || undefined}
+                    onChange={(v) => handleReceivedChange(String(v))}
+                    min={0}
+                    decimals={2}
                     placeholder="0.00"
-                    value={effectiveReceivedInput}
-                    onChange={(e) => handleReceivedChange(e.target.value)}
                     className="h-8"
                   />
                 </div>
