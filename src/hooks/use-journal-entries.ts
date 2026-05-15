@@ -70,6 +70,7 @@ export function useJournalEntryAccountRows(names: string[]) {
           "credit_in_account_currency",
         ],
         limitPageLength: 0,
+        parentDoctype: "Journal Entry",
       }),
     enabled: names.length > 0,
     staleTime: 60_000,

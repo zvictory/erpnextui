@@ -18,6 +18,7 @@ interface HistoryRowProps {
   currencySymbol: string;
   symbolOnRight: boolean;
   accountRows?: JEAccountRow[];
+  accountRowsLoading?: boolean;
   onSubmit: (name: string) => void;
   onEdit?: (name: string) => void;
   onAmend?: (name: string) => void;
@@ -44,6 +45,7 @@ export function HistoryRow({
   currencySymbol,
   symbolOnRight,
   accountRows,
+  accountRowsLoading,
   onSubmit,
   onEdit,
   onAmend,
@@ -96,6 +98,8 @@ export function HistoryRow({
                 </span>
               </div>
             )
+          ) : accountRowsLoading ? (
+            <Skeleton className="h-4 w-24 inline-block" />
           ) : (
             formatCurrency(entry.total_debit, currencySymbol, symbolOnRight)
           )}
