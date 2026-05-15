@@ -3,10 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Plus, ChevronDown } from "lucide-react";
+import { Plus, ChevronDown, Filter, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DateInput } from "@/components/shared/date-input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +30,9 @@ import {
   useCancelStockEntry,
   useDeleteStockEntry,
 } from "@/hooks/use-stock-entries";
+import type { StockEntryFilters } from "@/hooks/use-stock-entries";
 import { useListState } from "@/hooks/use-list-state";
+import { useWarehousesAll } from "@/hooks/use-warehouses";
 import { useCompanyStore } from "@/stores/company-store";
 import { formatDate, formatNumber } from "@/lib/formatters";
 import type { StockEntryListItem } from "@/types/stock-entry";
@@ -36,6 +46,14 @@ const TYPE_BADGES: Record<string, "default" | "secondary" | "outline"> = {
   "Material Transfer for Manufacture": "outline",
 };
 
+const ENTRY_TYPES = [
+  "Material Receipt",
+  "Material Issue",
+  "Material Transfer",
+  "Manufacture",
+  "Material Transfer for Manufacture",
+];
+
 export default function StockEntriesPage() {
   const router = useRouter();
   const t = useTranslations("stock");
@@ -43,13 +61,22 @@ export default function StockEntriesPage() {
   const { company } = useCompanyStore();
   const listState = useListState("posting_date desc");
 
+  const activeFilters = listState.filters as StockEntryFilters;
+  const hasFilters = Object.keys(listState.filters).length > 0;
+
   const { data: entries = [], isLoading } = useStockEntryList(
     company,
     listState.page,
     listState.debouncedSearch,
     listState.sort,
+    activeFilters,
   );
-  const { data: totalCount = 0 } = useStockEntryCount(company, listState.debouncedSearch);
+  const { data: totalCount = 0 } = useStockEntryCount(
+    company,
+    listState.debouncedSearch,
+    activeFilters,
+  );
+  const { data: warehouses = [] } = useWarehousesAll(company);
 
   const cancelEntry = useCancelStockEntry();
   const deleteEntry = useDeleteStockEntry();
@@ -190,6 +217,95 @@ export default function StockEntriesPage() {
     </DropdownMenu>
   );
 
+  const filterBar = (
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+        <Filter className="h-3.5 w-3.5" />
+        <span>{tc("filters")}</span>
+        {hasFilters && (
+          <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+            {Object.keys(listState.filters).length}
+          </Badge>
+        )}
+      </div>
+
+      {/* Entry type */}
+      <Select
+        value={activeFilters.type || "__all__"}
+        onValueChange={(v) => listState.setFilter("type", v === "__all__" ? undefined : v)}
+      >
+        <SelectTrigger className="h-8 w-[190px]">
+          <SelectValue placeholder={t("allTypes")} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="__all__">{t("allTypes")}</SelectItem>
+          {ENTRY_TYPES.map((type) => (
+            <SelectItem key={type} value={type}>
+              {typeLabel(type)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {/* Docstatus */}
+      <Select
+        value={activeFilters.docstatus ?? "__all__"}
+        onValueChange={(v) => listState.setFilter("docstatus", v === "__all__" ? undefined : v)}
+      >
+        <SelectTrigger className="h-8 w-[140px]">
+          <SelectValue placeholder={tc("allStatuses")} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="__all__">{tc("allStatuses")}</SelectItem>
+          <SelectItem value="0">{tc("draft")}</SelectItem>
+          <SelectItem value="1">{tc("submitted")}</SelectItem>
+          <SelectItem value="2">{tc("cancelled")}</SelectItem>
+        </SelectContent>
+      </Select>
+
+      {/* Date range */}
+      <div className="w-[145px]">
+        <DateInput
+          value={activeFilters.dateFrom || ""}
+          onChange={(e) => listState.setFilter("dateFrom", e.target.value || undefined)}
+          placeholder={tc("dateFrom")}
+        />
+      </div>
+      <div className="w-[145px]">
+        <DateInput
+          value={activeFilters.dateTo || ""}
+          onChange={(e) => listState.setFilter("dateTo", e.target.value || undefined)}
+          placeholder={tc("dateTo")}
+        />
+      </div>
+
+      {/* Warehouse */}
+      <Select
+        value={activeFilters.warehouse || "__all__"}
+        onValueChange={(v) => listState.setFilter("warehouse", v === "__all__" ? undefined : v)}
+      >
+        <SelectTrigger className="h-8 w-[200px]">
+          <SelectValue placeholder={t("allWarehouses")} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="__all__">{t("allWarehouses")}</SelectItem>
+          {warehouses.map((wh) => (
+            <SelectItem key={wh.name} value={wh.name}>
+              {wh.warehouse_name || wh.name.replace(/ - A$/, "")}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {hasFilters && (
+        <Button variant="ghost" size="sm" className="h-8 px-2" onClick={listState.clearFilters}>
+          <X className="mr-1 h-3.5 w-3.5" />
+          {tc("clearFilters")}
+        </Button>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">{t("stockEntries")}</h1>
@@ -209,6 +325,7 @@ export default function StockEntriesPage() {
         onNextPage={listState.nextPage}
         onPrevPage={listState.prevPage}
         toolbar={toolbar}
+        filterBar={filterBar}
         onRowClick={(row) => router.push(`/stock-entries/${encodeURIComponent(row.name)}`)}
       />
 

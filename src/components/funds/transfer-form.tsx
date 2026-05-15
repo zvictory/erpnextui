@@ -308,16 +308,28 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
         }
 
         // Restore exchange rate if accounts have different currencies
+        // Prefer account_currency from JE row itself; fall back to transferAccounts lookup
         const loadedFromCurrency =
-          transferAccounts.find((a) => a.name === creditAcc?.account)?.account_currency ?? "";
+          creditAcc?.account_currency ||
+          transferAccounts.find((a) => a.name === creditAcc?.account)?.account_currency ||
+          "";
         const loadedToCurrency =
-          transferAccounts.find((a) => a.name === debitAcc?.account)?.account_currency ?? "";
+          debitAcc?.account_currency ||
+          transferAccounts.find((a) => a.name === debitAcc?.account)?.account_currency ||
+          "";
 
         if (loadedFromCurrency && loadedToCurrency && loadedFromCurrency !== loadedToCurrency) {
-          // exchange_rate on the JE row = "company currency per 1 account currency"
-          const foreignAcc = loadedFromCurrency === companyCurrency ? debitAcc : creditAcc;
-          if (foreignAcc?.exchange_rate && foreignAcc.exchange_rate !== 1) {
-            setRate(rateStr(foreignAcc.exchange_rate));
+          const credit = creditAcc?.credit_in_account_currency ?? 0;
+          const debit = debitAcc?.debit_in_account_currency ?? 0;
+          if (credit > 0 && debit > 0) {
+            // Derive rate from actual amounts — avoids wrong exchange_rate in legacy entries.
+            // Rate is expressed as "1 baseCurrency = X quoteCurrency" matching display convention.
+            const [computedBase] = getDisplayPair(loadedFromCurrency, loadedToCurrency, companyCurrency);
+            const loadedRate =
+              computedBase !== loadedFromCurrency
+                ? credit / debit  // base is to-side (e.g. USD received): rate = UZS/USD
+                : debit / credit; // base is from-side (e.g. USD sent): rate = UZS/USD
+            setRate(rateStr(loadedRate));
           }
         } else {
           setRate("1");

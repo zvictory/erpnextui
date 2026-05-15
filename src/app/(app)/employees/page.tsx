@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { CalendarCheck } from "lucide-react";
+import { CalendarCheck, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmployeeListPanel } from "@/components/employees/employee-list-panel";
 import { EmployeeDetailPanel } from "@/components/employees/employee-detail-panel";
@@ -88,12 +88,20 @@ export default function EmployeesPage() {
         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-0.5">
           {t("title")}
         </span>
-        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-muted-foreground" asChild>
-          <Link href="/employees/salary-accrual">
-            <CalendarCheck className="h-3.5 w-3.5" />
-            {t("salaryAccrual")}
-          </Link>
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-muted-foreground" asChild>
+            <Link href="/employees/salary-accrual">
+              <CalendarCheck className="h-3.5 w-3.5" />
+              {t("salaryAccrual")}
+            </Link>
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-muted-foreground" asChild>
+            <Link href="/employees/new">
+              <Plus className="h-3.5 w-3.5" />
+              {t("newEmployee")}
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="flex overflow-hidden -mx-4 -mb-4 md:-mx-6 md:-mb-6 h-[calc(100svh-6.5rem)]">

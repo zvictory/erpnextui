@@ -104,11 +104,27 @@ export function HistoryRow({
             formatCurrency(entry.total_debit, currencySymbol, symbolOnRight)
           )}
         </span>
-        {fromRow && toRow && !sameCurrency && (
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            1 {currSymbol(fromRow.account_currency)[0]} = {formatNumber(toRow.debit_in_account_currency / fromRow.credit_in_account_currency, 4)} {currSymbol(toRow.account_currency)[0]}
-          </p>
-        )}
+        {fromRow && toRow && !sameCurrency && (() => {
+          const STRONG = ["USD", "EUR", "GBP", "CNY", "RUB"];
+          const toIsBase =
+            STRONG.includes(toRow.account_currency) && !STRONG.includes(fromRow.account_currency);
+          const [bSym, qSym, fxRate] = toIsBase
+            ? [
+                currSymbol(toRow.account_currency)[0],
+                currSymbol(fromRow.account_currency)[0],
+                fromRow.credit_in_account_currency / toRow.debit_in_account_currency,
+              ]
+            : [
+                currSymbol(fromRow.account_currency)[0],
+                currSymbol(toRow.account_currency)[0],
+                toRow.debit_in_account_currency / fromRow.credit_in_account_currency,
+              ];
+          return (
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              1 {bSym} = {formatNumber(fxRate, 4)} {qSym}
+            </p>
+          );
+        })()}
       </div>
 
       {/* Row 2: Date · ID · Badge */}

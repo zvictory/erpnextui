@@ -1,0 +1,199 @@
+"use client";
+
+import { useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import {
+  DepositForm,
+  type DepositFormHandle,
+  type DepositFormData,
+} from "@/components/incomes/deposit-form";
+import { CreateAccountDialog } from "@/components/accounts/create-account-dialog";
+import { HistoryPanel } from "@/components/expenses/history-panel";
+import { useCompanyStore } from "@/stores/company-store";
+import { frappe } from "@/lib/frappe-client";
+import {
+  useCreateAndSubmitJournalEntry,
+  useAmendJournalEntry,
+  useUpdateDraftAndSubmit,
+} from "@/hooks/use-journal-entries";
+import { useBankAccountsWithCurrency } from "@/hooks/use-accounts";
+import { queryKeys } from "@/hooks/query-keys";
+import { ensureMultiCurrencyEnabled } from "@/lib/multi-currency";
+import type { AccountWithCurrency } from "@/types/account";
+import type { JournalEntry, JournalEntryAccount } from "@/types/journal-entry";
+
+function roundTo2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function buildAccounts(data: DepositFormData): JournalEntryAccount[] {
+  const total = data.incomeLines.reduce((sum, l) => sum + l.amount, 0);
+
+  if (!data.isMultiCurrency) {
+    // Same-currency path: income lines → CREDIT, cash/bank → DEBIT
+    const accounts: JournalEntryAccount[] = data.incomeLines.map((l) => ({
+      doctype: "Journal Entry Account",
+      account: l.account,
+      credit_in_account_currency: roundTo2(l.amount),
+      user_remark: l.memo,
+    }));
+    accounts.push({
+      doctype: "Journal Entry Account",
+      account: data.paymentFrom,
+      debit_in_account_currency: roundTo2(total),
+    });
+    return accounts;
+  }
+
+  // Multi-currency — Golden Rule allocation, debit/credit swapped vs expense
+  const ct = data.convertedTotal;
+  const R = total > 0 ? ct / total : data.exchangeRate;
+
+  const accounts: JournalEntryAccount[] = data.incomeLines.map((l) => ({
+    doctype: "Journal Entry Account",
+    account: l.account,
+    credit_in_account_currency: l.amount,
+    exchange_rate: R,
+    user_remark: l.memo,
+  }));
+  accounts.push({
+    doctype: "Journal Entry Account",
+    account: data.paymentFrom,
+    debit_in_account_currency: total,
+    exchange_rate: R,
+  });
+  return accounts;
+}
+
+function buildRemark(payer: string, lines: { memo: string }[]): string {
+  const memos = lines.map((l) => l.memo).join("; ");
+  if (payer) return `Received from ${payer} | ${memos}`;
+  return memos;
+}
+
+function collectCurrencies(
+  data: DepositFormData,
+  bankAccounts: AccountWithCurrency[],
+): string[] {
+  const paymentCurrency =
+    bankAccounts.find((a) => a.name === data.paymentFrom)?.account_currency ?? "";
+  return [paymentCurrency];
+}
+
+export default function DepositPage() {
+  const { company } = useCompanyStore();
+  const formRef = useRef<DepositFormHandle>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createAccountOpen, setCreateAccountOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  const createAndSubmit = useCreateAndSubmitJournalEntry();
+  const amend = useAmendJournalEntry();
+  const updateDraft = useUpdateDraftAndSubmit();
+  const { data: bankAccounts } = useBankAccountsWithCurrency(company);
+
+  const handleSubmit = async (data: DepositFormData) => {
+    const accounts = buildAccounts(data);
+    const remark = `[Income] ${buildRemark(data.payer, data.incomeLines)}`;
+
+    setIsSubmitting(true);
+    try {
+      const currencies = collectCurrencies(data, bankAccounts ?? []);
+      const multiCurrency = await ensureMultiCurrencyEnabled(company, currencies);
+
+      // Branch: Edit draft (docstatus 0)
+      if (data.editingName && data.editingDocstatus === 0) {
+        const result = await updateDraft.mutateAsync({
+          name: data.editingName,
+          postingDate: data.postingDate,
+          userRemark: remark,
+          accounts,
+          multiCurrency,
+        });
+        if (result.submitted) {
+          toast.success(`Updated & submitted ${result.name}`);
+        } else {
+          toast.warning(`Saved ${result.name} but submit failed: ${result.error}`);
+        }
+        queryClient.invalidateQueries({ queryKey: queryKeys.accounts.bankWithCurrency(company) });
+        return;
+      }
+
+      // Branch: Amend submitted (docstatus 1)
+      if (data.editingName && data.editingDocstatus === 1) {
+        const result = await amend.mutateAsync({
+          originalName: data.editingName,
+          postingDate: data.postingDate,
+          company,
+          userRemark: remark,
+          accounts,
+          multiCurrency,
+        });
+        toast.success(`Cancelled ${result.originalName}. New draft: ${result.newName}`);
+        queryClient.invalidateQueries({ queryKey: queryKeys.accounts.bankWithCurrency(company) });
+        return;
+      }
+
+      // Branch: Create new
+      const result = await createAndSubmit.mutateAsync({
+        postingDate: data.postingDate,
+        company,
+        userRemark: remark,
+        accounts,
+        multiCurrency,
+        listKeySuffix: "[Income]",
+      });
+      if (result.submitted) {
+        toast.success(`Submitted ${result.name}`);
+      } else {
+        toast.warning(`Created ${result.name} as draft (submit failed: ${result.error})`);
+      }
+      queryClient.invalidateQueries({ queryKey: queryKeys.accounts.bankWithCurrency(company) });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Operation failed";
+      toast.error(message);
+      throw err;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleLoadEntry = async (name: string) => {
+    return await frappe.getDoc<JournalEntry>("Journal Entry", name);
+  };
+
+  const handleEditFromHistory = (name: string) => {
+    formRef.current?.loadEntryForEdit(name);
+  };
+
+  return (
+    <div className="mx-auto max-w-6xl h-[calc(100svh-7rem)] overflow-hidden">
+      <div className="grid h-full grid-rows-1 grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 overflow-hidden">
+        <div className="min-h-0 overflow-y-auto">
+          <DepositForm
+            ref={formRef}
+            onSubmit={handleSubmit}
+            onLoadEntry={handleLoadEntry}
+            isSubmitting={isSubmitting}
+            onOpenNewAccount={() => setCreateAccountOpen(true)}
+          />
+        </div>
+
+        <div className="hidden lg:flex h-full min-h-0 flex-col rounded-xl border bg-card p-4 shadow-sm">
+          <HistoryPanel onEdit={handleEditFromHistory} remarkFilter="[Income]" />
+        </div>
+      </div>
+
+      <div className="mt-6 lg:hidden rounded-xl border bg-card p-4 shadow-sm">
+        <HistoryPanel onEdit={handleEditFromHistory} remarkFilter="[Income]" />
+      </div>
+
+      <CreateAccountDialog
+        open={createAccountOpen}
+        onOpenChange={setCreateAccountOpen}
+        company={company}
+      />
+    </div>
+  );
+}

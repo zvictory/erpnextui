@@ -58,3 +58,34 @@ export function useUpdateEmployee() {
     },
   });
 }
+
+export interface NewEmployeeInput {
+  employee_name: string;
+  gender: "Male" | "Female" | "Other";
+  date_of_birth: string;
+  date_of_joining: string;
+  status: "Active" | "Inactive" | "Suspended" | "Left";
+  company: string;
+  department?: string;
+  designation?: string;
+}
+
+export function useCreateEmployee() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: NewEmployeeInput) => {
+      // Frappe's /api/resource/Employee requires first_name separately from employee_name
+      const parts = data.employee_name.trim().split(/\s+/);
+      const first_name = parts[0];
+      const last_name = parts.length > 1 ? parts.slice(1).join(" ") : undefined;
+      return frappe.createDoc<Employee>("Employee", {
+        ...data,
+        first_name,
+        ...(last_name ? { last_name } : {}),
+      } as unknown as Record<string, unknown>);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["employees"] });
+    },
+  });
+}

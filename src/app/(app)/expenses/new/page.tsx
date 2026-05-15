@@ -57,13 +57,28 @@ function buildAccounts(data: WriteCheckFormData): JournalEntryAccount[] {
   const ct = data.convertedTotal;
   const R = total > 0 ? ct / total : data.exchangeRate;
 
-  const accounts: JournalEntryAccount[] = data.expenseLines.map((l) => ({
-    doctype: "Journal Entry Account",
-    account: l.account,
-    debit_in_account_currency: l.amount,
-    exchange_rate: R,
-    user_remark: l.memo,
-  }));
+  const accounts: JournalEntryAccount[] = data.expenseLines.map((l) => {
+    // Cross-currency debit: account is in a different currency than the payment account
+    // (e.g. USD fixed-asset account paid from UZS cash).
+    // ERPNext locks exchange_rate=1 for company-currency accounts, so we must pre-convert:
+    // debit_in_account_currency must be in the account's own currency (USD), not payment currency.
+    if (l.accountCurrency && l.accountCurrency !== data.paymentCurrency) {
+      return {
+        doctype: "Journal Entry Account",
+        account: l.account,
+        debit_in_account_currency: roundTo2(l.amount * R),
+        exchange_rate: 1,
+        user_remark: l.memo,
+      };
+    }
+    return {
+      doctype: "Journal Entry Account",
+      account: l.account,
+      debit_in_account_currency: l.amount,
+      exchange_rate: R,
+      user_remark: l.memo,
+    };
+  });
   accounts.push({
     doctype: "Journal Entry Account",
     account: data.paymentFrom,
@@ -165,7 +180,15 @@ export default function WriteCheckPage() {
       // Per-line tolerant: a failure on one asset must not roll back the JE.
       if (data.mode === "asset" && result.submitted) {
         const assetLines = data.expenseLines.filter((l) => l.asset && l.amount > 0);
+        const total = data.expenseLines.reduce((sum, l) => sum + l.amount, 0);
+        const R = total > 0 ? data.convertedTotal / total : data.exchangeRate;
         for (const line of assetLines) {
+          // Bump amount must be in the asset account's currency, not the payment currency.
+          // For cross-currency (e.g. UZS payment → USD asset), convert before bumping.
+          const bumpAmount =
+            line.accountCurrency && line.accountCurrency !== data.paymentCurrency
+              ? roundTo2(line.amount * R)
+              : line.amount;
           try {
             await frappe.call<{
               asset: string;
@@ -173,7 +196,7 @@ export default function WriteCheckPage() {
               new_gross_purchase_amount: number;
             }>("stable_app.api.expense.bump_asset_gross_value", {
               asset: line.asset,
-              amount: line.amount,
+              amount: bumpAmount,
               journal_entry: result.name,
             });
           } catch (err) {

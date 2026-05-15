@@ -15,6 +15,7 @@ export interface ExpenseLine {
   amount: number;
   memo: string;
   asset?: string;
+  accountCurrency?: string;
 }
 
 interface ExpenseLinesProps {
@@ -46,9 +47,17 @@ export function ExpenseLines({
   };
 
   const handleAssetSelect = (id: string, assetName: string, accountName: string) => {
+    const picked = assets.find((a) => a.name === assetName);
     onUpdate(
       lines.map((line) =>
-        line.id === id ? { ...line, asset: assetName, account: accountName } : line,
+        line.id === id
+          ? {
+              ...line,
+              asset: assetName,
+              account: accountName,
+              ...(picked ? { accountCurrency: picked.account_currency } : {}),
+            }
+          : line,
       ),
     );
   };

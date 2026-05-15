@@ -118,7 +118,9 @@ export async function frappeCall<T>(endpoint: string, options?: RequestInit): Pr
       const bodyText = await resp.text();
       try {
         const body = JSON.parse(bodyText);
-        if (body.data || body.message) return body;
+        // 417 is success when data exists (REST resource) OR message is the doc itself (frappe.client.save).
+        // For MandatoryError/validation errors, message is a string — treat those as real errors.
+        if (body.data || (body.message && typeof body.message === "object")) return body;
       } catch {
         // Not valid JSON — fall through to error
       }
@@ -250,10 +252,11 @@ export const frappe = {
     throw new Error("Unreachable");
   },
 
-  async getCount(doctype: string, filters?: unknown[]): Promise<number> {
+  async getCount(doctype: string, filters?: unknown[], orFilters?: unknown[]): Promise<number> {
     return frappe.call<number>("frappe.client.get_count", {
       doctype,
       ...(filters?.length ? { filters } : {}),
+      ...(orFilters?.length ? { or_filters: orFilters } : {}),
     });
   },
 

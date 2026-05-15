@@ -48,7 +48,14 @@ export interface WriteCheckFormData {
   postingDate: string;
   payee: string;
   paymentFrom: string;
-  expenseLines: { account: string; amount: number; memo: string; asset?: string }[];
+  paymentCurrency: string;
+  expenseLines: {
+    account: string;
+    amount: number;
+    memo: string;
+    asset?: string;
+    accountCurrency?: string;
+  }[];
   editingName: string | null;
   editingDocstatus: number | null;
   exchangeRate: number;
@@ -413,12 +420,14 @@ const WriteCheckFormInner: React.ForwardRefRenderFunction<
           amount: l.amount,
           memo: l.memo.trim(),
           ...(l.asset ? { asset: l.asset } : {}),
+          ...(l.accountCurrency ? { accountCurrency: l.accountCurrency } : {}),
         }));
 
       await onSubmit({
         postingDate,
         payee,
         paymentFrom,
+        paymentCurrency,
         expenseLines: validLines,
         editingName,
         editingDocstatus,
