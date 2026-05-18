@@ -413,6 +413,7 @@
     "company": "Company",
     "individual": "Individual",
     "customerGroup": "Customer Group",
+    "priceList": "Price List",
     "selectToView": "Select a customer to view details",
     "deleteSuccess": "Customer deleted"
   },

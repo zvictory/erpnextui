@@ -413,6 +413,7 @@
     "company": "Компания",
     "individual": "Физлицо",
     "customerGroup": "Группа клиентов",
+    "priceList": "Прайс-лист",
     "selectToView": "Выберите клиента для просмотра",
     "deleteSuccess": "Клиент удалён"
   },

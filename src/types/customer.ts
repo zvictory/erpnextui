@@ -7,6 +7,7 @@ export interface Customer {
   customer_group: string;
   territory: string;
   default_currency: string;
+  default_price_list: string;
   tax_id: string;
   email_id: string;
   mobile_no: string;

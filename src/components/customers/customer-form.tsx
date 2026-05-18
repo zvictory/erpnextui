@@ -42,6 +42,7 @@ export function CustomerForm({
           customer_group: defaultValues.customer_group ?? "",
           territory: defaultValues.territory ?? "",
           default_currency: defaultValues.default_currency ?? "",
+          default_price_list: defaultValues.default_price_list ?? "",
           tax_id: defaultValues.tax_id ?? "",
           email_id: defaultValues.email_id ?? "",
           mobile_no: defaultValues.mobile_no ?? "",
@@ -52,6 +53,7 @@ export function CustomerForm({
           customer_group: "",
           territory: "",
           default_currency: companyCurrency || "",
+          default_price_list: "",
           tax_id: "",
           email_id: "",
           mobile_no: "",
@@ -126,17 +128,29 @@ export function CustomerForm({
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="tax_id">{t("taxId")}</Label>
-          <Input id="tax_id" {...register("tax_id")} />
+          <Label>{t("priceList")}</Label>
+          <LinkField
+            doctype="Price List"
+            value={watch("default_price_list") ?? ""}
+            onChange={(v) => setValue("default_price_list", v)}
+            filters={[["selling", "=", 1]]}
+          />
         </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
+          <Label htmlFor="tax_id">{t("taxId")}</Label>
+          <Input id="tax_id" {...register("tax_id")} />
+        </div>
+        <div className="space-y-1.5">
           <Label htmlFor="email_id">{t("email")}</Label>
           <Input id="email_id" type="email" {...register("email_id")} />
           {errors.email_id && <p className="text-sm text-destructive">{errors.email_id.message}</p>}
         </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="mobile_no">{t("mobile")}</Label>
           <Input id="mobile_no" {...register("mobile_no")} />
