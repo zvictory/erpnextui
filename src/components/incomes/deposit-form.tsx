@@ -78,10 +78,10 @@ function makeDefaultLine(): IncomeLine {
   return { id: crypto.randomUUID(), account: "", amount: 0, memo: "" };
 }
 
-const DepositFormInner: React.ForwardRefRenderFunction<
-  DepositFormHandle,
-  DepositFormProps
-> = ({ onSubmit, onLoadEntry, isSubmitting, onOpenNewAccount }, ref) => {
+const DepositFormInner: React.ForwardRefRenderFunction<DepositFormHandle, DepositFormProps> = (
+  { onSubmit, onLoadEntry, isSubmitting, onOpenNewAccount },
+  ref,
+) => {
   const t = useTranslations("income");
   const { company } = useCompanyStore();
   const {
@@ -130,9 +130,7 @@ const DepositFormInner: React.ForwardRefRenderFunction<
   const foreignCurrency = isMultiCurrency ? paymentCurrency : null;
 
   const isRateInverted =
-    isMultiCurrency &&
-    STRONG.includes(companyCurrency) &&
-    !STRONG.includes(foreignCurrency ?? "");
+    isMultiCurrency && STRONG.includes(companyCurrency) && !STRONG.includes(foreignCurrency ?? "");
 
   // Filter income accounts to match deposit account's currency
   const filteredIncomeAccounts = paymentCurrency
@@ -503,7 +501,11 @@ const DepositFormInner: React.ForwardRefRenderFunction<
                   <div className="flex items-center gap-1">
                     <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
                       1&nbsp;
-                      {getSym(isRateInverted ? companyCurrency : (foreignCurrency ?? companyCurrency)).symbol}{" "}
+                      {
+                        getSym(
+                          isRateInverted ? companyCurrency : (foreignCurrency ?? companyCurrency),
+                        ).symbol
+                      }{" "}
                       =
                     </span>
                     <MoneyInput

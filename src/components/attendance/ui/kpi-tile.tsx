@@ -34,9 +34,7 @@ export function KpiTile({
       <div className="text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
         {label}
       </div>
-      <div className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-        {value}
-      </div>
+      <div className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-50">{value}</div>
       {hint ? (
         <div className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-500">{hint}</div>
       ) : null}

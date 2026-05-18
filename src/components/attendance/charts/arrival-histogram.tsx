@@ -26,26 +26,15 @@ function fmt(min: number): string {
 }
 
 export function ArrivalHistogram({ bins, expectedMin, graceMin }: ArrivalHistogramProps) {
-  const data = useMemo(
-    () => bins.map((b) => ({ ...b, onTime: b.count - b.late })),
-    [bins],
-  );
+  const data = useMemo(() => bins.map((b) => ({ ...b, onTime: b.count - b.late })), [bins]);
   const graceEnd = expectedMin + graceMin;
 
   return (
     <div className="h-64 w-full">
       <ResponsiveContainer>
         <BarChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-          <CartesianGrid
-            strokeDasharray="3 3"
-            className="stroke-zinc-200 dark:stroke-zinc-800"
-          />
-          <XAxis
-            dataKey="label"
-            tick={{ fontSize: 10 }}
-            interval={2}
-            className="fill-zinc-500"
-          />
+          <CartesianGrid strokeDasharray="3 3" className="stroke-zinc-200 dark:stroke-zinc-800" />
+          <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={2} className="fill-zinc-500" />
           <YAxis tick={{ fontSize: 10 }} className="fill-zinc-500" allowDecimals={false} />
           <ReferenceArea
             x1={fmt(expectedMin)}

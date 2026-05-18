@@ -1,4 +1,22 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { Agent, setGlobalDispatcher } from "undici";
+
+// Shared keep-alive pool for upstream ERPNext fetches. Without this, every
+// /api/proxy request opens a fresh TLS connection to {tenant}.erpstable.com
+// (~30-80ms handshake). With keep-alive, the same socket is reused across
+// requests, dropping TTFB by that amount under any sustained load.
+// `setGlobalDispatcher` makes `fetch()` in this Node runtime use the pool.
+declare global {
+  var __erpUpstreamAgent: Agent | undefined;
+}
+if (!globalThis.__erpUpstreamAgent) {
+  globalThis.__erpUpstreamAgent = new Agent({
+    keepAliveTimeout: 30_000,
+    keepAliveMaxTimeout: 60_000,
+    connections: 32,
+  });
+  setGlobalDispatcher(globalThis.__erpUpstreamAgent);
+}
 
 const DROP_REQ = new Set([
   "host",
@@ -50,7 +68,10 @@ async function handle(req: NextRequest, path: string[]): Promise<NextResponse> {
   const isHttps =
     req.headers.get("x-forwarded-proto") === "https" || req.url.startsWith("https://");
 
-  const targetUrl = `${siteUrl}/${path.join("/")}${req.nextUrl.search}`;
+  // Trim trailing slash so `siteUrl` ending in `/` doesn't produce `//api/...`
+  // (Frappe tolerates but logs it; nginx/upstream proxies may reject.)
+  const base = siteUrl.replace(/\/+$/, "");
+  const targetUrl = `${base}/${path.join("/")}${req.nextUrl.search}`;
 
   const forwardHeaders = new Headers();
   for (const [key, value] of req.headers.entries()) {
@@ -92,18 +113,21 @@ async function handle(req: NextRequest, path: string[]): Promise<NextResponse> {
     respHeaders.append("set-cookie", rewriteSetCookie(c, isHttps));
   }
 
-  const upstreamBody = await upstream.arrayBuffer();
-  if (upstream.status >= 400) {
-    // 417 is expected when custom batch methods (stable_erp_api.*) aren't deployed — frontend has fallbacks
-    if (upstream.status !== 417) {
-      console.error(
-        "[proxy] upstream error",
-        req.method,
-        targetUrl,
-        upstream.status,
-        new TextDecoder().decode(upstreamBody),
-      );
-    }
+  // Stream the response by default — TTFB drops to whatever upstream sends first,
+  // and large reports/exports don't sit in Node memory. We only buffer on 5xx,
+  // where we need the body to log. 4xx are normal upstream signals (404 for missing
+  // docs, 403 for permission denied, 417 for ERPNext info messages) — don't log them.
+  let upstreamBody: BodyInit | null = upstream.body;
+  if (upstream.status >= 500) {
+    const buf = await upstream.arrayBuffer();
+    upstreamBody = buf;
+    console.warn(
+      "[proxy] upstream 5xx",
+      req.method,
+      targetUrl,
+      upstream.status,
+      new TextDecoder().decode(buf).slice(0, 500),
+    );
   }
 
   // Add Cache-Control for successful GET responses

@@ -23,11 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Table,
   TableBody,
@@ -111,7 +107,7 @@ export default function SalesAnalyticsPage() {
     const body = rows.map((r) => [
       r.label,
       ...(dimension === "item" ? [r.secondaryLabel ?? ""] : []),
-      r.mixedUom ? t("mixedUomGroupHint") : r.stockUom ?? "",
+      r.mixedUom ? t("mixedUomGroupHint") : (r.stockUom ?? ""),
       ...months.map((m) => r.monthlyQty[m] ?? 0),
       r.totalQty,
     ]);
@@ -155,17 +151,7 @@ export default function SalesAnalyticsPage() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Sales Analytics");
     XLSX.writeFile(wb, `Sales-Analytics-${dimension}-${from}-to-${to}.xlsx`);
-  }, [
-    rows,
-    months,
-    monthlyTotals,
-    totalQty,
-    dimension,
-    dimensionColumnLabel,
-    from,
-    to,
-    t,
-  ]);
+  }, [rows, months, monthlyTotals, totalQty, dimension, dimensionColumnLabel, from, to, t]);
 
   const columnCount = 2 + (dimension === "item" ? 1 : 0) + months.length + 1;
 
@@ -177,12 +163,7 @@ export default function SalesAnalyticsPage() {
           <p className="text-muted-foreground mt-1 text-sm">{t("subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={exportExcel}
-            disabled={rows.length === 0}
-          >
+          <Button variant="outline" size="sm" onClick={exportExcel} disabled={rows.length === 0}>
             <Download className="mr-1 size-4" />
             Excel
           </Button>
@@ -331,9 +312,7 @@ export default function SalesAnalyticsPage() {
               <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                 {t("totalQty")}
               </p>
-              <p className="mt-1 text-2xl font-bold tabular-nums">
-                {formatNumber(totalQty)}
-              </p>
+              <p className="mt-1 text-2xl font-bold tabular-nums">{formatNumber(totalQty)}</p>
             </CardContent>
           </Card>
           <Card>
@@ -395,12 +374,10 @@ export default function SalesAnalyticsPage() {
                   <TableRow key={row.key}>
                     <TableCell className="font-medium">{row.label}</TableCell>
                     {dimension === "item" && (
-                      <TableCell className="text-muted-foreground">
-                        {row.secondaryLabel}
-                      </TableCell>
+                      <TableCell className="text-muted-foreground">{row.secondaryLabel}</TableCell>
                     )}
                     <TableCell className="text-muted-foreground text-xs">
-                      {row.mixedUom ? t("mixedUomGroupHint") : row.stockUom ?? "—"}
+                      {row.mixedUom ? t("mixedUomGroupHint") : (row.stockUom ?? "—")}
                     </TableCell>
                     {months.map((m) => (
                       <TableCell key={m} className="text-right tabular-nums">
@@ -428,10 +405,7 @@ export default function SalesAnalyticsPage() {
               </>
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columnCount}
-                  className="h-24 text-center text-muted-foreground"
-                >
+                <TableCell colSpan={columnCount} className="h-24 text-center text-muted-foreground">
                   {t("noData")}
                 </TableCell>
               </TableRow>

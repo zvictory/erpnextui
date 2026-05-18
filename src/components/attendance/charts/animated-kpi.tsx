@@ -80,10 +80,7 @@ export function AnimatedKpi({
         </div>
         {hasDelta ? (
           <div
-            className={cn(
-              "inline-flex items-center gap-0.5 text-[11px] font-medium",
-              deltaTone,
-            )}
+            className={cn("inline-flex items-center gap-0.5 text-[11px] font-medium", deltaTone)}
           >
             <Icon className="h-3 w-3" />
             <span>{Math.round(Math.abs(delta!) * 100)}%</span>

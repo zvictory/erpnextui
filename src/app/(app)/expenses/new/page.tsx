@@ -205,7 +205,9 @@ export default function WriteCheckPage() {
           }
         }
         if (assetLines.length) {
-          queryClient.invalidateQueries({ queryKey: queryKeys.accounts.assetsWithCurrency(company) });
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.accounts.assetsWithCurrency(company),
+          });
         }
       }
     } catch (err) {

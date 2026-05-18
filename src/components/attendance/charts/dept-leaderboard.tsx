@@ -32,11 +32,7 @@ export function DeptLeaderboard({ rows }: DeptLeaderboardProps) {
   return (
     <div style={{ height }} className="w-full">
       <ResponsiveContainer>
-        <BarChart
-          data={data}
-          layout="vertical"
-          margin={{ top: 4, right: 16, left: 0, bottom: 0 }}
-        >
+        <BarChart data={data} layout="vertical" margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
           <XAxis type="number" tick={{ fontSize: 10 }} className="fill-zinc-500" hide />
           <YAxis
             type="category"

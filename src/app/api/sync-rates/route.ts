@@ -36,7 +36,11 @@ async function proxyFrappe(
 const CBU_HISTORICAL_URL = "https://cbu.uz/uz/arkhiv-kursov-valyut/json/all/";
 
 export async function POST(req: NextRequest) {
-  const { siteUrl, currencies, date: requestedDate } = (await req.json()) as {
+  const {
+    siteUrl,
+    currencies,
+    date: requestedDate,
+  } = (await req.json()) as {
     siteUrl: string;
     currencies: string[];
     date?: string; // YYYY-MM-DD — if provided, fetch historical CBU rates for that date

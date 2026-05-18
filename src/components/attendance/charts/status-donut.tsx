@@ -1,12 +1,6 @@
 "use client";
 import { useMemo } from "react";
-import {
-  RadialBarChart,
-  RadialBar,
-  ResponsiveContainer,
-  PolarAngleAxis,
-  Tooltip,
-} from "recharts";
+import { RadialBarChart, RadialBar, ResponsiveContainer, PolarAngleAxis, Tooltip } from "recharts";
 import { useTranslations } from "next-intl";
 import type { StatusMixSlice } from "@/lib/attendance/aggregates";
 
@@ -64,7 +58,7 @@ export function StatusDonut({ slices }: StatusDonutProps) {
                 color: "white",
               }}
               formatter={(value, _name, item) => [
-                `${value} (${Math.round(((item.payload as { pct: number }).pct) * 100)}%)`,
+                `${value} (${Math.round((item.payload as { pct: number }).pct * 100)}%)`,
                 (item.payload as { name: string }).name,
               ]}
             />
@@ -81,10 +75,7 @@ export function StatusDonut({ slices }: StatusDonutProps) {
         {data.map((d) => (
           <li key={d.key} className="flex items-center justify-between gap-2">
             <span className="flex items-center gap-2">
-              <span
-                className="inline-block h-2 w-2 rounded-full"
-                style={{ background: d.fill }}
-              />
+              <span className="inline-block h-2 w-2 rounded-full" style={{ background: d.fill }} />
               <span className="text-zinc-600 dark:text-zinc-300">{d.name}</span>
             </span>
             <span className="tabular-nums text-zinc-900 dark:text-zinc-100">

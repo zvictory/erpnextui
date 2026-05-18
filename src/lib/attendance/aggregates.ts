@@ -46,11 +46,7 @@ export interface ArrivalBin {
 
 const BIN_SIZE = 10;
 
-export function arrivalBins(
-  employees: Employee[],
-  shift: ShiftKind,
-  policy: Policy,
-): ArrivalBin[] {
+export function arrivalBins(employees: Employee[], shift: ShiftKind, policy: Policy): ArrivalBin[] {
   const def = policy.shifts[shift];
   const expected = def.startH * 60 + def.startM;
   const fromMin = expected - 60;
@@ -93,9 +89,7 @@ export function genderShiftMatrix(employees: Employee[]): GenderShiftCell[] {
   const cells: GenderShiftCell[] = [];
   for (const g of ["m", "f"] as const) {
     for (const s of SHIFTS) {
-      const count = employees.filter(
-        (e) => inferGender(e.name) === g && e.shift === s,
-      ).length;
+      const count = employees.filter((e) => inferGender(e.name) === g && e.shift === s).length;
       cells.push({ gender: g, shift: s, count });
     }
   }
@@ -148,9 +142,9 @@ export function statusMix(employees: Employee[], policy: Policy): StatusMixSlice
       if (s in counts) counts[s as StatusMixSlice["key"]] += 1;
     }
   }
-  return (
-    ["present", "late_flat", "late_step", "half_day", "absent", "incomplete"] as const
-  ).map((k) => ({ key: k, count: counts[k] }));
+  return (["present", "late_flat", "late_step", "half_day", "absent", "incomplete"] as const).map(
+    (k) => ({ key: k, count: counts[k] }),
+  );
 }
 
 export interface DailySeriesPoint {

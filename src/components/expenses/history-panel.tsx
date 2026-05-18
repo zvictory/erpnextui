@@ -74,7 +74,8 @@ export function HistoryPanel({ onEdit, voucherType, remarkFilter }: HistoryPanel
   } = useJournalEntryList(company, voucherType, remarkFilter);
 
   const names = (entries ?? []).map((e) => e.name);
-  const { data: accountRowsFlat, isLoading: accountRowsLoading } = useJournalEntryAccountRows(names);
+  const { data: accountRowsFlat, isLoading: accountRowsLoading } =
+    useJournalEntryAccountRows(names);
   const rowsByParent = new Map<string, JEAccountRow[]>();
   for (const r of accountRowsFlat ?? []) {
     const list = rowsByParent.get(r.parent) ?? [];

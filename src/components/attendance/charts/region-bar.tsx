@@ -41,9 +41,7 @@ export function RegionBar({ totals }: RegionBarProps) {
           <li key={r.region} className="flex items-center justify-between gap-2">
             <span className="flex items-center gap-2">
               <span className={`inline-block h-2 w-2 rounded-full ${COLORS[r.region]}`} />
-              <span className="text-zinc-600 dark:text-zinc-300">
-                {t(`region.${r.region}`)}
-              </span>
+              <span className="text-zinc-600 dark:text-zinc-300">{t(`region.${r.region}`)}</span>
               <span className="text-zinc-400">· {r.employees}</span>
             </span>
             <span className="tabular-nums text-zinc-900 dark:text-zinc-100">
@@ -53,9 +51,7 @@ export function RegionBar({ totals }: RegionBarProps) {
         ))}
         <li className="flex items-center justify-between border-t border-zinc-200 pt-1.5 text-[11px] font-medium dark:border-zinc-800">
           <span className="text-zinc-500">Σ</span>
-          <span className="tabular-nums text-zinc-900 dark:text-zinc-100">
-            {formatUZS(grand)}
-          </span>
+          <span className="tabular-nums text-zinc-900 dark:text-zinc-100">{formatUZS(grand)}</span>
         </li>
       </ul>
     </div>

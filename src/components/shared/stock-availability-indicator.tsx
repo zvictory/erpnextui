@@ -33,7 +33,9 @@ export function StockAvailabilityIndicator({
     return <span className="text-xs text-muted-foreground animate-pulse">...</span>;
   }
 
-  const filteredBins = warehouse ? (bins ?? []).filter((b) => b.warehouse === warehouse) : (bins ?? []);
+  const filteredBins = warehouse
+    ? (bins ?? []).filter((b) => b.warehouse === warehouse)
+    : (bins ?? []);
 
   const totalQty = filteredBins.reduce((sum, b) => sum + b.actual_qty, 0);
   const availableQty = filteredBins.reduce(
@@ -54,10 +56,7 @@ export function StockAvailabilityIndicator({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={`text-xs hover:underline cursor-pointer ${triggerColor}`}
-        >
+        <button type="button" className={`text-xs hover:underline cursor-pointer ${triggerColor}`}>
           {hasStock
             ? hasReserved
               ? `${t("stockTotal", { qty: formatNumber(totalQty) })} / ${formatNumber(availableQty)} avail`

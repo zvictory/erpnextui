@@ -114,15 +114,17 @@ function ItemRow({
   );
   const qtyInStockUom = (parseFloat(qty) || 0) * (parseFloat(String(convFactor)) || 1);
   const isOverQty =
-    showStockAvailability && isStockItem && binsForWarehouse.length > 0 && qtyInStockUom > availableQty;
+    showStockAvailability &&
+    isStockItem &&
+    binsForWarehouse.length > 0 &&
+    qtyInStockUom > availableQty;
 
   const prevOverQtyRef = useRef(false);
   useEffect(() => {
     if (isOverQty && !prevOverQtyRef.current && itemCode) {
-      toast.warning(
-        `${itemCode}: ${t("qtyExceedsAvail", { qty: formatNumber(availableQty) })}`,
-        { id: `over-qty-${itemCode}` },
-      );
+      toast.warning(`${itemCode}: ${t("qtyExceedsAvail", { qty: formatNumber(availableQty) })}`, {
+        id: `over-qty-${itemCode}`,
+      });
     }
     prevOverQtyRef.current = isOverQty;
   }, [isOverQty, itemCode, availableQty, t]);
@@ -257,7 +259,11 @@ function ItemRow({
           min={0}
           decimals={2}
           disabled={disabled}
-          className={isOverQty ? "border-red-500 dark:border-red-400 focus-visible:ring-red-500/30" : undefined}
+          className={
+            isOverQty
+              ? "border-red-500 dark:border-red-400 focus-visible:ring-red-500/30"
+              : undefined
+          }
         />
         {isOverQty && (
           <span className="text-[10px] text-red-600 dark:text-red-400 leading-tight">

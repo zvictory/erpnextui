@@ -222,7 +222,7 @@ export function EmployeeDetailPanel({
     "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300",
   ];
   let hash = 0;
-  for (const c of employeeName) hash = ((hash * 31) + c.charCodeAt(0)) >>> 0;
+  for (const c of employeeName) hash = (hash * 31 + c.charCodeAt(0)) >>> 0;
   const avatarColorClass = AVATAR_COLORS[hash % AVATAR_COLORS.length];
 
   const balanceColorClass =
@@ -312,9 +312,7 @@ export function EmployeeDetailPanel({
                     })}
                   </div>
                   {currencyBalances.length > 1 && (
-                    <p className="text-[11px] text-muted-foreground mt-1">
-                      ≈ {formattedBalance}
-                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-1">≈ {formattedBalance}</p>
                   )}
                 </>
               ) : (
@@ -373,180 +371,188 @@ export function EmployeeDetailPanel({
           </TabsList>
 
           <TabsContent value="overview" className="flex-1 min-h-0">
-        <ScrollArea className="flex-1 px-4 pb-4">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
-                    onClick={() => setSortAsc((v) => !v)}
-                  >
-                    {tCommon("date")}
-                    {sortAsc ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                  </button>
-                </TableHead>
-                <TableHead>{tCommon("voucher")}</TableHead>
-                <TableHead className="text-right">{tCommon("debitOriginal")}</TableHead>
-                <TableHead className="text-right">{tCommon("creditOriginal")}</TableHead>
-                <TableHead className="text-right">{tCommon("baseAmount")}</TableHead>
-                <TableHead className="text-right">{tCommon("balance")}</TableHead>
-                <TableHead className="w-[70px]" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {ledgerLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell>
-                      <Skeleton className="h-4 w-20" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-28" />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Skeleton className="h-4 w-16 ml-auto" />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Skeleton className="h-4 w-16 ml-auto" />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Skeleton className="h-4 w-16 ml-auto" />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Skeleton className="h-4 w-16 ml-auto" />
-                    </TableCell>
-                    <TableCell />
+            <ScrollArea className="flex-1 px-4 pb-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+                        onClick={() => setSortAsc((v) => !v)}
+                      >
+                        {tCommon("date")}
+                        {sortAsc ? (
+                          <ArrowUp className="h-3 w-3" />
+                        ) : (
+                          <ArrowDown className="h-3 w-3" />
+                        )}
+                      </button>
+                    </TableHead>
+                    <TableHead>{tCommon("voucher")}</TableHead>
+                    <TableHead className="text-right">{tCommon("debitOriginal")}</TableHead>
+                    <TableHead className="text-right">{tCommon("creditOriginal")}</TableHead>
+                    <TableHead className="text-right">{tCommon("baseAmount")}</TableHead>
+                    <TableHead className="text-right">{tCommon("balance")}</TableHead>
+                    <TableHead className="w-[70px]" />
                   </TableRow>
-                ))
-              ) : !displayEntries.length ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                    {tCommon("noTransactions")}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                displayEntries.map((entry) => (
-                  <TableRow
-                    key={entry.name}
-                    className={cn(
-                      "cursor-pointer hover:bg-accent/50",
-                      entry.isDraft && "opacity-70",
-                    )}
-                    onClick={() => handleRowClick(entry)}
-                  >
-                    <TableCell className="whitespace-nowrap text-sm">
-                      {formatDate(entry.posting_date)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-muted-foreground">
-                          {getVoucherIcon(entry.voucher_type)}
-                        </span>
-                        <Badge variant="outline" className="text-xs font-normal">
-                          {entry.voucher_type}
-                        </Badge>
-                        {entry.isDraft && (
-                          <Badge variant="secondary" className="text-xs">
-                            {tCommon("draft")}
-                          </Badge>
+                </TableHeader>
+                <TableBody>
+                  {ledgerLoading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell>
+                          <Skeleton className="h-4 w-20" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-4 w-28" />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Skeleton className="h-4 w-16 ml-auto" />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Skeleton className="h-4 w-16 ml-auto" />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Skeleton className="h-4 w-16 ml-auto" />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Skeleton className="h-4 w-16 ml-auto" />
+                        </TableCell>
+                        <TableCell />
+                      </TableRow>
+                    ))
+                  ) : !displayEntries.length ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                        {tCommon("noTransactions")}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    displayEntries.map((entry) => (
+                      <TableRow
+                        key={entry.name}
+                        className={cn(
+                          "cursor-pointer hover:bg-accent/50",
+                          entry.isDraft && "opacity-70",
                         )}
-                      </div>
-                      <div className="text-xs mt-0.5 text-muted-foreground flex items-center gap-1.5">
-                        <span>{entry.isDraft ? entry.remarks : entry.voucher_no}</span>
-                        {!entry.isDraft && parseLinkedSI(entry.remarks) && (
-                          <Badge variant="secondary" className="text-[10px]">
-                            {parseLinkedSI(entry.remarks)}
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right text-red-600 font-medium tabular-nums">
-                      {entry.debit_in_account_currency > 0
-                        ? formatInvoiceCurrency(
-                            entry.debit_in_account_currency,
-                            entry.account_currency,
-                            currencyMap?.get(entry.account_currency),
-                          )
-                        : ""}
-                    </TableCell>
-                    <TableCell className="text-right text-green-600 font-medium tabular-nums">
-                      {entry.credit_in_account_currency > 0
-                        ? formatInvoiceCurrency(
-                            entry.credit_in_account_currency,
-                            entry.account_currency,
-                            currencyMap?.get(entry.account_currency),
-                          )
-                        : ""}
-                    </TableCell>
-                    <TableCell
-                      className={cn(
-                        "text-right font-medium tabular-nums",
-                        entry.debit > 0
-                          ? "text-red-600"
-                          : entry.credit > 0
-                            ? "text-green-600"
-                            : "text-muted-foreground",
-                      )}
-                    >
-                      {formatCurrency(
-                        Math.max(entry.debit, entry.credit),
-                        currencySymbol,
-                        symbolOnRight,
-                      )}
-                    </TableCell>
-                    <TableCell
-                      className={cn(
-                        "text-right font-medium tabular-nums",
-                        entry.isDraft
-                          ? "text-muted-foreground"
-                          : entry.balance > 0
-                            ? "text-red-600"
-                            : entry.balance < 0
-                              ? "text-green-600"
-                              : "text-muted-foreground",
-                      )}
-                    >
-                      {entry.isDraft
-                        ? "—"
-                        : formatInvoiceCurrency(
-                            Math.abs(entry.balance),
-                            entry.balanceCurrency,
-                            currencyMap?.get(entry.balanceCurrency),
+                        onClick={() => handleRowClick(entry)}
+                      >
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {formatDate(entry.posting_date)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-muted-foreground">
+                              {getVoucherIcon(entry.voucher_type)}
+                            </span>
+                            <Badge variant="outline" className="text-xs font-normal">
+                              {entry.voucher_type}
+                            </Badge>
+                            {entry.isDraft && (
+                              <Badge variant="secondary" className="text-xs">
+                                {tCommon("draft")}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-xs mt-0.5 text-muted-foreground flex items-center gap-1.5">
+                            <span>{entry.isDraft ? entry.remarks : entry.voucher_no}</span>
+                            {!entry.isDraft && parseLinkedSI(entry.remarks) && (
+                              <Badge variant="secondary" className="text-[10px]">
+                                {parseLinkedSI(entry.remarks)}
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right text-red-600 font-medium tabular-nums">
+                          {entry.debit_in_account_currency > 0
+                            ? formatInvoiceCurrency(
+                                entry.debit_in_account_currency,
+                                entry.account_currency,
+                                currencyMap?.get(entry.account_currency),
+                              )
+                            : ""}
+                        </TableCell>
+                        <TableCell className="text-right text-green-600 font-medium tabular-nums">
+                          {entry.credit_in_account_currency > 0
+                            ? formatInvoiceCurrency(
+                                entry.credit_in_account_currency,
+                                entry.account_currency,
+                                currencyMap?.get(entry.account_currency),
+                              )
+                            : ""}
+                        </TableCell>
+                        <TableCell
+                          className={cn(
+                            "text-right font-medium tabular-nums",
+                            entry.debit > 0
+                              ? "text-red-600"
+                              : entry.credit > 0
+                                ? "text-green-600"
+                                : "text-muted-foreground",
                           )}
-                    </TableCell>
-                    <TableCell>
-                      {entry.isDraft && (
-                        <div
-                          className="flex items-center gap-0.5"
-                          onClick={(e) => e.stopPropagation()}
                         >
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => setConfirmAction({ type: "submit", name: entry.name })}
-                          >
-                            <Send className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 text-destructive"
-                            onClick={() => setConfirmAction({ type: "delete", name: entry.name })}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </ScrollArea>
+                          {formatCurrency(
+                            Math.max(entry.debit, entry.credit),
+                            currencySymbol,
+                            symbolOnRight,
+                          )}
+                        </TableCell>
+                        <TableCell
+                          className={cn(
+                            "text-right font-medium tabular-nums",
+                            entry.isDraft
+                              ? "text-muted-foreground"
+                              : entry.balance > 0
+                                ? "text-red-600"
+                                : entry.balance < 0
+                                  ? "text-green-600"
+                                  : "text-muted-foreground",
+                          )}
+                        >
+                          {entry.isDraft
+                            ? "—"
+                            : formatInvoiceCurrency(
+                                Math.abs(entry.balance),
+                                entry.balanceCurrency,
+                                currencyMap?.get(entry.balanceCurrency),
+                              )}
+                        </TableCell>
+                        <TableCell>
+                          {entry.isDraft && (
+                            <div
+                              className="flex items-center gap-0.5"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() =>
+                                  setConfirmAction({ type: "submit", name: entry.name })
+                                }
+                              >
+                                <Send className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-destructive"
+                                onClick={() =>
+                                  setConfirmAction({ type: "delete", name: entry.name })
+                                }
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </ScrollArea>
           </TabsContent>
 
           <TabsContent value="attendance" className="flex-1 min-h-0 overflow-auto px-4 pb-4">

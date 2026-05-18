@@ -54,7 +54,15 @@ export function EmployeesSettingsPage() {
     const maxCount = Math.max(1, ...positions.map((p) => p.count));
     const minSalary = Math.min(...positions.map((p) => p.salaryUZS));
     const maxSalary = Math.max(...positions.map((p) => p.salaryUZS));
-    return { headcount, customizedCount, monthlyPayroll, avgSalary, maxCount, minSalary, maxSalary };
+    return {
+      headcount,
+      customizedCount,
+      monthlyPayroll,
+      avgSalary,
+      maxCount,
+      minSalary,
+      maxSalary,
+    };
   }, [positions]);
 
   return (

@@ -159,10 +159,7 @@ export function employmentMarker(
 
 export function useEmployees(): Employee[] {
   const overrides = useOverrides();
-  return useMemo(
-    () => DATA.employees.map((e) => applyOverride(e, overrides[e.id])),
-    [overrides],
-  );
+  return useMemo(() => DATA.employees.map((e) => applyOverride(e, overrides[e.id])), [overrides]);
 }
 
 export function useEmployee(id: string): Employee | null {

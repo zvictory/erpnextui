@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-import { TrendingUp } from 'lucide-react';
+import { motion } from "framer-motion";
+import { TrendingUp } from "lucide-react";
 
 interface SceneFinanceProps {
   progress: number;
@@ -11,13 +11,13 @@ export function SceneFinance({ progress }: SceneFinanceProps) {
   const liabilities = Math.floor((Math.min(progress, 60) / 60) * 2800000);
 
   const kpiCards = [
-    { label: 'Выручка', value: revenue, icon: TrendingUp, color: 'teal', threshold: 20 },
-    { label: 'Прибыль', value: profit, icon: TrendingUp, color: 'green', threshold: 40 },
+    { label: "Выручка", value: revenue, icon: TrendingUp, color: "teal", threshold: 20 },
+    { label: "Прибыль", value: profit, icon: TrendingUp, color: "green", threshold: 40 },
     {
-      label: 'Кредиторка',
+      label: "Кредиторка",
       value: liabilities,
       icon: TrendingUp,
-      color: 'amber',
+      color: "amber",
       threshold: 60,
     },
   ];
@@ -30,9 +30,9 @@ export function SceneFinance({ progress }: SceneFinanceProps) {
         {kpiCards.map((card, i) => {
           const isVisible = progress >= card.threshold;
           const colorClass = {
-            teal: 'text-teal-400 bg-teal-900/20',
-            green: 'text-green-400 bg-green-900/20',
-            amber: 'text-amber-400 bg-amber-900/20',
+            teal: "text-teal-400 bg-teal-900/20",
+            green: "text-green-400 bg-green-900/20",
+            amber: "text-amber-400 bg-amber-900/20",
           }[card.color];
 
           return (
@@ -43,9 +43,7 @@ export function SceneFinance({ progress }: SceneFinanceProps) {
               className={`rounded-lg border border-slate-700 p-4 ${colorClass}`}
             >
               <p className="text-sm text-slate-400 mb-2">{card.label}</p>
-              <p className="text-2xl font-bold">
-                {(card.value / 1000000).toFixed(1)}M
-              </p>
+              <p className="text-2xl font-bold">{(card.value / 1000000).toFixed(1)}M</p>
             </motion.div>
           );
         })}
@@ -77,7 +75,7 @@ export function SceneFinance({ progress }: SceneFinanceProps) {
         >
           <span className="text-sm text-slate-300">
             <span className="text-teal-400">$42 800</span>
-            {' / '}
+            {" / "}
             <span className="text-slate-100">530 000 000 сўм</span>
           </span>
         </motion.div>

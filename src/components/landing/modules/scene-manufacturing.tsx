@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-import { Clock, CheckCircle, Play } from 'lucide-react';
+import { motion } from "framer-motion";
+import { Clock, CheckCircle, Play } from "lucide-react";
 
 interface SceneManufacturingProps {
   progress: number;
@@ -7,21 +7,21 @@ interface SceneManufacturingProps {
 
 export function SceneManufacturing({ progress }: SceneManufacturingProps) {
   const orders = [
-    { id: 'ПЗ-0041', status: 'planned', threshold: 0 },
-    { id: 'ПЗ-0042', status: 'inprogress', threshold: 33 },
-    { id: 'ПЗ-0043', status: 'done', threshold: 66 },
+    { id: "ПЗ-0041", status: "planned", threshold: 0 },
+    { id: "ПЗ-0042", status: "inprogress", threshold: 33 },
+    { id: "ПЗ-0043", status: "done", threshold: 66 },
   ];
 
   const getStatusInfo = (baseStatus: string) => {
-    if (progress < 33) return 'planned';
-    if (progress < 66) return 'inprogress';
-    return 'done';
+    if (progress < 33) return "planned";
+    if (progress < 66) return "inprogress";
+    return "done";
   };
 
   const statusConfig = {
-    planned: { label: 'Планируется', color: 'text-slate-400 bg-slate-800', icon: Clock },
-    inprogress: { label: 'В производстве', color: 'text-blue-400 bg-blue-900/20', icon: Play },
-    done: { label: 'Завершено', color: 'text-green-400 bg-green-900/20', icon: CheckCircle },
+    planned: { label: "Планируется", color: "text-slate-400 bg-slate-800", icon: Clock },
+    inprogress: { label: "В производстве", color: "text-blue-400 bg-blue-900/20", icon: Play },
+    done: { label: "Завершено", color: "text-green-400 bg-green-900/20", icon: CheckCircle },
   };
 
   const machineUtilization = Math.min(40 + (progress / 100) * 45, 85);
@@ -46,7 +46,9 @@ export function SceneManufacturing({ progress }: SceneManufacturingProps) {
               <div>
                 <p className="text-sm font-medium text-slate-100">{order.id}</p>
               </div>
-              <div className={`px-3 py-1 rounded text-xs font-medium flex items-center gap-1 ${config.color}`}>
+              <div
+                className={`px-3 py-1 rounded text-xs font-medium flex items-center gap-1 ${config.color}`}
+              >
                 <Icon className="w-3 h-3" />
                 {config.label}
               </div>

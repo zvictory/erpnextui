@@ -13,7 +13,13 @@ import {
 
 interface PolicyState extends Policy {
   setNumber: (
-    key: "dailyCapUZS" | "flatFeeUZS" | "stepFeeUZS" | "graceMin" | "halfDayMinMin" | "feeBudgetUZS",
+    key:
+      | "dailyCapUZS"
+      | "flatFeeUZS"
+      | "stepFeeUZS"
+      | "graceMin"
+      | "halfDayMinMin"
+      | "feeBudgetUZS",
     value: number,
   ) => void;
   setShiftField: (kind: ShiftKind, patch: Partial<ShiftDef>) => void;

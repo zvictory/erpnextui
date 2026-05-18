@@ -18,8 +18,7 @@ function rampClass(rate: number, scheduled: number): string {
   if (rate <= 0.05)
     return "bg-emerald-200 text-emerald-900 dark:bg-emerald-500/25 dark:text-emerald-100";
   if (rate <= 0.1) return "bg-amber-200 text-amber-900 dark:bg-amber-500/30 dark:text-amber-100";
-  if (rate <= 0.2)
-    return "bg-orange-300 text-orange-950 dark:bg-orange-500/40 dark:text-orange-50";
+  if (rate <= 0.2) return "bg-orange-300 text-orange-950 dark:bg-orange-500/40 dark:text-orange-50";
   return "bg-rose-400 text-rose-950 dark:bg-rose-500/60 dark:text-rose-50";
 }
 
@@ -64,9 +63,7 @@ export function HeatmapCalendar({ points, weekStart = 1 }: HeatmapCalendarProps)
             >
               <span>{p.day}</span>
               {p.scheduled > 0 ? (
-                <span className="absolute bottom-0.5 right-1 text-[8px] opacity-60">
-                  {ratePct}
-                </span>
+                <span className="absolute bottom-0.5 right-1 text-[8px] opacity-60">{ratePct}</span>
               ) : null}
             </Link>
           );

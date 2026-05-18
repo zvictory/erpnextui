@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { motion } from "framer-motion";
+import { AlertCircle, CheckCircle } from "lucide-react";
 
 interface SceneWarehouseProps {
   progress: number;
@@ -8,21 +8,21 @@ interface SceneWarehouseProps {
 export function SceneWarehouse({ progress }: SceneWarehouseProps) {
   const items = [
     {
-      name: 'Мороженое Ваниль',
+      name: "Мороженое Ваниль",
       stock: 1250,
-      status: 'normal',
+      status: "normal",
       threshold: 0,
     },
     {
-      name: 'Упаковка',
+      name: "Упаковка",
       stock: 45000,
-      status: 'normal',
+      status: "normal",
       threshold: 25,
     },
     {
-      name: 'Сахар',
+      name: "Сахар",
       stock: 3500,
-      status: 'critical',
+      status: "critical",
       threshold: 50,
     },
   ];
@@ -33,8 +33,11 @@ export function SceneWarehouse({ progress }: SceneWarehouseProps) {
       <div className="space-y-3">
         {items.map((item, i) => {
           const isVisible = progress >= item.threshold;
-          const statusColor = item.status === 'normal' ? 'text-green-400 bg-green-900/20' : 'text-red-400 bg-red-900/20';
-          const statusLabel = item.status === 'normal' ? 'Норма' : 'Критично';
+          const statusColor =
+            item.status === "normal"
+              ? "text-green-400 bg-green-900/20"
+              : "text-red-400 bg-red-900/20";
+          const statusLabel = item.status === "normal" ? "Норма" : "Критично";
 
           return (
             <motion.div
@@ -45,10 +48,12 @@ export function SceneWarehouse({ progress }: SceneWarehouseProps) {
             >
               <div className="flex-1">
                 <p className="text-sm font-medium text-slate-100">{item.name}</p>
-                <p className="text-xs text-slate-400">{item.stock.toLocaleString('ru-RU')} шт</p>
+                <p className="text-xs text-slate-400">{item.stock.toLocaleString("ru-RU")} шт</p>
               </div>
-              <div className={`px-3 py-1 rounded text-xs font-medium flex items-center gap-1 ${statusColor}`}>
-                {item.status === 'normal' ? (
+              <div
+                className={`px-3 py-1 rounded text-xs font-medium flex items-center gap-1 ${statusColor}`}
+              >
+                {item.status === "normal" ? (
                   <CheckCircle className="w-3 h-3" />
                 ) : (
                   <AlertCircle className="w-3 h-3" />

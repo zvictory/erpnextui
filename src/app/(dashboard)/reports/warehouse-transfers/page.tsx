@@ -308,9 +308,28 @@ export default function WarehouseTransfersPage() {
     XLSX.utils.book_append_sheet(wb, wsSummary, "By Item");
     XLSX.utils.book_append_sheet(wb, wsDetails, "Details");
     XLSX.writeFile(wb, `Warehouse-Transfers-${from}-to-${to}.xlsx`);
-  }, [rows, sortedItemRows, totalAmount, totalQty, totalCount, uniqueLaneCount, baseInfo, from, to, t]);
+  }, [
+    rows,
+    sortedItemRows,
+    totalAmount,
+    totalQty,
+    totalCount,
+    uniqueLaneCount,
+    baseInfo,
+    from,
+    to,
+    t,
+  ]);
 
-  const SortBtn = ({ label, k, align = "left" }: { label: string; k: SortKey; align?: "left" | "right" }) => (
+  const SortBtn = ({
+    label,
+    k,
+    align = "left",
+  }: {
+    label: string;
+    k: SortKey;
+    align?: "left" | "right";
+  }) => (
     <Button
       variant="ghost"
       size="sm"
@@ -332,12 +351,7 @@ export default function WarehouseTransfersPage() {
               {allExpanded ? t("collapseAll") : t("expandAll")}
             </Button>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={exportExcel}
-            disabled={rows.length === 0}
-          >
+          <Button variant="outline" size="sm" onClick={exportExcel} disabled={rows.length === 0}>
             <Download className="mr-1 size-4" />
             Excel
           </Button>
@@ -518,9 +532,7 @@ export default function WarehouseTransfersPage() {
                             >
                               {item.item_code}
                             </Link>
-                            <span className="text-muted-foreground text-xs">
-                              {item.item_name}
-                            </span>
+                            <span className="text-muted-foreground text-xs">{item.item_name}</span>
                           </div>
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
@@ -529,9 +541,7 @@ export default function WarehouseTransfersPage() {
                         <TableCell className="text-right tabular-nums">
                           {item.transferCount}
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {item.laneCount}
-                        </TableCell>
+                        <TableCell className="text-right tabular-nums">{item.laneCount}</TableCell>
                         <TableCell className="tabular-nums text-xs">
                           {formatDate(item.lastDate)}
                         </TableCell>
@@ -566,10 +576,7 @@ export default function WarehouseTransfersPage() {
                                 </TableHeader>
                                 <TableBody>
                                   {item.details.map((d, idx) => (
-                                    <TableRow
-                                      key={`${d.parent}-${idx}`}
-                                      className="border-none"
-                                    >
+                                    <TableRow key={`${d.parent}-${idx}`} className="border-none">
                                       <TableCell className="py-1 text-xs tabular-nums">
                                         {formatDate(d.posting_date)}
                                       </TableCell>

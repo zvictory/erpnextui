@@ -43,9 +43,7 @@ export function PayrollSummary({
             </div>
           </div>
         ) : (
-          <div className="text-sm text-zinc-500 dark:text-zinc-400">
-            {t("payroll.standalone")}
-          </div>
+          <div className="text-sm text-zinc-500 dark:text-zinc-400">{t("payroll.standalone")}</div>
         )}
         <div className="ml-auto grid grow grid-cols-2 gap-x-4 gap-y-2 text-xs sm:grid-cols-5">
           <Stat

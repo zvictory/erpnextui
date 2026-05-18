@@ -1,16 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  BarChart3,
-  Boxes,
-  Factory,
-  Moon,
-  Scale,
-  Sun,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import { BarChart3, Boxes, Factory, Moon, Scale, Sun, Users, type LucideIcon } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";

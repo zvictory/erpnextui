@@ -285,7 +285,10 @@ export function SalesOrderForm({
                 if (v) updateCompanySetting(company, "sellingWarehouse", v);
               }}
               disabled={isReadOnly}
-              filters={[["company", "=", company], ["is_group", "=", 0]]}
+              filters={[
+                ["company", "=", company],
+                ["is_group", "=", 0],
+              ]}
             />
             {errors.set_warehouse && (
               <p className="text-sm text-destructive">{errors.set_warehouse.message}</p>

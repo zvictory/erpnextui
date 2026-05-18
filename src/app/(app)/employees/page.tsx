@@ -89,13 +89,23 @@ export default function EmployeesPage() {
           {t("title")}
         </span>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-muted-foreground" asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs gap-1 text-muted-foreground"
+            asChild
+          >
             <Link href="/employees/salary-accrual">
               <CalendarCheck className="h-3.5 w-3.5" />
               {t("salaryAccrual")}
             </Link>
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-muted-foreground" asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs gap-1 text-muted-foreground"
+            asChild
+          >
             <Link href="/employees/new">
               <Plus className="h-3.5 w-3.5" />
               {t("newEmployee")}

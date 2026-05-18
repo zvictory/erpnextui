@@ -38,19 +38,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency, formatNumber, formatDate } from "@/lib/formatters";
-import type {
-  SalesByCustomerRow,
-  DateRange,
-  SalesByCustomerDetailGroup,
-} from "@/types/reports";
+import type { SalesByCustomerRow, DateRange, SalesByCustomerDetailGroup } from "@/types/reports";
 
 export default function SalesByCustomerPage() {
   const t = useTranslations("sbc");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const mode: "summary" | "detail" =
-    searchParams.get("mode") === "detail" ? "detail" : "summary";
+  const mode: "summary" | "detail" = searchParams.get("mode") === "detail" ? "detail" : "summary";
   const setMode = (next: "summary" | "detail") => {
     const sp = new URLSearchParams(searchParams.toString());
     if (next === "summary") sp.delete("mode");
@@ -549,138 +544,144 @@ export default function SalesByCustomerPage() {
           getCurrencyInfo={getCurrencyInfo}
           t={t}
         />
-      ) : (<>
-      {isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-24" />
-          ))}
-        </div>
-      ) : rows.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardContent className="pt-4 pb-4">
-              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-                {t("totalSales")}
-              </p>
-              <div className="mt-1 space-y-0.5">
-                {currencyEntries.length > 0 ? (
-                  currencyEntries.map(([code, total]) => {
-                    const info = getCurrencyInfo(code);
-                    return (
-                      <p key={code} className="text-2xl font-bold tabular-nums leading-tight">
-                        {formatCurrency(total, info.symbol, info.onRight)}
-                      </p>
-                    );
-                  })
-                ) : (
-                  <p className="text-2xl font-bold tabular-nums">
-                    {formatCurrency(0, baseInfo.symbol, baseInfo.onRight)}
+      ) : (
+        <>
+          {isLoading ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-24" />
+              ))}
+            </div>
+          ) : rows.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Card>
+                <CardContent className="pt-4 pb-4">
+                  <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                    {t("totalSales")}
                   </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4 pb-4">
-              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-                {t("uniqueCustomers")}
-              </p>
-              <p className="mt-1 text-2xl font-bold tabular-nums">{uniqueCustomerCount}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4 pb-4">
-              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-                {t("totalInvoices")}
-              </p>
-              <p className="mt-1 text-2xl font-bold tabular-nums">{totalInvoices}</p>
-            </CardContent>
-          </Card>
-        </div>
-      ) : null}
+                  <div className="mt-1 space-y-0.5">
+                    {currencyEntries.length > 0 ? (
+                      currencyEntries.map(([code, total]) => {
+                        const info = getCurrencyInfo(code);
+                        return (
+                          <p key={code} className="text-2xl font-bold tabular-nums leading-tight">
+                            {formatCurrency(total, info.symbol, info.onRight)}
+                          </p>
+                        );
+                      })
+                    ) : (
+                      <p className="text-2xl font-bold tabular-nums">
+                        {formatCurrency(0, baseInfo.symbol, baseInfo.onRight)}
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4 pb-4">
+                  <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                    {t("uniqueCustomers")}
+                  </p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums">{uniqueCustomerCount}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4 pb-4">
+                  <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                    {t("totalInvoices")}
+                  </p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums">{totalInvoices}</p>
+                </CardContent>
+              </Card>
+            </div>
+          ) : null}
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  const meta = header.column.columnDef.meta as { className?: string } | undefined;
-                  return (
-                    <TableHead key={header.id} className={meta?.className}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: 8 }).map((_, i) => (
-                <TableRow key={i}>
-                  {columns.map((_, j) => (
-                    <TableCell key={j}>
-                      <Skeleton className="h-4 w-full" />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : table.getRowModel().rows.length > 0 ? (
-              <>
-                {table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => {
-                      const meta = cell.column.columnDef.meta as { className?: string } | undefined;
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => {
+                      const meta = header.column.columnDef.meta as
+                        | { className?: string }
+                        | undefined;
                       return (
-                        <TableCell key={cell.id} className={meta?.className}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
+                        <TableHead key={header.id} className={meta?.className}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                        </TableHead>
                       );
                     })}
                   </TableRow>
                 ))}
-                <TableRow className="font-semibold">
-                  <TableCell />
-                  <TableCell>{t("total")}</TableCell>
-                  <TableCell />
-                  <TableCell />
-                  <TableCell className="text-right tabular-nums">{totalInvoices}</TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatNumber(totalQty)}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    <div className="space-y-0.5">
-                      {currencyEntries.map(([code, total]) => {
-                        const info = getCurrencyInfo(code);
-                        return (
-                          <div key={code} className="leading-tight">
-                            {formatCurrency(total, info.symbol, info.onRight)}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </TableCell>
-                  <TableCell />
-                </TableRow>
-              </>
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  {t("noData")}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      </>)}
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 8 }).map((_, i) => (
+                    <TableRow key={i}>
+                      {columns.map((_, j) => (
+                        <TableCell key={j}>
+                          <Skeleton className="h-4 w-full" />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : table.getRowModel().rows.length > 0 ? (
+                  <>
+                    {table.getRowModel().rows.map((row) => (
+                      <TableRow key={row.id}>
+                        {row.getVisibleCells().map((cell) => {
+                          const meta = cell.column.columnDef.meta as
+                            | { className?: string }
+                            | undefined;
+                          return (
+                            <TableCell key={cell.id} className={meta?.className}>
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
+                    ))}
+                    <TableRow className="font-semibold">
+                      <TableCell />
+                      <TableCell>{t("total")}</TableCell>
+                      <TableCell />
+                      <TableCell />
+                      <TableCell className="text-right tabular-nums">{totalInvoices}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {formatNumber(totalQty)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        <div className="space-y-0.5">
+                          {currencyEntries.map(([code, total]) => {
+                            const info = getCurrencyInfo(code);
+                            return (
+                              <div key={code} className="leading-tight">
+                                {formatCurrency(total, info.symbol, info.onRight)}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </TableCell>
+                      <TableCell />
+                    </TableRow>
+                  </>
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      {t("noData")}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </>
+      )}
     </div>
   );
 }

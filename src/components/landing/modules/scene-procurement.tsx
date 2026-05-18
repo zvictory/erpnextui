@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-import { AlertCircle } from 'lucide-react';
+import { motion } from "framer-motion";
+import { AlertCircle } from "lucide-react";
 
 interface SceneProcurementProps {
   progress: number;
@@ -7,15 +7,15 @@ interface SceneProcurementProps {
 
 export function SceneProcurement({ progress }: SceneProcurementProps) {
   const orders = [
-    { vendor: 'ООО Сахар Поставка', amount: 25000000, status: 'pending', threshold: 0 },
-    { vendor: 'ЗАО Упаковка Pro', amount: 8500000, status: 'pending', threshold: 25 },
-    { vendor: 'ООО Агро Импорт', amount: 42000000, status: 'pending', threshold: 50 },
+    { vendor: "ООО Сахар Поставка", amount: 25000000, status: "pending", threshold: 0 },
+    { vendor: "ЗАО Упаковка Pro", amount: 8500000, status: "pending", threshold: 25 },
+    { vendor: "ООО Агро Импорт", amount: 42000000, status: "pending", threshold: 50 },
   ];
 
   const landedCostBreakdown = [
-    { label: 'Товар', percent: 70, color: 'from-blue-500 to-blue-400' },
-    { label: 'Фрахт', percent: 20, color: 'from-amber-500 to-amber-400' },
-    { label: 'Пошлина', percent: 10, color: 'from-orange-500 to-orange-400' },
+    { label: "Товар", percent: 70, color: "from-blue-500 to-blue-400" },
+    { label: "Фрахт", percent: 20, color: "from-amber-500 to-amber-400" },
+    { label: "Пошлина", percent: 10, color: "from-orange-500 to-orange-400" },
   ];
 
   const animatedPercent = Math.min(progress, 100) * (100 / 100);
@@ -36,9 +36,7 @@ export function SceneProcurement({ progress }: SceneProcurementProps) {
             >
               <div className="flex-1">
                 <p className="text-sm font-medium text-slate-100">{order.vendor}</p>
-                <p className="text-xs text-slate-400">
-                  {(order.amount / 1000000).toFixed(1)}M сўм
-                </p>
+                <p className="text-xs text-slate-400">{(order.amount / 1000000).toFixed(1)}M сўм</p>
               </div>
               <div className="px-3 py-1 rounded text-xs font-medium text-amber-400 bg-amber-900/20">
                 Ожидание

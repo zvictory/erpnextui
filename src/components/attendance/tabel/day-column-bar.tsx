@@ -24,9 +24,7 @@ export function DayColumnBar({ k, y, n, d, total }: DayColumnBarProps) {
       {kPct > 0 && (
         <div className="bg-emerald-500 dark:bg-emerald-400" style={{ width: `${kPct}%` }} />
       )}
-      {yPct > 0 && (
-        <div className="bg-amber-500 dark:bg-amber-400" style={{ width: `${yPct}%` }} />
-      )}
+      {yPct > 0 && <div className="bg-amber-500 dark:bg-amber-400" style={{ width: `${yPct}%` }} />}
       {nPct > 0 && (
         <div className="bg-fuchsia-500 dark:bg-fuchsia-400" style={{ width: `${nPct}%` }} />
       )}

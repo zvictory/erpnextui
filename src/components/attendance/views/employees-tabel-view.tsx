@@ -125,12 +125,10 @@ function TabelInner() {
           cmp = a.name.localeCompare(b.name, "ru");
           break;
         case "position":
-          cmp =
-            a.position.localeCompare(b.position, "ru") || a.name.localeCompare(b.name, "ru");
+          cmp = a.position.localeCompare(b.position, "ru") || a.name.localeCompare(b.name, "ru");
           break;
         case "dept":
-          cmp =
-            a.deptName.localeCompare(b.deptName, "ru") || a.name.localeCompare(b.name, "ru");
+          cmp = a.deptName.localeCompare(b.deptName, "ru") || a.name.localeCompare(b.name, "ru");
           break;
         case "workDays":
           cmp = a.workDays - b.workDays || a.name.localeCompare(b.name, "ru");
@@ -191,7 +189,11 @@ function TabelInner() {
   const highlightRef = useRef<HTMLTableCellElement | null>(null);
   useEffect(() => {
     if (!highlightDay) return;
-    highlightRef.current?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+    highlightRef.current?.scrollIntoView({
+      inline: "center",
+      block: "nearest",
+      behavior: "smooth",
+    });
   }, [highlightDay]);
 
   const inputCls =
@@ -355,7 +357,8 @@ function TabelInner() {
                         key={`dow-${d}`}
                         className={cn(
                           "border border-zinc-200 px-1 py-0.5 text-center text-[10px] font-normal dark:border-zinc-800",
-                          isWeekend && "bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300",
+                          isWeekend &&
+                            "bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300",
                           highlightDay === d && "border-x-cyan-500/60 dark:border-x-cyan-400/70",
                         )}
                       >
@@ -375,7 +378,8 @@ function TabelInner() {
                         ref={isHighlighted ? highlightRef : undefined}
                         className={cn(
                           "border border-zinc-200 px-1 py-0.5 text-center font-medium dark:border-zinc-800",
-                          isWeekend && "bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300",
+                          isWeekend &&
+                            "bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300",
                           isHighlighted &&
                             "bg-cyan-50 text-cyan-700 ring-2 ring-inset ring-cyan-500/60 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-400/70",
                         )}

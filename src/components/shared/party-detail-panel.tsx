@@ -56,11 +56,7 @@ import { useCancelJournalEntry } from "@/hooks/use-journal-entries";
 // nginx's ~8KB header buffer even with long ACC-XXX-2026-NNNNN identifiers.
 const IN_FILTER_CHUNK = 50;
 
-async function fetchByNames<T>(
-  doctype: string,
-  names: string[],
-  fields: string[],
-): Promise<T[]> {
+async function fetchByNames<T>(doctype: string, names: string[], fields: string[]): Promise<T[]> {
   if (names.length === 0) return [];
   const chunks: string[][] = [];
   for (let i = 0; i < names.length; i += IN_FILTER_CHUNK) {

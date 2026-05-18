@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-import { AlertCircle } from 'lucide-react';
+import { motion } from "framer-motion";
+import { AlertCircle } from "lucide-react";
 
 interface SceneHRProps {
   progress: number;
@@ -31,7 +31,7 @@ export function SceneHR({ progress }: SceneHRProps) {
               <div
                 key={i}
                 className="flex-1 bg-gradient-to-t from-teal-500 to-teal-400 rounded-t"
-                style={{ height: `${animatedHeight}%`, minHeight: '2px' }}
+                style={{ height: `${animatedHeight}%`, minHeight: "2px" }}
               />
             );
           })}
@@ -46,9 +46,7 @@ export function SceneHR({ progress }: SceneHRProps) {
           className="p-4 rounded-lg border border-slate-700 bg-slate-800/50"
         >
           <p className="text-xs text-slate-400 mb-1">Фонд оплаты труда</p>
-          <p className="text-2xl font-bold text-slate-100 mb-1">
-            68 000 000 сўм
-          </p>
+          <p className="text-2xl font-bold text-slate-100 mb-1">68 000 000 сўм</p>
           <p className="text-xs text-slate-500">за май</p>
         </motion.div>
       )}

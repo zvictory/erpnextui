@@ -222,9 +222,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
   // isDisplayInverted: from is the quote side → amount / rate; else from is base → amount * rate.
   const autoReceived =
     isExchange && parsedAmount > 0 && parsedRate > 0
-      ? String(
-          roundTo2(isDisplayInverted ? parsedAmount / parsedRate : parsedAmount * parsedRate),
-        )
+      ? String(roundTo2(isDisplayInverted ? parsedAmount / parsedRate : parsedAmount * parsedRate))
       : "";
   const effectiveReceivedInput = rateManuallyEdited ? receivedInput : autoReceived;
 
@@ -324,10 +322,14 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
           if (credit > 0 && debit > 0) {
             // Derive rate from actual amounts — avoids wrong exchange_rate in legacy entries.
             // Rate is expressed as "1 baseCurrency = X quoteCurrency" matching display convention.
-            const [computedBase] = getDisplayPair(loadedFromCurrency, loadedToCurrency, companyCurrency);
+            const [computedBase] = getDisplayPair(
+              loadedFromCurrency,
+              loadedToCurrency,
+              companyCurrency,
+            );
             const loadedRate =
               computedBase !== loadedFromCurrency
-                ? credit / debit  // base is to-side (e.g. USD received): rate = UZS/USD
+                ? credit / debit // base is to-side (e.g. USD received): rate = UZS/USD
                 : debit / credit; // base is from-side (e.g. USD sent): rate = UZS/USD
             setRate(rateStr(loadedRate));
           }
@@ -496,7 +498,9 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
                   <SelectContent>
                     {bankAccounts.length > 0 && (
                       <SelectGroup>
-                        <SelectLabel className="text-xs text-muted-foreground">Bank & Cash</SelectLabel>
+                        <SelectLabel className="text-xs text-muted-foreground">
+                          Bank & Cash
+                        </SelectLabel>
                         {bankAccounts.map((acc) => (
                           <SelectItem key={acc.name} value={acc.name}>
                             {acc.name} ({acc.account_currency})
@@ -545,7 +549,9 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
                   <SelectContent>
                     {bankAccounts.filter((a) => a.name !== fromAccount).length > 0 && (
                       <SelectGroup>
-                        <SelectLabel className="text-xs text-muted-foreground">Bank & Cash</SelectLabel>
+                        <SelectLabel className="text-xs text-muted-foreground">
+                          Bank & Cash
+                        </SelectLabel>
                         {bankAccounts
                           .filter((acc) => acc.name !== fromAccount)
                           .map((acc) => (
@@ -641,7 +647,9 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
                       decimals={6}
                       className="h-8 min-w-0"
                     />
-                    <span className="text-xs text-muted-foreground shrink-0">{quoteSym.symbol}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {quoteSym.symbol}
+                    </span>
                   </div>
                 </div>
 
@@ -667,11 +675,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
                 <p className="text-[11px] text-muted-foreground text-center">
                   {formatCurrency(parsedAmount, fromSym.symbol, fromSym.onRight)}
                   <span className="mx-1.5 opacity-40">→</span>
-                  {formatCurrency(
-                    parseFloat(effectiveReceivedInput),
-                    toSym.symbol,
-                    toSym.onRight,
-                  )}
+                  {formatCurrency(parseFloat(effectiveReceivedInput), toSym.symbol, toSym.onRight)}
                 </p>
               )}
             </div>

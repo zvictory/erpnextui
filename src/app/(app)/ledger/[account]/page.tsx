@@ -131,12 +131,7 @@ export default function AccountLedgerPage() {
     hasNextPage,
     isFetchingNextPage,
     isLoading: entriesLoading,
-  } = useLedgerEntriesInfinite(
-    accountName,
-    sort,
-    appliedFrom || undefined,
-    appliedTo || undefined,
-  );
+  } = useLedgerEntriesInfinite(accountName, sort, appliedFrom || undefined, appliedTo || undefined);
   const entries = useMemo(() => entriesData?.pages.flat() ?? [], [entriesData]);
   const { data: totalCount = 0 } = useLedgerEntryCount(
     accountName,
@@ -543,8 +538,7 @@ export default function AccountLedgerPage() {
                       <TableCell
                         className={cn(
                           "text-right tabular-nums text-sm whitespace-nowrap",
-                          (entry.runningBalanceBase ?? 0) < 0 &&
-                            "text-red-600 dark:text-red-400",
+                          (entry.runningBalanceBase ?? 0) < 0 && "text-red-600 dark:text-red-400",
                         )}
                       >
                         {`${formatNumber(entry.runningBalanceBase ?? 0, 2)} ${baseSymbol}`}

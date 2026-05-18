@@ -46,8 +46,12 @@ export function EmployeesDashboardView() {
     let halfDays = 0;
     let perfect = 0;
 
-    const offenders: { id: string; name: string; dept: string; fee: number; lateMin: number }[] = [];
-    const deptAgg = new Map<string, { hours: number; fee: number; emps: number; lateMin: number }>();
+    const offenders: { id: string; name: string; dept: string; fee: number; lateMin: number }[] =
+      [];
+    const deptAgg = new Map<
+      string,
+      { hours: number; fee: number; emps: number; lateMin: number }
+    >();
 
     for (const e of employees) {
       const m = computeMonth(e, policy);
@@ -221,7 +225,11 @@ export function EmployeesDashboardView() {
             <div className="mt-0.5 text-[11px] text-zinc-500">{t("dashboard.arrivalDistHint")}</div>
           </CardHeader>
           <CardContent>
-            <ArrivalHistogram bins={dayBins} expectedMin={expectedDayMin} graceMin={policy.graceMin} />
+            <ArrivalHistogram
+              bins={dayBins}
+              expectedMin={expectedDayMin}
+              graceMin={policy.graceMin}
+            />
           </CardContent>
         </Card>
         <Card>
@@ -327,7 +335,11 @@ export function EmployeesDashboardView() {
         <CardContent className="flex flex-wrap gap-2">
           {(["present", "late_flat", "late_step", "half_day", "absent", "incomplete"] as const).map(
             (s) => (
-              <Badge key={s} variant="outline" className={STATUS_META[s].bg + " " + STATUS_META[s].color}>
+              <Badge
+                key={s}
+                variant="outline"
+                className={STATUS_META[s].bg + " " + STATUS_META[s].color}
+              >
                 {STATUS_META[s].icon} {t(`status.${s}`)}
               </Badge>
             ),

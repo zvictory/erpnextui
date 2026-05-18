@@ -7,7 +7,12 @@ let socket: Socket | null = null;
 export function getRealtimeSocket(siteUrl: string): Socket {
   const site = new URL(siteUrl).hostname;
 
-  if (socket && socket.connected && socket.io.opts.query && (socket.io.opts.query as Record<string, string>).site === site) {
+  if (
+    socket &&
+    socket.connected &&
+    socket.io.opts.query &&
+    (socket.io.opts.query as Record<string, string>).site === site
+  ) {
     return socket;
   }
 

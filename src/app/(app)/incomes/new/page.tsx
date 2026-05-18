@@ -72,10 +72,7 @@ function buildRemark(payer: string, lines: { memo: string }[]): string {
   return memos;
 }
 
-function collectCurrencies(
-  data: DepositFormData,
-  bankAccounts: AccountWithCurrency[],
-): string[] {
+function collectCurrencies(data: DepositFormData, bankAccounts: AccountWithCurrency[]): string[] {
   const paymentCurrency =
     bankAccounts.find((a) => a.name === data.paymentFrom)?.account_currency ?? "";
   return [paymentCurrency];

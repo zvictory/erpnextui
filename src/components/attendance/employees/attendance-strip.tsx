@@ -21,12 +21,7 @@ interface AttendanceStripProps {
   gap?: number;
 }
 
-export function AttendanceStrip({
-  perDay,
-  size = "sm",
-  cellWidth,
-  gap,
-}: AttendanceStripProps) {
+export function AttendanceStrip({ perDay, size = "sm", cellWidth, gap }: AttendanceStripProps) {
   const w = cellWidth ?? (size === "md" ? 8 : 6);
   const g = gap ?? 1.5;
   const h = size === "md" ? 14 : 10;
@@ -58,9 +53,7 @@ export function AttendanceStrip({
           >
             <title>
               {`${p.day.d}: ${status}${p.result.lateMin ? ` · ${p.result.lateMin}m late` : ""}${
-                p.result.feeUZS
-                  ? ` · ${formatNumber(p.result.feeUZS, 0)} сўм`
-                  : ""
+                p.result.feeUZS ? ` · ${formatNumber(p.result.feeUZS, 0)} сўм` : ""
               }`}
             </title>
           </rect>

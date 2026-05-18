@@ -58,9 +58,7 @@ function formatWhileTyping(raw: string, decimalSep: string, thousandsSep: string
   const decIdx = stripped.indexOf(decimalSep);
   const intPart = decIdx === -1 ? stripped : stripped.slice(0, decIdx);
   const decPart =
-    decIdx === -1
-      ? null
-      : stripped.slice(decIdx + 1).replace(new RegExp(escapedDecimal, "g"), "");
+    decIdx === -1 ? null : stripped.slice(decIdx + 1).replace(new RegExp(escapedDecimal, "g"), "");
   let grouped = "";
   if (intPart.length > 0) {
     const chunks: string[] = [];

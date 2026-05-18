@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion } from "framer-motion";
 
 interface SceneCRMProps {
   progress: number;
@@ -12,9 +12,9 @@ export function SceneCRM({ progress }: SceneCRMProps) {
   const winRate = Math.floor((Math.min(progress, 80) / 80) * 42);
 
   const funnelStages = [
-    { label: 'Лиды', count: leads, width: 100, color: 'from-blue-500 to-blue-400' },
-    { label: 'Переговоры', count: negotiations, width: 44, color: 'from-purple-500 to-purple-400' },
-    { label: 'Сделки', count: deals, width: 19, color: 'from-green-500 to-green-400' },
+    { label: "Лиды", count: leads, width: 100, color: "from-blue-500 to-blue-400" },
+    { label: "Переговоры", count: negotiations, width: 44, color: "from-purple-500 to-purple-400" },
+    { label: "Сделки", count: deals, width: 19, color: "from-green-500 to-green-400" },
   ];
 
   return (
@@ -33,9 +33,7 @@ export function SceneCRM({ progress }: SceneCRMProps) {
               animate={{ width: `${stage.width}%` }}
               transition={{ duration: 0.6 }}
             >
-              {stage.width > 30 && (
-                <p className="text-xs font-bold text-white">{stage.count}</p>
-              )}
+              {stage.width > 30 && <p className="text-xs font-bold text-white">{stage.count}</p>}
             </motion.div>
           </motion.div>
         ))}

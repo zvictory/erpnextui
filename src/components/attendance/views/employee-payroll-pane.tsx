@@ -11,7 +11,9 @@ export function EmployeePayrollPane({ employeeName }: EmployeePayrollPaneProps) 
   const t = useTranslations("attendance");
   const employees = useEmployees();
   const target = employeeName?.trim().toLowerCase() ?? null;
-  const emp = target ? employees.find((e) => e.name.trim().toLowerCase() === target) ?? null : null;
+  const emp = target
+    ? (employees.find((e) => e.name.trim().toLowerCase() === target) ?? null)
+    : null;
   const month = useMonth(emp);
 
   if (!emp || !month) {

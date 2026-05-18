@@ -170,12 +170,7 @@ export function MultiLinkField({
                     value={opt.value}
                     onSelect={() => toggle(opt.value, formatLabel(opt))}
                   >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        checked ? "opacity-100" : "opacity-0",
-                      )}
-                    />
+                    <Check className={cn("mr-2 h-4 w-4", checked ? "opacity-100" : "opacity-0")} />
                     <span>{formatLabel(opt)}</span>
                   </CommandItem>
                 );

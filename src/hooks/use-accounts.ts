@@ -232,10 +232,9 @@ export function useAssetsWithCurrency(company: string) {
     queryFn: async (): Promise<AssetWithCurrency[]> => {
       // Use whitelist endpoint to avoid 417 from /api/resource/Asset REST path;
       // also resolves account_currency server-side in one round trip.
-      const list = await frappe.call<AssetWithCurrency[]>(
-        "stable_app.api.expense.list_assets",
-        { company },
-      );
+      const list = await frappe.call<AssetWithCurrency[]>("stable_app.api.expense.list_assets", {
+        company,
+      });
       return (list ?? []).map((a) => ({
         ...a,
         gross_purchase_amount: Number(a.gross_purchase_amount) || 0,

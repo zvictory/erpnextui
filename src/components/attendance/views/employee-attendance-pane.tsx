@@ -40,7 +40,9 @@ export function EmployeeAttendancePane({ employeeName }: EmployeeAttendancePaneP
   const ds = getDataset();
   const employees = useEmployees();
   const target = employeeName?.trim().toLowerCase() ?? null;
-  const emp = target ? employees.find((e) => e.name.trim().toLowerCase() === target) ?? null : null;
+  const emp = target
+    ? (employees.find((e) => e.name.trim().toLowerCase() === target) ?? null)
+    : null;
   const m = useMonth(emp);
   const view = useUIStore((s) => s.employeeView);
   const setView = useUIStore((s) => s.setEmployeeView);
@@ -203,7 +205,9 @@ export function EmployeeAttendancePane({ employeeName }: EmployeeAttendancePaneP
                     >
                       <div className="flex items-center justify-between text-[10px] text-zinc-500 dark:text-zinc-400">
                         <span className="font-medium">{pad(day.d)}</span>
-                        <span className={cn("text-base leading-none", meta.color)}>{meta.icon}</span>
+                        <span className={cn("text-base leading-none", meta.color)}>
+                          {meta.icon}
+                        </span>
                       </div>
                       <div className="mt-1 text-[11px] text-zinc-700 dark:text-zinc-300">
                         {day.in ?? "—"} → {day.out ?? "—"}
@@ -224,13 +228,24 @@ export function EmployeeAttendancePane({ employeeName }: EmployeeAttendancePaneP
               </div>
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-500">
                 <div className="flex flex-wrap gap-1.5">
-                  {(["present", "late_flat", "late_step", "half_day", "absent", "incomplete"] as const).map(
-                    (s) => (
-                      <Badge key={s} variant="outline" className={STATUS_META[s].bg + " " + STATUS_META[s].color}>
-                        {STATUS_META[s].icon} {t(`status.${s}`)}
-                      </Badge>
-                    ),
-                  )}
+                  {(
+                    [
+                      "present",
+                      "late_flat",
+                      "late_step",
+                      "half_day",
+                      "absent",
+                      "incomplete",
+                    ] as const
+                  ).map((s) => (
+                    <Badge
+                      key={s}
+                      variant="outline"
+                      className={STATUS_META[s].bg + " " + STATUS_META[s].color}
+                    >
+                      {STATUS_META[s].icon} {t(`status.${s}`)}
+                    </Badge>
+                  ))}
                 </div>
                 <div className="flex items-center gap-1">
                   <span>{t("table.clickHint")}</span>
@@ -273,8 +288,12 @@ export function EmployeeAttendancePane({ employeeName }: EmployeeAttendancePaneP
                         <td className="px-3 py-2 text-zinc-500 dark:text-zinc-400">
                           {t(`dow.${DOW_KEY_BY_JS_DAY[dow]}`)}
                         </td>
-                        <td className="px-3 py-2 text-zinc-700 dark:text-zinc-300">{day.in ?? "—"}</td>
-                        <td className="px-3 py-2 text-zinc-700 dark:text-zinc-300">{day.out ?? "—"}</td>
+                        <td className="px-3 py-2 text-zinc-700 dark:text-zinc-300">
+                          {day.in ?? "—"}
+                        </td>
+                        <td className="px-3 py-2 text-zinc-700 dark:text-zinc-300">
+                          {day.out ?? "—"}
+                        </td>
                         <td className="px-3 py-2 text-right text-amber-600 dark:text-amber-300">
                           {result.lateMin > 0 ? formatNumber(result.lateMin, 0) : "—"}
                         </td>
@@ -318,7 +337,9 @@ function ChipGroup({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <span className="text-[10px] uppercase tracking-wide text-zinc-500 dark:text-zinc-500">{label}</span>
+      <span className="text-[10px] uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
+        {label}
+      </span>
       <div className="inline-flex flex-wrap gap-1 rounded-md border border-zinc-200 bg-zinc-50 p-0.5 dark:border-zinc-800 dark:bg-zinc-900/60">
         {options.map((o) => (
           <button

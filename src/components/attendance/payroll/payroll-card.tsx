@@ -133,8 +133,7 @@ export function PayrollCard({ emp, month }: { emp: Employee; month: MonthlyStats
             label={t("payroll.earnedSalary")}
             formula={
               <Formula>
-                {formatUZS(result.baseWithStaj)} ×{" "}
-                {formatNumber(result.attendanceFactor * 100, 1)}%
+                {formatUZS(result.baseWithStaj)} × {formatNumber(result.attendanceFactor * 100, 1)}%
               </Formula>
             }
             value={formatUZS(result.earnedSalary)}
@@ -147,12 +146,7 @@ export function PayrollCard({ emp, month }: { emp: Employee; month: MonthlyStats
               emp.overtimeMin > 0 ? (
                 <Formula>
                   {formatNumber(otHours, 2)}h × {formatUZS(hourlyRate)}/h × {OT_COEFFICIENT_DEFAULT}
-                  {isNightOT ? (
-                    <Hi>
-                      {" "}
-                      × {NIGHT_OT_PREMIUM} (night)
-                    </Hi>
-                  ) : null}
+                  {isNightOT ? <Hi> × {NIGHT_OT_PREMIUM} (night)</Hi> : null}
                   <Dim>
                     {" "}
                     · base/h = {formatUZS(positionSalary)} ÷ ({SCHEDULED_DAYS_DEFAULT}d ×{" "}

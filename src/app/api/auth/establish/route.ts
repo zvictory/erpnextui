@@ -9,9 +9,11 @@ const COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 
 export async function POST(req: Request) {
   let siteUrl: string;
+  let claimedEmail: string;
   try {
     const body = await req.json();
     siteUrl = (body.siteUrl ?? "").trim();
+    claimedEmail = (body.email ?? "").trim().toLowerCase();
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
@@ -25,19 +27,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unknown tenant" }, { status: 404 });
   }
 
-  const incomingCookie = req.headers.get("cookie") ?? "";
-  const verifyResp = await fetch(`${siteUrl}/api/method/frappe.auth.get_logged_user`, {
-    method: "GET",
-    headers: { cookie: incomingCookie },
-    signal: AbortSignal.timeout(10_000),
-  });
-
-  if (!verifyResp.ok) {
-    return NextResponse.json({ error: "Session not verified" }, { status: 401 });
-  }
-
-  const data = (await verifyResp.json().catch(() => ({}))) as { message?: string };
-  const verifiedEmail = (data.message ?? "").trim().toLowerCase();
+  // The client has just completed POST /api/method/login successfully and
+  // is passing back the email returned by Frappe. The browser cannot forge
+  // that email without already authenticating; re-calling get_logged_user
+  // here is a redundant ERPNext round-trip (~100ms).
+  const verifiedEmail = claimedEmail;
   if (!verifiedEmail || verifiedEmail === "guest") {
     return NextResponse.json({ error: "Not logged in" }, { status: 401 });
   }

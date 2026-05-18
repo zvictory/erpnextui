@@ -126,9 +126,7 @@ export default function NewEmployeePage() {
                   </Select>
                 )}
               />
-              {errors.gender && (
-                <p className="text-xs text-destructive">{t("requiredField")}</p>
-              )}
+              {errors.gender && <p className="text-xs text-destructive">{t("requiredField")}</p>}
             </div>
 
             <div className="space-y-1.5">
