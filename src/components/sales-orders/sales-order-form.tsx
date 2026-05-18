@@ -144,6 +144,13 @@ export function SalesOrderForm({
   const selectedWarehouse = watch("set_warehouse") ?? sellingWarehouse ?? "";
 
   const { data: customerDoc } = useCustomer(watchedCustomer);
+
+  const customerDefaultPriceList = customerDoc?.default_price_list;
+  useEffect(() => {
+    if (!customerDefaultPriceList) return;
+    setSelectedPriceList(customerDefaultPriceList);
+  }, [customerDefaultPriceList]);
+
   const effectiveCurrency =
     docstatus > 0
       ? defaultValues?.currency ||
