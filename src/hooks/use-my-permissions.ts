@@ -69,9 +69,14 @@ export function useMyPermissions(): {
         allowedScopes,
       };
     },
-    staleTime: 30_000,
-    enabled: !!user,
+    staleTime: 0,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+    refetchOnReconnect: true,
     retry: 1,
+    enabled: !!user,
   });
 
   return {
