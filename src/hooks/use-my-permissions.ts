@@ -36,8 +36,22 @@ export function useMyPermissions(): {
     queryKey: queryKeys.permissions.grants,
     queryFn: async (): Promise<MyPermissions> => {
       const resp = await fetch("/api/permissions/grants", { credentials: "include" });
+      if (resp.status === 401) {
+        // Cookie likely missing — fire establish then let React Query retry.
+        const { siteUrl, user: email } = useAuthStore.getState();
+        if (siteUrl && email) {
+          await fetch("/api/auth/establish", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ siteUrl, email }),
+          }).catch(() => {
+            /* non-fatal */
+          });
+        }
+        throw new Error("Re-establishing session");
+      }
       if (!resp.ok) {
-        if (resp.status === 401) return EMPTY;
         throw new Error(`Failed to load permissions: ${resp.status}`);
       }
       const json: GrantsResponse = await resp.json();
@@ -57,6 +71,7 @@ export function useMyPermissions(): {
     },
     staleTime: 30_000,
     enabled: !!user,
+    retry: 1,
   });
 
   return {

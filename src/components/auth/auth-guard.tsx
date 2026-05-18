@@ -15,6 +15,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const router = useRouter();
   const { data: boot, isLoading, isError, error } = useBoot();
   const csrfToken = useAuthStore((s) => s.csrfToken);
+  const siteUrl = useAuthStore((s) => s.siteUrl);
+  const userEmail = useAuthStore((s) => s.user);
   const [csrfReady, setCsrfReady] = useState(!!csrfToken);
 
   useEffect(() => {
@@ -35,6 +37,21 @@ export function AuthGuard({ children }: AuthGuardProps) {
         .finally(() => setCsrfReady(true));
     }
   }, [boot, csrfReady]);
+
+  // Idempotent re-establish of stable-tenant / stable-user-email cookies.
+  // Covers stale sessions, silent establish failures, and multi-tab races
+  // where /api/permissions/grants would otherwise 401 forever.
+  useEffect(() => {
+    if (!boot || !siteUrl || !userEmail) return;
+    fetch("/api/auth/establish", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ siteUrl, email: userEmail }),
+    }).catch(() => {
+      /* non-fatal */
+    });
+  }, [boot, siteUrl, userEmail]);
 
   if (isLoading || (boot && !csrfReady)) {
     return (
