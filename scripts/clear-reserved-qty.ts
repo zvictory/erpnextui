@@ -39,6 +39,7 @@ interface Args {
   tenant: string;
   yes: boolean;
   limit?: number;
+  skipSos: boolean;
 }
 
 function parseArgs(): Args {
@@ -60,6 +61,7 @@ function parseArgs(): Args {
     tenant,
     yes: has("yes"),
     limit: limitRaw ? Number(limitRaw) : undefined,
+    skipSos: has("skip-sos"),
   };
 }
 
@@ -325,6 +327,10 @@ async function main() {
     queuedSres = sres.slice(0, args.limit);
     queuedSos = sos.slice(0, args.limit);
     console.log(`Limit applied: will touch ${queuedSres.length} SREs and ${queuedSos.length} SOs.`);
+  }
+  if (args.skipSos) {
+    queuedSos = [];
+    console.log("--skip-sos: Phase B will be skipped; no Sales Orders will be closed.");
   }
 
   // ── Plan ──
