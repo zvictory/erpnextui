@@ -111,8 +111,8 @@ export default function EditSalesInvoicePage({ params }: { params: Promise<{ id:
           onSubmit={handleSubmit}
           isSubmitting={updateInvoice.isPending}
           isEdit
-          onSubmitDoc={canSubmit("Sales Invoice") && !hasWorkflow ? handleSubmitDoc : undefined}
-          onCancelDoc={canCancel("Sales Invoice") && !hasWorkflow ? handleCancelDoc : undefined}
+          onSubmitDoc={canSubmit("Sales Invoice") ? handleSubmitDoc : undefined}
+          onCancelDoc={canCancel("Sales Invoice") ? handleCancelDoc : undefined}
           isSubmittingDoc={submitInvoice.isPending}
           isCancellingDoc={cancelInvoice.isPending}
           onCreateReturn={
