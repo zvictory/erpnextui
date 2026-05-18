@@ -370,7 +370,7 @@ export function EmployeeDetailPanel({
             <TabsTrigger value="payroll">{t("tab.payroll")}</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="flex-1 min-h-0">
+          <TabsContent value="overview" className="flex-1 min-h-0 flex flex-col">
             <ScrollArea className="flex-1 px-4 pb-4">
               <Table>
                 <TableHeader>
