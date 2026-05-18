@@ -24,10 +24,13 @@ import {
   useFrappeUsers,
   type AdminRoleTemplate,
 } from "@/hooks/use-admin-permissions";
-import { GrantEditor } from "@/components/permissions/grant-editor";
+import { GrantEditorBody, useGrantEditorState } from "@/components/permissions/grant-editor";
+import { SidebarPreview } from "@/components/permissions/sidebar-preview";
 import { TemplateEditor } from "@/components/permissions/template-editor";
 import { ApplyTemplateDialog } from "@/components/permissions/apply-template-dialog";
 import { CustomCapabilityManager } from "@/components/permissions/custom-capability-manager";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/formatters";
 
 export default function PermissionsAdminPage() {
@@ -114,6 +117,8 @@ function UsersTab() {
     return mergedUsers.filter((u) => u.email.includes(q) || u.fullName.toLowerCase().includes(q));
   }, [mergedUsers, search]);
 
+  const editorState = useGrantEditorState(editingUser);
+
   if (grantsLoading || frappeLoading) {
     return (
       <div className="space-y-2">
@@ -126,59 +131,92 @@ function UsersTab() {
 
   return (
     <>
-      <div className="mb-4 flex items-center justify-between gap-4">
-        <Input
-          placeholder={t("searchUsers")}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-xs"
-        />
+      <div className="mb-4 flex items-center justify-end">
         <Button variant="outline" onClick={() => setApplyOpen(true)}>
           {t("applyBtn")}
         </Button>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t("columns.user")}</TableHead>
-            <TableHead className="text-right">{t("columns.grants")}</TableHead>
-            <TableHead>{t("columns.lastGranted")}</TableHead>
-            <TableHead className="w-24" />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filtered.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={4} className="text-center text-muted-foreground">
-                {t("noUsers")}
-              </TableCell>
-            </TableRow>
-          ) : (
-            filtered.map((u) => (
-              <TableRow key={u.email}>
-                <TableCell>
-                  <div className="font-medium text-sm">{u.fullName}</div>
-                  <div className="font-mono text-xs text-muted-foreground">{u.email}</div>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Badge variant={u.grantCount > 0 ? "default" : "outline"}>{u.grantCount}</Badge>
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {u.lastGrantedAt ? formatDate(u.lastGrantedAt) : "—"}
-                </TableCell>
-                <TableCell>
-                  <Button size="sm" variant="outline" onClick={() => setEditingUser(u.email)}>
-                    {t("editBtn")}
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+      <div className="grid gap-4 md:grid-cols-[280px_1fr_320px]">
+        {/* Left pane: user list */}
+        <Card className="p-3 space-y-2 md:max-h-[80vh] md:overflow-y-auto">
+          <Input
+            placeholder={t("searchUsers")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-8 text-sm"
+          />
+          <div className="space-y-1">
+            {filtered.length === 0 ? (
+              <p className="text-center text-xs text-muted-foreground py-4">{t("noUsers")}</p>
+            ) : (
+              filtered.map((u) => (
+                <button
+                  key={u.email}
+                  type="button"
+                  onClick={() => setEditingUser(u.email)}
+                  className={cn(
+                    "w-full text-left rounded-md px-2 py-1.5 hover:bg-muted/50 transition-colors",
+                    editingUser === u.email && "bg-muted",
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium">{u.fullName}</div>
+                      <div className="truncate font-mono text-[10px] text-muted-foreground">
+                        {u.email}
+                      </div>
+                    </div>
+                    <Badge
+                      variant={u.grantCount > 0 ? "default" : "outline"}
+                      className="shrink-0 text-[10px] tabular-nums"
+                    >
+                      {u.grantCount}
+                    </Badge>
+                  </div>
+                  {u.lastGrantedAt && (
+                    <div className="mt-0.5 text-[10px] text-muted-foreground">
+                      {formatDate(u.lastGrantedAt)}
+                    </div>
+                  )}
+                </button>
+              ))
+            )}
+          </div>
+        </Card>
 
-      <GrantEditor userEmail={editingUser} onClose={() => setEditingUser(null)} />
+        {/* Center pane: editor */}
+        <Card className="p-4">
+          {editingUser ? (
+            <>
+              <div className="mb-3">
+                <h2 className="text-sm font-semibold">{t("editTitle")}</h2>
+                <p className="font-mono text-xs text-muted-foreground">{editingUser}</p>
+              </div>
+              <GrantEditorBody
+                userEmail={editingUser}
+                state={editorState}
+                onSaved={() => {
+                  /* keep user selected after save */
+                }}
+                variant="inline"
+              />
+            </>
+          ) : (
+            <div className="flex h-40 items-center justify-center rounded-md border border-dashed border-border/60">
+              <p className="text-sm text-muted-foreground">{t("clickUserToEdit")}</p>
+            </div>
+          )}
+        </Card>
+
+        {/* Right pane: sidebar preview */}
+        <div className="md:sticky md:top-4 md:self-start">
+          <Card className="p-4">
+            <SidebarPreview selected={editorState.selected} userEmail={editingUser} />
+          </Card>
+        </div>
+      </div>
+
       <ApplyTemplateDialog open={applyOpen} onClose={() => setApplyOpen(false)} />
     </>
   );

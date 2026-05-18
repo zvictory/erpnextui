@@ -1677,7 +1677,19 @@
     "capEditTitle": "Edit custom capability",
     "capEdited": "Custom capability updated",
     "applyScopeSection": "Scope access",
-    "applyScopeAll": "All (wildcard)"
+    "applyScopeAll": "All (wildcard)",
+    "sidebarVisibility": "Sidebar visibility",
+    "sidebarVisibilityHint": "Items toggled on appear in this user's sidebar.",
+    "visibleCount": "{count}/{total}",
+    "previewTitle": "Preview — what the user sees",
+    "previewHelp": "Live mirror of the user's sidebar as you toggle items.",
+    "previewEmpty": "Select a user on the left to preview their sidebar.",
+    "previewVisibleSummary": "{count} items visible",
+    "pendingDiff": "+{added} added, −{removed} removed",
+    "noChanges": "No pending changes",
+    "searchNav": "Filter nav items…",
+    "revert": "Revert",
+    "clickUserToEdit": "Select a user on the left to edit permissions."
   },
   "cap": {
     "platform": {

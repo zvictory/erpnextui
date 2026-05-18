@@ -1630,7 +1630,19 @@
     "capEditTitle": "Изменить пользовательскую возможность",
     "capEdited": "Пользовательская возможность обновлена",
     "applyScopeSection": "Область доступа",
-    "applyScopeAll": "Все (любой)"
+    "applyScopeAll": "Все (любой)",
+    "sidebarVisibility": "Видимость в меню",
+    "sidebarVisibilityHint": "Включённые пункты появятся в боковом меню пользователя.",
+    "visibleCount": "{count}/{total}",
+    "previewTitle": "Превью — что увидит пользователь",
+    "previewHelp": "Меню пользователя обновляется по мере переключения пунктов.",
+    "previewEmpty": "Выберите пользователя слева, чтобы увидеть превью меню.",
+    "previewVisibleSummary": "Видимых пунктов: {count}",
+    "pendingDiff": "+{added} добавлено, −{removed} убрано",
+    "noChanges": "Нет несохранённых изменений",
+    "searchNav": "Поиск по пунктам меню…",
+    "revert": "Отменить",
+    "clickUserToEdit": "Выберите пользователя слева, чтобы изменить права."
   },
   "cap": {
     "platform": {

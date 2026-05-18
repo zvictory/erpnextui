@@ -1615,7 +1615,19 @@
     "capEditTitle": "Maxsus imkoniyatni tahrirlash",
     "capEdited": "Maxsus imkoniyat yangilandi",
     "applyScopeSection": "Kirish doirasi",
-    "applyScopeAll": "Barchasi (wildcard)"
+    "applyScopeAll": "Barchasi (wildcard)",
+    "sidebarVisibility": "Yon panelda ko'rinishi",
+    "sidebarVisibilityHint": "Yoqilgan bandlar foydalanuvchining yon panelida ko'rinadi.",
+    "visibleCount": "{count}/{total}",
+    "previewTitle": "Ko'rinish — foydalanuvchi nimani ko'radi",
+    "previewHelp": "Bandlarni almashtirganingizda yon panel jonli yangilanadi.",
+    "previewEmpty": "Yon panelni ko'rish uchun chapdan foydalanuvchi tanlang.",
+    "previewVisibleSummary": "Ko'rinadigan bandlar: {count}",
+    "pendingDiff": "+{added} qo'shildi, −{removed} olib tashlandi",
+    "noChanges": "Saqlanmagan o'zgarishlar yo'q",
+    "searchNav": "Bandlar bo'yicha qidirish…",
+    "revert": "Bekor qilish",
+    "clickUserToEdit": "Ruxsatlarni tahrirlash uchun chapdan foydalanuvchi tanlang."
   },
   "cap": {
     "platform": {

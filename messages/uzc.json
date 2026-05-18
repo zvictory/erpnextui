@@ -1618,7 +1618,19 @@
     "capEditTitle": "Махсус имкониятни таҳрирлаш",
     "capEdited": "Махсус имконият янгиланди",
     "applyScopeSection": "Кириш доираси",
-    "applyScopeAll": "Барчаси (wildcard)"
+    "applyScopeAll": "Барчаси (wildcard)",
+    "sidebarVisibility": "Ён панелда кўриниши",
+    "sidebarVisibilityHint": "Ёқилган бандлар фойдаланувчининг ён панелида кўринади.",
+    "visibleCount": "{count}/{total}",
+    "previewTitle": "Кўриниш — фойдаланувчи нимани кўради",
+    "previewHelp": "Бандларни алмаштирганингизда ён панел жонли янгиланади.",
+    "previewEmpty": "Ён панелни кўриш учун чапдан фойдаланувчи танланг.",
+    "previewVisibleSummary": "Кўринадиган бандлар: {count}",
+    "pendingDiff": "+{added} қўшилди, −{removed} олиб ташланди",
+    "noChanges": "Сақланмаган ўзгаришлар йўқ",
+    "searchNav": "Бандлар бўйича қидириш…",
+    "revert": "Бекор қилиш",
+    "clickUserToEdit": "Рухсатларни таҳрирлаш учун чапдан фойдаланувчи танланг."
   },
   "cap": {
     "platform": {
