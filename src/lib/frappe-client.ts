@@ -55,13 +55,12 @@ async function parseErrorResponse(resp: Response): Promise<FrappeAPIError> {
 
 /** Fetch a fresh CSRF token by loading the Frappe app shell and parsing it out. */
 export async function fetchCsrfToken(): Promise<void> {
-  const { siteUrl } = useAuthStore.getState();
+  const { siteUrl, directFetch } = useAuthStore.getState();
   if (!siteUrl) return;
   try {
-    const resp = await fetch("/api/proxy/app", {
-      credentials: "include",
-      headers: { "X-Frappe-Site": siteUrl },
-    });
+    const url = directFetch ? `${siteUrl}/app` : "/api/proxy/app";
+    const headers: Record<string, string> = directFetch ? {} : { "X-Frappe-Site": siteUrl };
+    const resp = await fetch(url, { credentials: "include", headers });
     if (!resp.ok) return;
     const html = await resp.text();
     const m = html.match(/csrf_token\s*=\s*"([a-f0-9]+)"/);
@@ -73,17 +72,25 @@ export async function fetchCsrfToken(): Promise<void> {
 
 export async function frappeCall<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const hasBody = !!options?.body;
-  const { siteUrl, csrfToken } = useAuthStore.getState();
+  const { siteUrl, csrfToken, directFetch } = useAuthStore.getState();
 
-  // Route through the local Next.js proxy so CORS is never an issue.
-  // The proxy reads X-Frappe-Site to know which Frappe server to call.
-  const fullEndpoint = endpoint.startsWith("/") ? `/api/proxy${endpoint}` : endpoint;
+  // Direct path: browser → tenant origin (CORS-enabled). Proxy path: browser →
+  // Next.js → tenant. Both use credentials: "include" so the sid cookie flows.
+  const fullEndpoint = endpoint.startsWith("/")
+    ? directFetch
+      ? `${siteUrl}${endpoint}`
+      : `/api/proxy${endpoint}`
+    : endpoint;
 
   function buildHeaders(token: string | null): Record<string, string> {
     const h: Record<string, string> = {};
     if (hasBody) h["Content-Type"] = "application/json";
     if (token) h["X-Frappe-CSRF-Token"] = token;
-    if (siteUrl) h["X-Frappe-Site"] = siteUrl;
+    if (directFetch) {
+      h["X-Requested-With"] = "XMLHttpRequest";
+    } else if (siteUrl) {
+      h["X-Frappe-Site"] = siteUrl;
+    }
     return h;
   }
 

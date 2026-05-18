@@ -14,6 +14,7 @@ import { FrappeAPIError } from "@/lib/frappe-types";
 interface TenantMatch {
   name: string;
   siteUrl: string;
+  directFetch: boolean;
 }
 
 const PHASE_TRANSITION = { type: "spring" as const, stiffness: 240, damping: 28 };
@@ -73,7 +74,12 @@ export function LoginForm() {
 
       if (tenants.length === 1) {
         loginMutation.mutate(
-          { siteUrl: tenants[0].siteUrl, usr: trimmedEmail, pwd: password },
+          {
+            siteUrl: tenants[0].siteUrl,
+            usr: trimmedEmail,
+            pwd: password,
+            directFetch: tenants[0].directFetch,
+          },
           { onSuccess: () => router.replace("/dashboard") },
         );
       } else {
@@ -89,8 +95,15 @@ export function LoginForm() {
 
   function handleTenantConfirm() {
     if (!selectedSiteUrl) return;
+    const selected = matchedTenants?.find((t) => t.siteUrl === selectedSiteUrl);
+    if (!selected) return;
     loginMutation.mutate(
-      { siteUrl: selectedSiteUrl, usr: email.trim(), pwd: password },
+      {
+        siteUrl: selected.siteUrl,
+        usr: email.trim(),
+        pwd: password,
+        directFetch: selected.directFetch,
+      },
       { onSuccess: () => router.replace("/dashboard") },
     );
   }
@@ -220,11 +233,7 @@ export function LoginForm() {
                       transition={{ duration: 0.15 }}
                       className="inline-flex"
                     >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </motion.span>
                   </AnimatePresence>
                 </button>
@@ -244,16 +253,16 @@ export function LoginForm() {
               className="mt-2 w-full"
               disabled={isBusy || !email.trim() || !password.trim()}
             >
-              {isResolving
-                ? t("signIn.searching")
-                : loginMutation.isPending
-                  ? t("signIn.signingIn")
-                  : (
-                    <>
-                      {t("signIn.signInButton")}
-                      <ArrowRight className="ml-1.5 h-4 w-4" />
-                    </>
-                  )}
+              {isResolving ? (
+                t("signIn.searching")
+              ) : loginMutation.isPending ? (
+                t("signIn.signingIn")
+              ) : (
+                <>
+                  {t("signIn.signInButton")}
+                  <ArrowRight className="ml-1.5 h-4 w-4" />
+                </>
+              )}
             </Button>
           </form>
 

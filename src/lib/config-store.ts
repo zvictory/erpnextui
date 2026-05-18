@@ -26,6 +26,7 @@ export interface TenantConfig {
   enabledModuleGroups?: string[];
   billing?: BillingInfo;
   referralCode?: string;
+  directFetch?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -81,8 +82,27 @@ const DEFAULT_SETTINGS: PlatformSettings = {
   tenantCacheTtlMs: 300_000,
 };
 
-// Mtime-based cache to avoid redundant disk reads
-let cached: { config: PlatformConfig; mtimeMs: number } | null = null;
+// In-memory config cache invalidated by an fs.watch on config.json.
+// Old approach did a statSync on every readConfig() — one syscall per
+// proxy/resolve-tenant hit. Now we read once, then watch for changes.
+// Cross-process safe: if another PM2 worker writes (atomic rename), our
+// watcher fires and we re-read on next call.
+let cached: PlatformConfig | null = null;
+let watcherStarted = false;
+
+function startWatcher() {
+  if (watcherStarted) return;
+  watcherStarted = true;
+  try {
+    fs.watch(CONFIG_PATH, { persistent: false }, () => {
+      cached = null;
+    });
+  } catch {
+    // File may not exist yet (setup not complete); watcher will be retried
+    // on next readConfig once configExists() returns true.
+    watcherStarted = false;
+  }
+}
 
 function ensureDataDir() {
   const dir = path.dirname(CONFIG_PATH);
@@ -102,6 +122,8 @@ export function isSetupComplete(): boolean {
 }
 
 export function readConfig(): PlatformConfig {
+  if (cached) return cached;
+
   if (!configExists()) {
     return {
       version: 1,
@@ -113,16 +135,11 @@ export function readConfig(): PlatformConfig {
   }
 
   try {
-    const stat = fs.statSync(CONFIG_PATH);
-    if (cached && cached.mtimeMs === stat.mtimeMs) {
-      return cached.config;
-    }
-
     const raw = fs.readFileSync(CONFIG_PATH, "utf-8");
     const config = JSON.parse(raw) as PlatformConfig;
-    // Backward compat: ensure registrations array exists
     if (!config.registrations) config.registrations = [];
-    cached = { config, mtimeMs: stat.mtimeMs };
+    cached = config;
+    startWatcher();
     return config;
   } catch {
     return {

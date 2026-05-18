@@ -11,6 +11,7 @@ interface LoginCredentials {
   siteUrl: string;
   usr: string;
   pwd: string;
+  directFetch?: boolean;
 }
 
 interface LoginResponse {
@@ -62,14 +63,23 @@ export function useFullName(email: string | null) {
 export function useLogin() {
   const setUser = useAuthStore((s) => s.setUser);
   const setSiteUrl = useAuthStore((s) => s.setSiteUrl);
+  const setDirectFetch = useAuthStore((s) => s.setDirectFetch);
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ siteUrl, usr, pwd }: LoginCredentials) => {
-      const resp = await fetch("/api/proxy/api/method/login", {
+    mutationFn: async ({ siteUrl, usr, pwd, directFetch = false }: LoginCredentials) => {
+      const url = directFetch ? `${siteUrl}/api/method/login` : "/api/proxy/api/method/login";
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (directFetch) {
+        headers["X-Requested-With"] = "XMLHttpRequest";
+      } else {
+        headers["X-Frappe-Site"] = siteUrl;
+      }
+
+      const resp = await fetch(url, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json", "X-Frappe-Site": siteUrl },
+        headers,
         body: JSON.stringify({ usr, pwd }),
       });
 
@@ -85,10 +95,13 @@ export function useLogin() {
       }
 
       const data: LoginResponse = await resp.json();
-      return { ...data, siteUrl };
+      return { ...data, siteUrl, directFetch };
     },
     onSuccess: async (data) => {
       clearTenantState();
+      // Set directFetch BEFORE siteUrl so the first frappeCall sees the right
+      // flag — frappe-client reads both from the store snapshot at call time.
+      setDirectFetch(data.directFetch);
       setSiteUrl(data.siteUrl);
       setUser(data.message); // email
       if (data.full_name) {
@@ -105,7 +118,7 @@ export function useLogin() {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ siteUrl: data.siteUrl }),
+          body: JSON.stringify({ siteUrl: data.siteUrl, email: data.message }),
         });
       } catch {
         // non-fatal
