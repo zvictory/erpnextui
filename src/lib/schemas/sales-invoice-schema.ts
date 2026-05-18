@@ -29,6 +29,8 @@ const invoiceItemSchema = z
     conversion_factor: z.number().optional(),
     discount_percentage: z.number().min(0).max(100).optional(),
     discount_amount: z.number().min(0).optional(),
+    sales_order: z.string().optional(),
+    so_detail: z.string().optional(),
   })
   .refine(
     (d) => {
@@ -72,5 +74,7 @@ export interface SalesInvoiceSubmitValues {
     conversion_factor?: number;
     discount_percentage?: number;
     discount_amount?: number;
+    sales_order?: string;
+    so_detail?: string;
   }>;
 }

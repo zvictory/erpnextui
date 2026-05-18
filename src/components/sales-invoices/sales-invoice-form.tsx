@@ -114,6 +114,7 @@ export function SalesInvoiceForm({
               // Use price_list_rate as display rate so per-item discount is visible
               const plr = (item as Record<string, unknown>).price_list_rate as number | undefined;
               const displayRate = plr && plr > 0 ? plr : item.rate;
+              const rec = item as Record<string, unknown>;
               return {
                 item_code: item.item_code,
                 qty: item.qty,
@@ -122,6 +123,8 @@ export function SalesInvoiceForm({
                 uom: item.uom,
                 discount_percentage: item.discount_percentage || 0,
                 discount_amount: item.discount_amount || 0,
+                sales_order: rec.sales_order as string | undefined,
+                so_detail: rec.so_detail as string | undefined,
               };
             }),
           };
@@ -194,6 +197,8 @@ export function SalesInvoiceForm({
         price_list_rate: item.rate,
         discount_percentage: item.discount_percentage || 0,
         discount_amount: item.discount_amount || 0,
+        ...(item.sales_order ? { sales_order: item.sales_order } : {}),
+        ...(item.so_detail ? { so_detail: item.so_detail } : {}),
       })),
     };
     if (taxTemplate) {

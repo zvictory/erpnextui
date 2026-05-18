@@ -10,14 +10,13 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, "").trim();
 }
 
-async function parseErrorResponse(resp: Response): Promise<FrappeAPIError> {
-  const body = await resp.text();
-  let message = body;
+function buildErrorFromBody(bodyText: string, status: number): FrappeAPIError {
+  let message = bodyText;
   let excType: string | undefined;
   let serverMessages: string[] | undefined;
 
   try {
-    const json = JSON.parse(body);
+    const json = JSON.parse(bodyText);
     excType = json.exc_type;
 
     // Parse _server_messages first — these are the clean, user-facing messages
@@ -41,16 +40,23 @@ async function parseErrorResponse(resp: Response): Promise<FrappeAPIError> {
     // Prefer server_messages over raw exception/traceback
     if (serverMessages?.length) {
       message = serverMessages[0];
-    } else if (json.message) {
+    } else if (typeof json.message === "string") {
       message = stripHtml(json.message);
+    } else if (excType) {
+      message = excType.replace(/^.*\./, "");
     } else {
-      message = excType || "An error occurred";
+      message = "An error occurred";
     }
   } catch {
-    // body wasn't JSON
+    // body wasn't JSON — cap length so the toast doesn't become a wall of text
+    if (message.length > 300) message = message.slice(0, 300) + "…";
   }
 
-  return new FrappeAPIError(message, resp.status, excType, serverMessages);
+  return new FrappeAPIError(message, status, excType, serverMessages);
+}
+
+async function parseErrorResponse(resp: Response): Promise<FrappeAPIError> {
+  return buildErrorFromBody(await resp.text(), resp.status);
 }
 
 /** Fetch a fresh CSRF token by loading the Frappe app shell and parsing it out. */
@@ -131,7 +137,7 @@ export async function frappeCall<T>(endpoint: string, options?: RequestInit): Pr
       } catch {
         // Not valid JSON — fall through to error
       }
-      throw new FrappeAPIError(bodyText, resp.status);
+      throw buildErrorFromBody(bodyText, resp.status);
     }
     throw await parseErrorResponse(resp);
   }
