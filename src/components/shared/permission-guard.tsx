@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useMyPermissions } from "@/hooks/use-my-permissions";
+import { useHomeRoute } from "@/hooks/use-home-route";
 import type { PermissionAction } from "@/lib/permissions";
 import type { CapabilityId } from "@/lib/permissions/capabilities";
 
@@ -39,6 +40,7 @@ export function PermissionGuard({
   const router = useRouter();
   const { isLoading: doctypeLoading, permissions } = usePermissions();
   const { data: myPerms, isLoading: grantsLoading } = useMyPermissions();
+  const { route: homeRoute } = useHomeRoute();
 
   const doctypeAllowed = doctype ? permissions(doctype)[action] : true;
 
@@ -58,9 +60,9 @@ export function PermissionGuard({
     if (!isLoading && !allowed) {
       const target = capability ?? doctype ?? "this page";
       toast.error(`You don't have access to ${target}`);
-      router.replace("/dashboard");
+      router.replace(homeRoute ?? "/dashboard");
     }
-  }, [isLoading, allowed, doctype, capability, router]);
+  }, [isLoading, allowed, doctype, capability, homeRoute, router]);
 
   if (isLoading) return <>{fallback}</>;
   if (!allowed) return null;

@@ -1,8 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useDashboard } from "@/hooks/use-dashboard";
 import { useCompanyStore } from "@/stores/company-store";
+import { useCapability } from "@/hooks/use-my-permissions";
+import { useHomeRoute } from "@/hooks/use-home-route";
+import { Skeleton } from "@/components/ui/skeleton";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
 import { CashPositionCard } from "@/components/dashboard/cash-position-card";
@@ -15,7 +20,28 @@ import { BalanceSummary } from "@/components/dashboard/balance-summary";
 export default function DashboardPage() {
   const t = useTranslations("dashboard");
   const company = useCompanyStore((s) => s.company);
+  const router = useRouter();
+  const hasDashboardCap = useCapability("nav.dashboard");
+  const { route: homeRoute, isLoading: homeLoading } = useHomeRoute();
   const { data, isLoading } = useDashboard(company);
+
+  const shouldRedirect = !homeLoading && !hasDashboardCap && !!homeRoute && homeRoute !== "/dashboard";
+
+  useEffect(() => {
+    if (shouldRedirect && homeRoute) {
+      router.replace(homeRoute);
+    }
+  }, [shouldRedirect, homeRoute, router]);
+
+  if (homeLoading || shouldRedirect) {
+    return (
+      <div className="space-y-4 p-4">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-40 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
