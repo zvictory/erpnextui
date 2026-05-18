@@ -31,6 +31,7 @@ const DROP_REQ = new Set([
   "origin", // proxy is server-to-server; foreign origin confuses Frappe
   "referer", // same reason
   "accept-encoding", // force upstream to send uncompressed; avoids ERR_CONTENT_DECODING_FAILED
+  "x-stable-source", // server-only proxy-identity secret; never trust a client-supplied value
 ]);
 
 const DROP_RESP = new Set([
@@ -77,6 +78,12 @@ async function handle(req: NextRequest, path: string[]): Promise<NextResponse> {
   for (const [key, value] of req.headers.entries()) {
     if (!DROP_REQ.has(key.toLowerCase())) forwardHeaders.set(key, value);
   }
+
+  // Identify this request as coming from the Next.js proxy so the Frappe
+  // `on_session_creation` hook lets non-desk users authenticate via app.erpstable.com.
+  // Secret is server-only — DROP_REQ above blocks any client-supplied copy.
+  const proxySecret = process.env.STABLE_PROXY_SECRET;
+  if (proxySecret) forwardHeaders.set("X-Stable-Source", proxySecret);
 
   const hasBody = !["GET", "HEAD"].includes(req.method);
   const body = hasBody ? await req.arrayBuffer() : undefined;
