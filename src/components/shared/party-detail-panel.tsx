@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { InvoiceDetailDialog } from "@/components/shared/invoice-detail-dialog";
+import { VoucherDetailSheet } from "@/components/shared/voucher-detail-sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -143,11 +143,11 @@ export function PartyDetailPanel({
   const tVendors = useTranslations("vendors");
   const { company, currencySymbol, symbolOnRight } = useCompanyStore();
   const { data: currencyMap } = useCurrencyMap();
-  const [invoiceDialog, setInvoiceDialog] = useState<{
+  const [voucherDetail, setVoucherDetail] = useState<{
     open: boolean;
-    voucherType: "Sales Invoice" | "Purchase Invoice";
+    voucherType: string;
     voucherNo: string;
-  }>({ open: false, voucherType: "Sales Invoice", voucherNo: "" });
+  }>({ open: false, voucherType: "", voucherNo: "" });
   const [sortAsc, setSortAsc] = useState(true);
   const [cancelTarget, setCancelTarget] = useState<{
     voucherType: string;
@@ -668,11 +668,9 @@ export function PartyDetailPanel({
                               type="button"
                               className="text-primary hover:underline text-left"
                               onClick={() =>
-                                setInvoiceDialog({
+                                setVoucherDetail({
                                   open: true,
-                                  voucherType: entry.voucher_type as
-                                    | "Sales Invoice"
-                                    | "Purchase Invoice",
+                                  voucherType: entry.voucher_type,
                                   voucherNo: entry.voucher_no,
                                 })
                               }
@@ -743,15 +741,12 @@ export function PartyDetailPanel({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            {(entry.voucher_type === "Sales Invoice" ||
-                              entry.voucher_type === "Purchase Invoice") && (
+                            {href && (
                               <DropdownMenuItem
                                 onClick={() =>
-                                  setInvoiceDialog({
+                                  setVoucherDetail({
                                     open: true,
-                                    voucherType: entry.voucher_type as
-                                      | "Sales Invoice"
-                                      | "Purchase Invoice",
+                                    voucherType: entry.voucher_type,
                                     voucherNo: entry.voucher_no,
                                   })
                                 }
@@ -784,11 +779,11 @@ export function PartyDetailPanel({
         </ScrollArea>
       </div>
 
-      <InvoiceDetailDialog
-        open={invoiceDialog.open}
-        onOpenChange={(open) => setInvoiceDialog((prev) => ({ ...prev, open }))}
-        voucherType={invoiceDialog.voucherType}
-        voucherNo={invoiceDialog.voucherNo}
+      <VoucherDetailSheet
+        open={voucherDetail.open}
+        onOpenChange={(open) => setVoucherDetail((prev) => ({ ...prev, open }))}
+        voucherType={voucherDetail.voucherType}
+        voucherNo={voucherDetail.voucherNo}
       />
 
       <ConfirmDialog
