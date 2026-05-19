@@ -37,6 +37,7 @@ import { useCompanyStore } from "@/stores/company-store";
 import { useCompanies } from "@/hooks/use-companies";
 import { cn, formatCurrency } from "@/lib/utils";
 import { formatNumber } from "@/lib/formatters";
+import { getCurrencyDecimals } from "@/lib/utils/multi-currency";
 import type { JournalEntry, JournalEntryAccount } from "@/types/journal-entry";
 
 export interface TransferFormData {
@@ -280,6 +281,45 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
     : amountCurrency === baseCurrency
       ? quoteAmountVal
       : baseAmountVal;
+
+  // Auto-correct the rate input to the EFFECTIVE rate that reconciles the
+  // derived leg AFTER currency-precision rounding. The GL stores the derived
+  // leg at its currency precision (USD 2 dp, UZS 0 dp), so `typed × rate`
+  // shaves sub-cent amounts unless the rate itself is back-computed from the
+  // rounded derived amount. Mirrors the server-side anchor in handleSubmit.
+  useEffect(() => {
+    if (!isExchange) return;
+    if (typedAmount <= 0 || parsedRate <= 0) return;
+    if (!derivedCurrency || !baseCurrency) return;
+
+    const id = window.setTimeout(() => {
+      const decimals = getCurrencyDecimals(derivedCurrency);
+      const factor = 10 ** decimals;
+      const roundedDerived = Math.round(derivedAmountVal * factor) / factor;
+      if (roundedDerived <= 0) return;
+
+      const effective =
+        amountCurrency === baseCurrency
+          ? roundedDerived / typedAmount
+          : typedAmount / roundedDerived;
+
+      const nextStr = rateStr(effective);
+      if (nextStr !== rateStr(parsedRate)) {
+        setRate(nextStr);
+        setRateManuallyEdited(true);
+      }
+    }, 350);
+
+    return () => window.clearTimeout(id);
+  }, [
+    isExchange,
+    typedAmount,
+    parsedRate,
+    amountCurrency,
+    derivedAmountVal,
+    derivedCurrency,
+    baseCurrency,
+  ]);
 
   const handleSwap = useCallback(() => {
     setFromAccount((prev) => {
@@ -773,7 +813,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
               </div>
               {isExchange && parsedRate > 0 && (
                 <p className="text-[11px] text-muted-foreground text-right">
-                  {t("summary.at")} 1 {baseSym.symbol} = {formatNumber(parsedRate, 4)}{" "}
+                  {t("summary.at")} 1 {baseSym.symbol} = {formatNumber(parsedRate, 6)}{" "}
                   {quoteSym.symbol}
                 </p>
               )}

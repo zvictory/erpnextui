@@ -98,6 +98,21 @@ export function calculatePaymentEntry(params: {
 }
 
 /**
+ * Currency decimal places used by ERPNext's `flt(_, precision)` on GL postings.
+ * USD/EUR/RUB = 2, UZS/JPY/IDR/VND = 0, BHD/KWD/OMR = 3. Falls back to 2 for
+ * unknown codes. Source: CLDR locale data via V8's Intl implementation.
+ */
+export function getCurrencyDecimals(currency: string): number {
+  if (!currency) return 2;
+  try {
+    const fmt = new Intl.NumberFormat("en", { style: "currency", currency });
+    return fmt.resolvedOptions().maximumFractionDigits ?? 2;
+  } catch {
+    return 2;
+  }
+}
+
+/**
  * Assert a derived base amount matches its user input within 0.01 tolerance.
  * Used in pre-submit guards to catch Golden Rule regressions.
  */
