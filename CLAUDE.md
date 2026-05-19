@@ -89,3 +89,4 @@ _Add a line here every time Claude does something wrong, so it doesn't repeat._
 - Don't add redirects from `/` in `next.config.ts` — the landing page lives at `/`, the app at `/login`.
 - `clearTenantState()` must be called on login (before setting new tenant) to prevent cross-tenant data leaks.
 - `settings.local.json` is gitignored (personal/machine-specific). `settings.json` is committed (shared team config).
+- **Pre-deploy backup is mandatory.** Every production deploy MUST first write a zip + notes file to `/Users/zafar/Documents/self_next/_backups/erpnext-ui/` (handled by the `@deploy` agent, step 3). Never rsync without it — there's no git on the server, so this zip is the only rollback path.
