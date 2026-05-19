@@ -442,10 +442,21 @@ export function useGrantEditorState(userEmail: string | null) {
     [currentGrants],
   );
   const [selected, setSelected] = useState<Set<GrantKey>>(initial);
-  const [lastRef, setLastRef] = useState(currentGrants);
-  if (currentGrants !== lastRef) {
-    setLastRef(currentGrants);
+
+  // Re-seed only when the user switches, or when grants first arrive
+  // for the current user. Later refetches (focus / 30s stale /
+  // post-save invalidation) yield new array refs with identical
+  // content — ignoring them prevents silently wiping in-progress edits.
+  const [seedUser, setSeedUser] = useState(userEmail);
+  const [hasSeeded, setHasSeeded] = useState(currentGrants !== undefined);
+  if (seedUser !== userEmail) {
+    setSeedUser(userEmail);
+    setHasSeeded(currentGrants !== undefined);
     setSelected(new Set(currentGrants?.map(keyOf) ?? []));
+  } else if (!hasSeeded && currentGrants !== undefined) {
+    setHasSeeded(true);
+    setSelected(new Set(currentGrants.map(keyOf)));
   }
+
   return { selected, setSelected, initial };
 }
