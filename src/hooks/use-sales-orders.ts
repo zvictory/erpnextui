@@ -74,12 +74,15 @@ export function useSalesOrder(name: string) {
 export function useCreateSalesOrder() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: SalesOrderFormValues & { company: string }) =>
+    mutationFn: ({
+      reserve_stock,
+      ...rest
+    }: SalesOrderFormValues & { company: string }) =>
       frappe.createDoc<SalesOrder>("Sales Order", {
         doctype: "Sales Order",
-        reserve_stock: 1,
-        ...data,
-        items: data.items.map((item) => ({
+        ...rest,
+        reserve_stock: reserve_stock ? 1 : 0,
+        items: rest.items.map((item) => ({
           doctype: "Sales Order Item",
           ...item,
         })),
@@ -98,9 +101,11 @@ export function useUpdateSalesOrder() {
   return useMutation({
     mutationFn: async ({ name, data }: { name: string; data: Partial<SalesOrderFormValues> }) => {
       const doc = await frappe.getDoc<SalesOrder>("Sales Order", name);
+      const { reserve_stock, ...rest } = data;
       return frappe.save<SalesOrder>({
         ...(doc as unknown as Record<string, unknown>),
-        ...data,
+        ...rest,
+        ...(reserve_stock !== undefined ? { reserve_stock: reserve_stock ? 1 : 0 } : {}),
         ...(data.items
           ? {
               items: data.items.map((item) => ({

@@ -9,6 +9,7 @@ import { DateInput } from "@/components/shared/date-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -101,6 +102,7 @@ export function SalesOrderForm({
           transaction_date: defaultValues.transaction_date,
           delivery_date: defaultValues.delivery_date ?? defaultValues.transaction_date,
           set_warehouse: defaultValues.set_warehouse ?? sellingWarehouse ?? "",
+          reserve_stock: defaultValues.reserve_stock === 0 ? false : true,
           items: defaultValues.items.map((item) => ({
             item_code: item.item_code,
             qty: item.qty,
@@ -123,6 +125,7 @@ export function SalesOrderForm({
           transaction_date: getToday(),
           delivery_date: getToday(),
           set_warehouse: sellingWarehouse ?? "",
+          reserve_stock: true,
           items: [
             { item_code: "", qty: 1, rate: 0, amount: 0, uom: "", conversion_factor: 1 },
             { item_code: "", qty: 1, rate: 0, amount: 0, uom: "", conversion_factor: 1 },
@@ -301,6 +304,18 @@ export function SalesOrderForm({
               <p className="text-sm text-destructive">{errors.set_warehouse.message}</p>
             )}
           </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Switch
+            id="reserve_stock"
+            checked={watch("reserve_stock") ?? true}
+            onCheckedChange={(v) => setValue("reserve_stock", v, { shouldValidate: true })}
+            disabled={isReadOnly}
+          />
+          <Label htmlFor="reserve_stock" className="cursor-pointer">
+            {t("reserveStock")}
+          </Label>
         </div>
 
         <Separator />

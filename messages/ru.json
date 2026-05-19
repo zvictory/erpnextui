@@ -805,7 +805,8 @@
     "toDeliver": "К доставке",
     "toDeliverAndBill": "К доставке и оплате",
     "completed": "Завершён",
-    "warehouse": "Склад"
+    "warehouse": "Склад",
+    "reserveStock": "Зарезервировать товар под этот заказ"
   },
   "quotations": {
     "title": "Коммерческие предложения",

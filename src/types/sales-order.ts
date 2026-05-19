@@ -29,6 +29,7 @@ export interface SalesOrder {
   amended_from?: string;
   workflow_state?: string;
   set_warehouse?: string;
+  reserve_stock?: 0 | 1;
   customer_name?: string;
   currency?: string;
   pick_notes?: string;

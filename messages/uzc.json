@@ -790,7 +790,8 @@
     "toDeliver": "Етказиш керак",
     "toDeliverAndBill": "Етказиш ва ҳисоблаш",
     "completed": "Якунланган",
-    "warehouse": "Омбор"
+    "warehouse": "Омбор",
+    "reserveStock": "Бу буюртма учун маҳсулотни банд қилиш"
   },
   "quotations": {
     "title": "Таклифномалар",

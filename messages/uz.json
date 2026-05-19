@@ -790,7 +790,8 @@
     "toDeliver": "Yetkazish kerak",
     "toDeliverAndBill": "Yetkazish va hisoblash",
     "completed": "Yakunlangan",
-    "warehouse": "Ombor"
+    "warehouse": "Ombor",
+    "reserveStock": "Bu buyurtma uchun mahsulotni band qilish"
   },
   "quotations": {
     "title": "Taklifnomalar",

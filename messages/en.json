@@ -852,7 +852,8 @@
     "toDeliver": "To Deliver",
     "toDeliverAndBill": "To Deliver and Bill",
     "completed": "Completed",
-    "warehouse": "Warehouse"
+    "warehouse": "Warehouse",
+    "reserveStock": "Reserve stock for this order"
   },
   "quotations": {
     "title": "Quotations",

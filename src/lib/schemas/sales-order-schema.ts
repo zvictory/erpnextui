@@ -17,6 +17,7 @@ export const salesOrderSchema = z.object({
   transaction_date: z.string().min(1, "Date is required"),
   delivery_date: z.string().min(1, "Delivery date is required"),
   set_warehouse: z.string().min(1, "Warehouse is required"),
+  reserve_stock: z.boolean(),
   items: z.array(orderItemSchema).min(1, "At least one item is required"),
 });
 
