@@ -1,9 +1,15 @@
 "use client";
 
-"use client";
-
 import { useState } from "react";
-import { ArrowRight, Send, Pencil, Trash2, RotateCcw } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowLeftRight,
+  Send,
+  Pencil,
+  Trash2,
+  RotateCcw,
+  type LucideIcon,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,12 +25,28 @@ interface HistoryRowProps {
   symbolOnRight: boolean;
   accountRows?: JEAccountRow[];
   accountRowsLoading?: boolean;
+  TypeIcon?: LucideIcon;
   onSubmit: (name: string) => void;
   onEdit?: (name: string) => void;
   onAmend?: (name: string) => void;
   onCancel: (name: string) => void;
   onDelete: (name: string) => void;
   disabled: boolean;
+}
+
+// Strip the trailing " - <CompanyAbbr>" segment (e.g. "Marufaka USD - G" →
+// "Marufaka USD"). Broader than `/ - [A-Z]$/` so multi-letter abbreviations
+// like " - ICP" also collapse cleanly.
+function shortName(account: string | undefined): string {
+  return (account ?? "").replace(/ - [A-Z]+$/, "");
+}
+
+// The auto-generated transfer remark from
+// src/app/(app)/funds/transfer/page.tsx:44 is `"Transfer from X to Y"`
+// where X and Y are full account paths. Suppress it so only real,
+// user-typed memos surface in the row.
+function isAutoTransferRemark(remark: string): boolean {
+  return /^Transfer from .+ to .+$/.test(remark.trim());
 }
 
 const STATUS_CONFIG: Record<
@@ -46,6 +68,7 @@ export function HistoryRow({
   symbolOnRight,
   accountRows,
   accountRowsLoading,
+  TypeIcon = ArrowLeftRight,
   onSubmit,
   onEdit,
   onAmend,
@@ -83,65 +106,60 @@ export function HistoryRow({
         entry.docstatus === 2 && "border-l-muted-foreground/30",
       )}
     >
-      {/* Row 1: Amount — full width */}
-      <div>
-        <span className="font-mono text-sm font-semibold">
+      {/* Row 1: TypeIcon · from → to · Badge */}
+      <div className="flex items-start gap-2 min-w-0">
+        <TypeIcon className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
+        <div className="flex items-center gap-1.5 min-w-0 flex-1 text-sm font-medium">
+          {fromRow && toRow ? (
+            <>
+              <span className="truncate">{shortName(fromRow.account)}</span>
+              <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
+              <span className="truncate">{shortName(toRow.account)}</span>
+            </>
+          ) : accountRowsLoading ? (
+            <Skeleton className="h-4 w-40" />
+          ) : (
+            <span className="text-muted-foreground truncate">{entry.name}</span>
+          )}
+        </div>
+        <Badge
+          variant={status.variant}
+          className={`ml-auto shrink-0 text-[10px] px-1.5 py-0 leading-4 ${status.className ?? ""}`}
+        >
+          {status.label}
+        </Badge>
+      </div>
+
+      {/* Row 2: Amount · Date · ID */}
+      <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground min-w-0">
+        <span className="font-mono font-semibold text-foreground tabular-nums shrink-0">
           {fromRow && toRow ? (
             sameCurrency ? (
               formatCurrency(toRow.debit_in_account_currency, ...currSymbol(toRow.account_currency))
             ) : (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="flex items-center gap-1.5">
-                  <span>
-                    {formatCurrency(
-                      fromRow.credit_in_account_currency,
-                      ...currSymbol(fromRow.account_currency),
-                    )}
-                  </span>
-                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                  <span>
-                    {formatCurrency(
-                      toRow.debit_in_account_currency,
-                      ...currSymbol(toRow.account_currency),
-                    )}
-                  </span>
+              <span className="inline-flex items-center gap-1">
+                <span>
+                  {formatCurrency(
+                    fromRow.credit_in_account_currency,
+                    ...currSymbol(fromRow.account_currency),
+                  )}
                 </span>
-              </div>
+                <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                <span>
+                  {formatCurrency(
+                    toRow.debit_in_account_currency,
+                    ...currSymbol(toRow.account_currency),
+                  )}
+                </span>
+              </span>
             )
           ) : accountRowsLoading ? (
-            <Skeleton className="h-4 w-24 inline-block" />
+            <Skeleton className="h-3 w-20 inline-block" />
           ) : (
             formatCurrency(entry.total_debit, currencySymbol, symbolOnRight)
           )}
         </span>
-        {fromRow &&
-          toRow &&
-          !sameCurrency &&
-          (() => {
-            const STRONG = ["USD", "EUR", "GBP", "CNY", "RUB"];
-            const toIsBase =
-              STRONG.includes(toRow.account_currency) && !STRONG.includes(fromRow.account_currency);
-            const [bSym, qSym, fxRate] = toIsBase
-              ? [
-                  currSymbol(toRow.account_currency)[0],
-                  currSymbol(fromRow.account_currency)[0],
-                  fromRow.credit_in_account_currency / toRow.debit_in_account_currency,
-                ]
-              : [
-                  currSymbol(fromRow.account_currency)[0],
-                  currSymbol(toRow.account_currency)[0],
-                  toRow.debit_in_account_currency / fromRow.credit_in_account_currency,
-                ];
-            return (
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
-                1 {bSym} = {formatNumber(fxRate, 4)} {qSym}
-              </p>
-            );
-          })()}
-      </div>
-
-      {/* Row 2: Date · ID · Badge */}
-      <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <span className="opacity-40 shrink-0">·</span>
         <span className="shrink-0">{formatDate(entry.posting_date)}</span>
         <span className="opacity-40 shrink-0">·</span>
         <a
@@ -151,16 +169,36 @@ export function HistoryRow({
         >
           {entry.name}
         </a>
-        <Badge
-          variant={status.variant}
-          className={`ml-auto shrink-0 text-[10px] px-1.5 py-0 leading-4 ${status.className ?? ""}`}
-        >
-          {status.label}
-        </Badge>
       </div>
 
-      {/* Row 3: Remark (if any) */}
-      {entry.user_remark && (
+      {/* FX rate sub-line (cross-currency only) */}
+      {fromRow &&
+        toRow &&
+        !sameCurrency &&
+        (() => {
+          const STRONG = ["USD", "EUR", "GBP", "CNY", "RUB"];
+          const toIsBase =
+            STRONG.includes(toRow.account_currency) && !STRONG.includes(fromRow.account_currency);
+          const [bSym, qSym, fxRate] = toIsBase
+            ? [
+                currSymbol(toRow.account_currency)[0],
+                currSymbol(fromRow.account_currency)[0],
+                fromRow.credit_in_account_currency / toRow.debit_in_account_currency,
+              ]
+            : [
+                currSymbol(fromRow.account_currency)[0],
+                currSymbol(toRow.account_currency)[0],
+                toRow.debit_in_account_currency / fromRow.credit_in_account_currency,
+              ];
+          return (
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              1 {bSym} = {formatNumber(fxRate, 4)} {qSym}
+            </p>
+          );
+        })()}
+
+      {/* Memo (only if user-authored, not the auto-generated "Transfer from X to Y") */}
+      {entry.user_remark && !isAutoTransferRemark(entry.user_remark) && (
         <p className="mt-0.5 text-[11px] text-muted-foreground/70 truncate">{entry.user_remark}</p>
       )}
 
@@ -177,7 +215,7 @@ export function HistoryRow({
               <div key={i} className="flex items-center justify-between text-[11px]">
                 <span className="text-muted-foreground truncate mr-2">
                   {(acc as unknown as Record<string, string>).account_name ||
-                    (acc.account ?? "").replace(/ - [A-Z]$/, "")}
+                    shortName(acc.account)}
                 </span>
                 <span className="tabular-nums shrink-0">
                   {(acc.debit_in_account_currency ?? 0) > 0 && (

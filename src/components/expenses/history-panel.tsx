@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import { RefreshCw, ReceiptText } from "lucide-react";
+import { RefreshCw, ReceiptText, ArrowLeftRight } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -149,6 +149,8 @@ export function HistoryPanel({ onEdit, voucherType, remarkFilter }: HistoryPanel
     }
   }, [confirm, submitMutation, cancelMutation, deleteMutation, closeConfirm]);
 
+  const TypeIcon = voucherType === "Bank Entry" ? ArrowLeftRight : ReceiptText;
+
   const confirmConfig = CONFIRM_CONFIG[confirm.action];
   const confirmLoading =
     (confirm.action === "submit" && submitMutation.isPending) ||
@@ -213,6 +215,7 @@ export function HistoryPanel({ onEdit, voucherType, remarkFilter }: HistoryPanel
                 symbolOnRight={symbolOnRight}
                 accountRows={rowsByParent.get(entry.name)}
                 accountRowsLoading={accountRowsLoading}
+                TypeIcon={TypeIcon}
                 onSubmit={(name) => openConfirm("submit", name)}
                 onEdit={onEdit ?? undefined}
                 onAmend={onEdit ?? undefined}
