@@ -134,6 +134,30 @@ export async function frappeCall<T>(endpoint: string, options?: RequestInit): Pr
         // 417 is success when data exists (REST resource) OR message is the doc itself (frappe.client.save).
         // For MandatoryError/validation errors, message is a string — treat those as real errors.
         if (body.data || (body.message && typeof body.message === "object")) return body;
+
+        // Informational-only 417: Frappe flips `http_status_code` to 417 whenever
+        // `frappe.message_log` is non-empty — even for bare `msgprint(...)` calls
+        // without `raise_exception=True` (e.g. "Item Price added for X" during PO
+        // save). If no entry carries `raise_exception` and `exc_type` is absent,
+        // the doc actually saved — swallow and return body so consumers proceed.
+        if (!body.exc_type && body._server_messages) {
+          try {
+            const msgs = JSON.parse(body._server_messages);
+            const allInformational =
+              Array.isArray(msgs) &&
+              msgs.length > 0 &&
+              msgs.every((m: string) => {
+                try {
+                  return !JSON.parse(m).raise_exception;
+                } catch {
+                  return false;
+                }
+              });
+            if (allInformational) return body;
+          } catch {
+            // fall through to error
+          }
+        }
       } catch {
         // Not valid JSON — fall through to error
       }
