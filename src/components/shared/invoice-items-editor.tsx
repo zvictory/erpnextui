@@ -208,7 +208,7 @@ function ItemRow({
             setValue(`${prefix}.${index}.conversion_factor`, 1);
           }}
           placeholder="Select item..."
-          disabled={disabled || !sellingWarehouse}
+          disabled={disabled || (showStockAvailability && !sellingWarehouse)}
           descriptionField="item_name"
           displayValue={itemDoc ? `${itemCode} — ${itemDoc.item_name}` : undefined}
           showValueWithDescription
