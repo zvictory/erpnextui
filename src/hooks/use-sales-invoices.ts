@@ -151,6 +151,7 @@ export function useUpdateSalesInvoice() {
       return frappe.save<SalesInvoice>({
         ...(doc as unknown as Record<string, unknown>),
         ...data,
+        update_stock: 1,
         set_posting_time: 1,
         ...(data.items
           ? {

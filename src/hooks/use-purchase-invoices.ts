@@ -77,6 +77,7 @@ export function useCreatePurchaseInvoice() {
     ) =>
       frappe.createDoc<PurchaseInvoice>("Purchase Invoice", {
         doctype: "Purchase Invoice",
+        update_stock: 1,
         ...data,
         set_posting_time: 1,
         bill_date: data.posting_date,
@@ -114,6 +115,7 @@ export function useUpdatePurchaseInvoice() {
       return frappe.save<PurchaseInvoice>({
         ...(doc as unknown as Record<string, unknown>),
         ...data,
+        update_stock: 1,
         set_posting_time: 1,
         ...(data.posting_date ? { bill_date: data.posting_date } : {}),
         ...(data.items
