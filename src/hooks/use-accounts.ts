@@ -626,7 +626,10 @@ export function useLedgerEntriesInfinite(
     queryKey: queryKeys.ledger.entriesInfinite(account, sort, fromDate, toDate),
     initialPageParam: 0,
     queryFn: ({ pageParam }) => {
-      const filters: unknown[] = [["account", "=", account]];
+      const filters: unknown[] = [
+        ["account", "=", account],
+        ["is_cancelled", "=", 0],
+      ];
       if (fromDate) filters.push(["posting_date", ">=", fromDate]);
       if (toDate) filters.push(["posting_date", "<=", toDate]);
 
@@ -660,7 +663,10 @@ export function useLedgerEntryCount(account: string, fromDate?: string, toDate?:
   return useQuery({
     queryKey: queryKeys.ledger.count(account, fromDate, toDate),
     queryFn: () => {
-      const filters: unknown[] = [["account", "=", account]];
+      const filters: unknown[] = [
+        ["account", "=", account],
+        ["is_cancelled", "=", 0],
+      ];
       if (fromDate) filters.push(["posting_date", ">=", fromDate]);
       if (toDate) filters.push(["posting_date", "<=", toDate]);
       return frappe.getCount("GL Entry", filters);
