@@ -36,6 +36,9 @@ const OPEN_SO_STATUSES_EXCLUDED = ["On Hold", "Closed", "Cancelled", "Completed"
 interface Args {
   tenant: string;
   yes: boolean;
+  maxDate?: string;
+  includePartial: boolean;
+  includeFullyDelivered: boolean;
 }
 
 function parseArgs(): Args {
@@ -44,10 +47,18 @@ function parseArgs(): Args {
   const has = (n: string) => process.argv.includes(`--${n}`);
   const tenant = arg("tenant");
   if (!tenant) {
-    console.error("Usage: tsx scripts/close-undelivered-sos.ts --tenant=<id> [--yes]");
+    console.error(
+      "Usage: tsx scripts/close-undelivered-sos.ts --tenant=<id> [--yes] [--max-date=YYYY-MM-DD] [--include-partial] [--include-fully-delivered]",
+    );
     process.exit(1);
   }
-  return { tenant, yes: has("yes") };
+  return {
+    tenant,
+    yes: has("yes"),
+    maxDate: arg("max-date"),
+    includePartial: has("include-partial"),
+    includeFullyDelivered: has("include-fully-delivered"),
+  };
 }
 
 interface ErpClient {
@@ -218,17 +229,28 @@ async function main() {
   const logPath = path.join(outDir, `close-undelivered-sos-${tenant.id}-${isoDate}.log.jsonl`);
 
   console.log("Fetching open Sales Orders ...");
-  const summaries = await fetchOpenSos(erp);
+  let summaries = await fetchOpenSos(erp);
   console.log(`  open SOs: ${summaries.length}`);
+
+  if (args.maxDate) {
+    const before = summaries.length;
+    summaries = summaries.filter((s) => s.transaction_date <= args.maxDate!);
+    console.log(`  after --max-date=${args.maxDate} filter: ${summaries.length} (dropped ${before - summaries.length})`);
+  }
 
   console.log("Classifying (fetching child items per SO) ...");
   const { fullyUndelivered, partiallyDelivered, fullyDelivered } = await classifyAll(
     erp,
     summaries,
   );
-  console.log(`  fully undelivered (will close): ${fullyUndelivered.length}`);
-  console.log(`  partially delivered (skip):     ${partiallyDelivered.length}`);
-  console.log(`  fully delivered, To-Bill (skip): ${fullyDelivered.length}`);
+  console.log(`  fully undelivered: ${fullyUndelivered.length}`);
+  console.log(`  partially delivered: ${partiallyDelivered.length}`);
+  console.log(`  fully delivered, To-Bill: ${fullyDelivered.length}`);
+
+  const toClose: SoDoc[] = [...fullyUndelivered];
+  if (args.includePartial || args.maxDate) toClose.push(...partiallyDelivered);
+  if (args.includeFullyDelivered || args.maxDate) toClose.push(...fullyDelivered);
+  console.log(`  → will close: ${toClose.length}`);
 
   const plan = {
     tenant: tenant.id,
@@ -240,25 +262,20 @@ async function main() {
       partiallyDelivered: partiallyDelivered.length,
       fullyDelivered: fullyDelivered.length,
     },
-    fullyUndelivered: fullyUndelivered.map((d) => ({
+    toClose: toClose.map((d) => ({
       name: d.name,
       status: d.status,
       transaction_date: d.transaction_date,
       lineCount: (d.items ?? []).length,
       totalStockQty: (d.items ?? []).reduce((s, it) => s + (it.stock_qty ?? 0), 0),
     })),
-    partiallyDelivered: partiallyDelivered.map((d) => ({
-      name: d.name,
-      status: d.status,
-      transaction_date: d.transaction_date,
-    })),
   };
   fs.writeFileSync(planPath, JSON.stringify(plan, null, 2));
   console.log(`Plan written: ${planPath}`);
 
-  if (fullyUndelivered.length > 0) {
+  if (toClose.length > 0) {
     console.log("\nSample of SOs to close:");
-    for (const d of fullyUndelivered.slice(0, 5)) {
+    for (const d of toClose.slice(0, 5)) {
       const total = (d.items ?? []).reduce((s, it) => s + (it.stock_qty ?? 0), 0);
       console.log(
         `  ${d.name}  ${d.transaction_date}  status=${d.status}  lines=${(d.items ?? []).length}  total_stock_qty=${total}`,
@@ -271,11 +288,11 @@ async function main() {
     return;
   }
 
-  console.log(`\nClosing ${fullyUndelivered.length} SOs ...`);
+  console.log(`\nClosing ${toClose.length} SOs ...`);
   let ok = 0;
   let fail = 0;
-  for (let i = 0; i < fullyUndelivered.length; i++) {
-    const d = fullyUndelivered[i];
+  for (let i = 0; i < toClose.length; i++) {
+    const d = toClose[i];
     const t0 = Date.now();
     try {
       await closeSo(erp, d.name);
@@ -298,8 +315,8 @@ async function main() {
       };
       fs.appendFileSync(logPath, JSON.stringify(entry) + "\n");
     }
-    if ((i + 1) % 10 === 0 || i === fullyUndelivered.length - 1) {
-      console.log(`  [close ${i + 1}/${fullyUndelivered.length}]  ok=${ok} fail=${fail}`);
+    if ((i + 1) % 10 === 0 || i === toClose.length - 1) {
+      console.log(`  [close ${i + 1}/${toClose.length}]  ok=${ok} fail=${fail}`);
     }
   }
 
