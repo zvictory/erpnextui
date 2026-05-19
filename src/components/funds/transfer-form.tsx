@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/money-input";
 import { Label } from "@/components/ui/label";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { DateInput } from "@/components/shared/date-input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -122,10 +123,6 @@ function buildTransferAccounts(
   ];
 }
 
-function roundTo2(n: number): number {
-  return Math.round(n * 100) / 100;
-}
-
 const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, TransferFormProps> = (
   { onSubmit, onLoadEntry, isSubmitting },
   ref,
@@ -149,7 +146,11 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
   const [toAccount, setToAccount] = useState("");
   const [amount, setAmount] = useState("");
   const [rate, setRate] = useState("1");
-  const [receivedInput, setReceivedInput] = useState("");
+  // User's explicit picker override for which currency the typed amount is
+  // denominated in. Empty string = "fall back to the from-account's currency".
+  // Effective `amountCurrency` is derived below so it stays valid across
+  // pair changes (e.g., after the ⇄ swap or when From/To accounts change).
+  const [pickedAmountCurrency, setPickedAmountCurrency] = useState<string>("");
   const [memo, setMemo] = useState("");
 
   const [editingName, setEditingName] = useState<string | null>(null);
@@ -168,10 +169,6 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
     () => (isExchange ? getDisplayPair(fromCurrency, toCurrency, companyCurrency) : ["", ""]),
     [isExchange, fromCurrency, toCurrency, companyCurrency],
   );
-
-  // When baseCurrency !== fromCurrency the display direction is flipped:
-  // rate input shows "1 base = ? quote" but 'from' is the quote side, so amounts use division.
-  const isDisplayInverted = isExchange && baseCurrency !== fromCurrency;
 
   // Auto-fetch exchange rate for the selected date
   const { data: fetchedRate } = useExchangeRate(baseCurrency, quoteCurrency, postingDate);
@@ -201,30 +198,81 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
     postingDate,
   );
 
-  // State for manual-edit flag (read during render, so must be state not a ref)
+  // Tracks whether user manually overrode the auto-fetched rate. Stays state
+  // (not ref) because effectiveRateStr is read during render.
   const [rateManuallyEdited, setRateManuallyEdited] = useState(false);
 
-  // Reset manual edit flag when currencies or date change
+  // Reset manual-edit flag when currencies or date change (so the fresh fetch wins)
   useEffect(() => {
     setRateManuallyEdited(false);
   }, [baseCurrency, quoteCurrency, postingDate]);
 
-  const parsedAmount = parseFloat(amount) || 0;
+  // Effective picker currency. Derived (not state-in-effect) so that pair
+  // changes — including the ⇄ swap that flips From/To — automatically validate
+  // the user's pick. If the picked currency is still part of the new pair we
+  // honor it (preserving "I'm thinking in UZS" across swaps); otherwise we
+  // fall back to the from-account's currency.
+  const pickIsValidForPair =
+    !!pickedAmountCurrency &&
+    (pickedAmountCurrency === fromCurrency || pickedAmountCurrency === toCurrency);
+  const amountCurrency =
+    !fromCurrency && !toCurrency
+      ? ""
+      : pickIsValidForPair
+        ? pickedAmountCurrency
+        : fromCurrency || toCurrency;
 
-  // Derive effective rate: use fetched rate unless user has manually edited or we're in edit mode
+  const typedAmount = parseFloat(amount) || 0;
+
+  // Effective rate: fetched value wins unless the user manually overrode or we're editing a saved entry
   const effectiveRateStr =
     !rateManuallyEdited && !editingName && fetchedRate && fetchedRate > 0
       ? rateStr(fetchedRate)
       : rate;
   const parsedRate = parseFloat(effectiveRateStr) || 1;
 
-  // Derive effective received amount: auto-compute unless user has manually edited.
-  // isDisplayInverted: from is the quote side → amount / rate; else from is base → amount * rate.
-  const autoReceived =
-    isExchange && parsedAmount > 0 && parsedRate > 0
-      ? String(roundTo2(isDisplayInverted ? parsedAmount / parsedRate : parsedAmount * parsedRate))
-      : "";
-  const effectiveReceivedInput = rateManuallyEdited ? receivedInput : autoReceived;
+  // Express the typed amount in BOTH currencies of the pair. Rate r is oriented
+  // as "1 baseCurrency = r quoteCurrency" (per getDisplayPair). So:
+  //   amount-in-base  = (picker=base)  ? typed : typed / r
+  //   amount-in-quote = (picker=quote) ? typed : typed * r
+  // For non-exchange transfers both legs are simply the typed amount.
+  const baseAmountVal = !isExchange
+    ? typedAmount
+    : amountCurrency === baseCurrency
+      ? typedAmount
+      : parsedRate > 0
+        ? typedAmount / parsedRate
+        : 0;
+  const quoteAmountVal = !isExchange
+    ? typedAmount
+    : amountCurrency === quoteCurrency
+      ? typedAmount
+      : typedAmount * parsedRate;
+
+  // Map onto the From/To legs (which way the Journal Entry rows go is purely
+  // determined by the From/To account selectors; amountCurrency is a UX layer).
+  const fromAmountVal = !isExchange
+    ? typedAmount
+    : fromCurrency === baseCurrency
+      ? baseAmountVal
+      : quoteAmountVal;
+  const toAmountVal = !isExchange
+    ? typedAmount
+    : toCurrency === baseCurrency
+      ? baseAmountVal
+      : quoteAmountVal;
+
+  // The "≈" derived display under the input: whichever pair currency wasn't picked.
+  const derivedCurrency = !isExchange
+    ? ""
+    : amountCurrency === baseCurrency
+      ? quoteCurrency
+      : baseCurrency;
+  const derivedAmountVal = !isExchange
+    ? 0
+    : amountCurrency === baseCurrency
+      ? quoteAmountVal
+      : baseAmountVal;
 
   const handleSwap = useCallback(() => {
     setFromAccount((prev) => {
@@ -232,32 +280,15 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
       setToAccount(oldFrom);
       return toAccount;
     });
-    // Rate stays the same — it's anchored to company currency
+    // amountCurrency intentionally preserved — user's "I was typing UZS" survives the flip
   }, [toAccount]);
 
-  const handleRateChange = useCallback(
-    (value: string) => {
-      setRate(value);
-      setRateManuallyEdited(true);
-      const r = parseFloat(value) || 1;
-      if (parsedAmount <= 0) return;
-      const newReceived = isDisplayInverted ? parsedAmount / r : parsedAmount * r;
-      setReceivedInput(String(roundTo2(newReceived)));
-    },
-    [parsedAmount, isDisplayInverted],
-  );
-
-  const handleReceivedChange = useCallback(
-    (value: string) => {
-      setReceivedInput(value);
-      setRateManuallyEdited(true);
-      const r = parseFloat(value);
-      if (r <= 0 || parsedAmount <= 0) return;
-      const newRate = isDisplayInverted ? parsedAmount / r : r / parsedAmount;
-      setRate(rateStr(newRate));
-    },
-    [parsedAmount, isDisplayInverted],
-  );
+  const handleRateChange = useCallback((value: string) => {
+    setRate(value);
+    setRateManuallyEdited(true);
+    // No two-way sync needed: the typed amount stays anchored; the derived
+    // (≈) value just re-computes from the new rate on next render.
+  }, []);
 
   const resetForm = useCallback(() => {
     setPostingDate(getToday());
@@ -265,7 +296,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
     setToAccount("");
     setAmount("");
     setRate("1");
-    setReceivedInput("");
+    setPickedAmountCurrency("");
     setMemo("");
     setEditingName(null);
     setEditingDocstatus(null);
@@ -297,12 +328,15 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
         if (creditAcc) setFromAccount(creditAcc.account);
         if (debitAcc) setToAccount(debitAcc.account);
 
+        // Re-hydrate the typed amount + currency from the from-side leg. The
+        // to-side becomes the derived (≈) display automatically on next render.
         if (creditAcc?.credit_in_account_currency) {
           setAmount(String(creditAcc.credit_in_account_currency));
-        }
-
-        if (debitAcc?.debit_in_account_currency) {
-          setReceivedInput(String(debitAcc.debit_in_account_currency));
+          const loadedFromCur =
+            creditAcc.account_currency ||
+            transferAccounts.find((a) => a.name === creditAcc.account)?.account_currency ||
+            "";
+          if (loadedFromCur) setPickedAmountCurrency(loadedFromCur);
         }
 
         // Restore exchange rate if accounts have different currencies
@@ -358,15 +392,18 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
   const fromCurrencyCode = fromAccountData?.account_currency ?? "";
   // Equity accounts have no "insufficient balance" concept — owners can always invest
   const isEquityFrom = fromAccountData?.root_type === "Equity";
+  // Compare the from-leg amount (in from-currency) against the balance — works
+  // even when the user typed in the OTHER currency, because fromAmountVal is
+  // the converted equivalent.
   const isInsufficientBalance =
-    !!fromAccount && !isEquityFrom && parsedAmount > 0 && parsedAmount > fromBalance;
+    !!fromAccount && !isEquityFrom && fromAmountVal > 0 && fromAmountVal > fromBalance;
 
   const validate = (): string | null => {
     if (!postingDate) return "Date is required";
     if (!fromAccount) return "Transfer From account is required";
     if (!toAccount) return "Transfer To account is required";
     if (fromAccount === toAccount) return "From and To accounts must be different";
-    if (parsedAmount <= 0) return "Amount must be greater than 0";
+    if (typedAmount <= 0) return "Amount must be greater than 0";
     if (isExchange && parsedRate <= 0) return "Exchange rate must be greater than 0";
     if (isInsufficientBalance) return "Insufficient balance in source account";
     return null;
@@ -384,40 +421,34 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
     setStatus({ type: "loading", message: "Posting transfer..." });
 
     try {
-      const parsedReceivedInput = parseFloat(effectiveReceivedInput) || 0;
+      // Both legs come from the derived values, no matter which currency the user typed in.
+      const fromLegAmount = fromAmountVal;
+      const toLegAmount = toAmountVal;
 
-      let fromExRate: number, toExRate: number, debitAmount: number;
+      let fromExRate: number, toExRate: number;
       if (fromCurrency === toCurrency) {
         fromExRate = 1;
         toExRate = 1;
-        debitAmount = parsedAmount;
       } else if (fromCurrency === companyCurrency) {
-        // Sent company (UZS) → received foreign (USD)
-        // Rate = amount / received ensures debit × toExRate = amount exactly
-        const effectiveRate =
-          parsedReceivedInput > 0 ? parsedAmount / parsedReceivedInput : parsedRate;
+        // From-leg is company currency → its rate vs company = 1.
+        // To-leg's rate ensures: toLegAmount × toExRate = fromLegAmount (no rounding drift)
         fromExRate = 1;
-        toExRate = effectiveRate;
-        debitAmount = parsedReceivedInput;
+        toExRate = toLegAmount > 0 ? fromLegAmount / toLegAmount : parsedRate;
       } else if (toCurrency === companyCurrency) {
-        // Sent foreign (USD) → received company (UZS)
-        const effectiveRate = parsedAmount > 0 ? parsedReceivedInput / parsedAmount : parsedRate;
-        fromExRate = effectiveRate;
+        fromExRate = fromLegAmount > 0 ? toLegAmount / fromLegAmount : parsedRate;
         toExRate = 1;
-        debitAmount = parsedReceivedInput;
       } else {
-        // Neither is company currency — keep existing behaviour
+        // Cross-foreign (neither side = company). Keep previous fallback: both legs at the typed rate.
         fromExRate = isExchange ? parsedRate : 1;
         toExRate = isExchange ? parsedRate : 1;
-        debitAmount = parsedReceivedInput > 0 ? parsedReceivedInput : parsedAmount;
       }
 
       const accounts = buildTransferAccounts(
         fromAccount,
         toAccount,
-        parsedAmount,
+        fromLegAmount,
         fromExRate,
-        debitAmount,
+        toLegAmount,
         toExRate,
         fromCurrency,
         toCurrency,
@@ -427,9 +458,9 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
         postingDate,
         fromAccount,
         toAccount,
-        amount: parsedAmount,
+        amount: fromLegAmount,
         exchangeRate: parsedRate,
-        convertedTotal: debitAmount,
+        convertedTotal: toLegAmount,
         memo,
         accounts,
         editingName,
@@ -590,7 +621,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
             {fromAccount && !isEquityFrom && (
               <InsufficientBalanceWarning
                 balance={fromBalance}
-                amount={parsedAmount}
+                amount={fromAmountVal}
                 currency={fromCurrencyCode}
               />
             )}
@@ -610,11 +641,41 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="amount">
-                {t("amount")}
-                {fromCurrency ? ` (${fromSym.symbol})` : ""}{" "}
-                <span className="text-destructive">*</span>
-              </Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="amount">
+                  {t("amountSent")}
+                  {!isExchange && fromCurrency ? ` (${fromSym.symbol})` : ""}{" "}
+                  <span className="text-destructive">*</span>
+                </Label>
+                {isExchange && fromCurrency && toCurrency && (
+                  <ToggleGroup
+                    type="single"
+                    size="sm"
+                    variant="outline"
+                    value={amountCurrency}
+                    onValueChange={(v) => {
+                      if (v) setPickedAmountCurrency(v);
+                    }}
+                    aria-label={t("currencySent")}
+                    className="h-7"
+                  >
+                    <ToggleGroupItem
+                      value={fromCurrency}
+                      className="h-7 px-2.5 text-xs"
+                      aria-label={fromCurrency}
+                    >
+                      {fromSym.symbol}
+                    </ToggleGroupItem>
+                    <ToggleGroupItem
+                      value={toCurrency}
+                      className="h-7 px-2.5 text-xs"
+                      aria-label={toCurrency}
+                    >
+                      {toSym.symbol}
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                )}
+              </div>
               <MoneyInput
                 id="amount"
                 value={amount ? parseFloat(amount) : undefined}
@@ -626,56 +687,40 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
             </div>
           </div>
 
-          {/* Row 3: Exchange Rate — compact 2-col, shown only when currencies differ */}
+          {/* Row 3: Exchange Rate + derived equivalent — shown only when currencies differ */}
           {isExchange && (
-            <div className="rounded-lg border border-dashed bg-muted/30 px-3 py-2.5 space-y-2.5">
-              <div className="grid grid-cols-2 gap-3">
-                {/* Rate */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="exchangeRate" className="text-xs">
-                    {t("rate")}
-                  </Label>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
-                      1 {baseSym.symbol} =
-                    </span>
-                    <MoneyInput
-                      id="exchangeRate"
-                      value={parseFloat(effectiveRateStr)}
-                      onChange={(v) => handleRateChange(String(v))}
-                      min={0}
-                      decimals={6}
-                      className="h-8 min-w-0"
-                    />
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      {quoteSym.symbol}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Received */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="receivedInput" className="text-xs">
-                    {t("received")} ({toSym.symbol})
-                  </Label>
+            <div className="rounded-lg border border-dashed bg-muted/30 px-3 py-2.5 space-y-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="exchangeRate" className="text-xs">
+                  {t("rate")}
+                </Label>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                    1 {baseSym.symbol} =
+                  </span>
                   <MoneyInput
-                    id="receivedInput"
-                    value={parseFloat(effectiveReceivedInput) || undefined}
-                    onChange={(v) => handleReceivedChange(String(v))}
+                    id="exchangeRate"
+                    value={parseFloat(effectiveRateStr)}
+                    onChange={(v) => handleRateChange(String(v))}
                     min={0}
-                    decimals={2}
-                    placeholder="0.00"
-                    className="h-8"
+                    decimals={6}
+                    className="h-8 min-w-0"
                   />
+                  <span className="text-xs text-muted-foreground shrink-0">{quoteSym.symbol}</span>
                 </div>
               </div>
 
-              {/* Conversion summary */}
-              {parsedAmount > 0 && parseFloat(effectiveReceivedInput) > 0 && (
-                <p className="text-[11px] text-muted-foreground text-center">
-                  {formatCurrency(parsedAmount, fromSym.symbol, fromSym.onRight)}
-                  <span className="mx-1.5 opacity-40">→</span>
-                  {formatCurrency(parseFloat(effectiveReceivedInput), toSym.symbol, toSym.onRight)}
+              {/* Derived equivalent — the amount in the OTHER currency */}
+              {typedAmount > 0 && parsedRate > 0 && derivedCurrency && (
+                <p className="text-xs text-center text-muted-foreground border-t pt-2">
+                  <span className="opacity-60 mr-1">{t("equivalent")}</span>
+                  <span className="font-medium text-foreground">
+                    {formatCurrency(
+                      derivedAmountVal,
+                      getSym(derivedCurrency).symbol,
+                      getSym(derivedCurrency).onRight,
+                    )}
+                  </span>
                 </p>
               )}
             </div>
@@ -694,7 +739,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
           </div>
 
           {/* Transfer Summary — from→to detail block */}
-          {fromAccount && toAccount && parsedAmount > 0 && (
+          {fromAccount && toAccount && fromAmountVal > 0 && (
             <div className="rounded-lg border bg-muted/20 px-3 py-2.5 space-y-1.5 text-sm">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs text-muted-foreground shrink-0">{t("summary.from")}</span>
@@ -706,15 +751,11 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
               </div>
               <div className="border-t pt-1.5 flex items-center justify-between gap-2">
                 <span className="font-semibold">
-                  {formatCurrency(parsedAmount, fromSym.symbol, fromSym.onRight)}
+                  {formatCurrency(fromAmountVal, fromSym.symbol, fromSym.onRight)}
                 </span>
                 <span className="opacity-50">→</span>
                 <span className="font-semibold">
-                  {formatCurrency(
-                    parseFloat(effectiveReceivedInput) || parsedAmount,
-                    toSym.symbol,
-                    toSym.onRight,
-                  )}
+                  {formatCurrency(toAmountVal, toSym.symbol, toSym.onRight)}
                 </span>
               </div>
               {isExchange && parsedRate > 0 && (
@@ -727,7 +768,7 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
                 <p className="text-[11px] text-muted-foreground text-right">
                   {t("summary.baseEquivalent")}:{" "}
                   {formatCurrency(
-                    parsedAmount * fromToCompanyRate,
+                    fromAmountVal * fromToCompanyRate,
                     companySym.symbol,
                     companySym.onRight,
                   )}
