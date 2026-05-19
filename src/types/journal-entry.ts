@@ -5,6 +5,8 @@ export interface JournalEntryAccount {
   party?: string;
   debit_in_account_currency?: number;
   credit_in_account_currency?: number;
+  debit?: number;
+  credit?: number;
   account_currency?: string;
   exchange_rate?: number;
   user_remark?: string;

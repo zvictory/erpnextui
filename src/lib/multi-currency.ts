@@ -174,3 +174,60 @@ export async function enrichJEAccounts(
 
   return { accounts: enriched, isMultiCurrency };
 }
+
+// ---------------------------------------------------------------------------
+// Base-currency anchoring (Dr = Cr invariant enforcement)
+// ---------------------------------------------------------------------------
+
+/**
+ * Anchor JE Account rows in company currency.
+ *
+ * Fills in base-currency `debit` / `credit` so ERPNext's
+ * `set_amounts_in_company_currency()` becomes a no-op and Dr = Cr by
+ * construction — never silently rounded down by `flt(amount × rate, precision)`.
+ *
+ * Per-row resolution:
+ *   - row already has explicit `debit` / `credit` → passes through unchanged.
+ *   - `account_currency` matches `companyCurrency` (or is unset) → `base =
+ *     amount_in_account_currency`, `exchange_rate = 1`.
+ *   - foreign-currency row → `base = baseTotal`, `exchange_rate = baseTotal /
+ *     amount`. Requires `baseTotal` to be passed (single company-currency anchor
+ *     for the whole JE).
+ *
+ * Idempotent. See `.claude/rules/multi-currency.md` for the full invariant.
+ */
+export function anchorJEAccountsInBaseCurrency(
+  rows: JournalEntryAccount[],
+  companyCurrency: string,
+  baseTotal?: number,
+): JournalEntryAccount[] {
+  return rows.map((row) => {
+    if (row.debit !== undefined || row.credit !== undefined) return row;
+    const isDebit = (row.debit_in_account_currency ?? 0) > 0;
+    const acctAmount = isDebit
+      ? (row.debit_in_account_currency ?? 0)
+      : (row.credit_in_account_currency ?? 0);
+    if (acctAmount <= 0) return row;
+
+    const isCompanyCurrency = !row.account_currency || row.account_currency === companyCurrency;
+    if (isCompanyCurrency) {
+      return {
+        ...row,
+        exchange_rate: row.exchange_rate ?? 1,
+        ...(isDebit ? { debit: acctAmount } : { credit: acctAmount }),
+      };
+    }
+
+    if (baseTotal === undefined || baseTotal <= 0) {
+      throw new Error(
+        "anchorJEAccountsInBaseCurrency: baseTotal is required for foreign-currency rows " +
+          `(account=${row.account}, currency=${row.account_currency})`,
+      );
+    }
+    return {
+      ...row,
+      exchange_rate: row.exchange_rate ?? baseTotal / acctAmount,
+      ...(isDebit ? { debit: baseTotal } : { credit: baseTotal }),
+    };
+  });
+}

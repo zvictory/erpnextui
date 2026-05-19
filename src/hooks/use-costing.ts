@@ -4,9 +4,10 @@ import { queryKeys } from "@/hooks/query-keys";
 import { getMaintenanceCostsForPeriod } from "@/actions/maintenance-logs";
 import { useUISettingsStore } from "@/stores/ui-settings-store";
 import { roundTo2 } from "@/lib/utils/multi-currency";
+import { anchorJEAccountsInBaseCurrency } from "@/lib/multi-currency";
 import type { EmployeeCostInfo, TimesheetEntry, CostingPeriod } from "@/types/costing";
 import type { WorkOrderListItem } from "@/types/manufacturing";
-import type { JournalEntry } from "@/types/journal-entry";
+import type { JournalEntry, JournalEntryAccount } from "@/types/journal-entry";
 
 // ── Employee Cost Info ──────────────────────────────────────
 
@@ -211,20 +212,24 @@ export async function accrueLaborForDate(
 
   const userRemark = `Labor accrual ${workOrder} on ${date} [LABOR-ACCRUAL:${workOrder}:${date}]`;
 
-  const accounts = [
+  const companyDoc = await frappe.getDoc<{ default_currency: string }>("Company", company);
+  const companyCurrency = companyDoc.default_currency;
+
+  const rawAccounts: JournalEntryAccount[] = [
     {
-      doctype: "Journal Entry Account" as const,
+      doctype: "Journal Entry Account",
       account: expenseAccount,
       debit_in_account_currency: totalAmount,
     },
-    ...Array.from(employeeTotals.entries()).map(([empId, amount]) => ({
-      doctype: "Journal Entry Account" as const,
+    ...Array.from(employeeTotals.entries()).map<JournalEntryAccount>(([empId, amount]) => ({
+      doctype: "Journal Entry Account",
       account: payableAccount,
-      party_type: "Employee" as const,
+      party_type: "Employee",
       party: empId,
       credit_in_account_currency: amount,
     })),
   ];
+  const accounts = anchorJEAccountsInBaseCurrency(rawAccounts, companyCurrency, totalAmount);
 
   const created = await frappe.createDoc<JournalEntry>("Journal Entry", {
     doctype: "Journal Entry",

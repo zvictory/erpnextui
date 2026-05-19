@@ -102,6 +102,11 @@ function buildTransferAccounts(
   fromExRate: number,
   debitAmount: number,
   toExRate: number,
+  // Company-currency anchors. ERPNext recomputes debit/credit from
+  // (amount × rate) otherwise, which loses precision when the rate has
+  // sub-cent significance (e.g. UZS rate 12200.001952 truncated to 12200).
+  fromBaseAmount: number,
+  toBaseAmount: number,
   fromCurrency?: string,
   toCurrency?: string,
 ): JournalEntryAccount[] {
@@ -110,6 +115,7 @@ function buildTransferAccounts(
       doctype: "Journal Entry Account",
       account: fromAccount,
       credit_in_account_currency: creditAmount,
+      credit: fromBaseAmount,
       exchange_rate: fromExRate,
       ...(fromCurrency ? { account_currency: fromCurrency } : {}),
     },
@@ -117,6 +123,7 @@ function buildTransferAccounts(
       doctype: "Journal Entry Account",
       account: toAccount,
       debit_in_account_currency: debitAmount,
+      debit: toBaseAmount,
       exchange_rate: toExRate,
       ...(toCurrency ? { account_currency: toCurrency } : {}),
     },
@@ -425,23 +432,27 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
       const fromLegAmount = fromAmountVal;
       const toLegAmount = toAmountVal;
 
-      let fromExRate: number, toExRate: number;
-      if (fromCurrency === toCurrency) {
-        fromExRate = 1;
-        toExRate = 1;
+      // Anchor the entire transfer to a SINGLE company-currency total.
+      // Both legs use the same anchor so the JE balances by construction,
+      // and ERPNext's set_amounts_in_company_currency() becomes a no-op
+      // (no rate truncation can shave UZS off the ledger).
+      let baseTotal: number;
+      if (!isExchange) {
+        baseTotal = fromLegAmount;
       } else if (fromCurrency === companyCurrency) {
-        // From-leg is company currency → its rate vs company = 1.
-        // To-leg's rate ensures: toLegAmount × toExRate = fromLegAmount (no rounding drift)
-        fromExRate = 1;
-        toExRate = toLegAmount > 0 ? fromLegAmount / toLegAmount : parsedRate;
+        baseTotal = fromLegAmount;
       } else if (toCurrency === companyCurrency) {
-        fromExRate = fromLegAmount > 0 ? toLegAmount / fromLegAmount : parsedRate;
-        toExRate = 1;
+        baseTotal = toLegAmount;
+      } else if (needsBaseEquivalent && fromToCompanyRate && fromToCompanyRate > 0) {
+        baseTotal = fromLegAmount * fromToCompanyRate;
       } else {
-        // Cross-foreign (neither side = company). Keep previous fallback: both legs at the typed rate.
-        fromExRate = isExchange ? parsedRate : 1;
-        toExRate = isExchange ? parsedRate : 1;
+        baseTotal = fromLegAmount * parsedRate;
       }
+
+      // Per-leg rate = anchor / leg-currency-amount → preserves the user's
+      // effective rate exactly when one leg is in company currency.
+      const fromExRate = fromLegAmount > 0 ? baseTotal / fromLegAmount : 1;
+      const toExRate = toLegAmount > 0 ? baseTotal / toLegAmount : 1;
 
       const accounts = buildTransferAccounts(
         fromAccount,
@@ -450,6 +461,8 @@ const TransferFormInner: React.ForwardRefRenderFunction<TransferFormHandle, Tran
         fromExRate,
         toLegAmount,
         toExRate,
+        baseTotal,
+        baseTotal,
         fromCurrency,
         toCurrency,
       );
