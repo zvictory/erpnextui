@@ -80,7 +80,7 @@ export function LoginForm() {
             pwd: password,
             directFetch: tenants[0].directFetch,
           },
-          { onSuccess: () => router.replace("/dashboard") },
+          { onSuccess: () => router.replace("/sales-orders") },
         );
       } else {
         setMatchedTenants(tenants);
@@ -104,7 +104,7 @@ export function LoginForm() {
         pwd: password,
         directFetch: selected.directFetch,
       },
-      { onSuccess: () => router.replace("/dashboard") },
+      { onSuccess: () => router.replace("/sales-orders") },
     );
   }
 

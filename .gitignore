@@ -39,10 +39,13 @@ data/*.json
 # one-off migration script outputs (plan/log JSON files)
 scripts/.out/
 
-# OEE SQLite database
+# OEE SQLite database (legacy root + new data/ location)
 oee.db
 oee.db-wal
 oee.db-shm
+data/oee.db
+data/oee.db-wal
+data/oee.db-shm
 
 # claude code (local/personal — shared settings.json IS committed)
 .claude/settings.local.json

@@ -85,6 +85,6 @@ export function useHomeRoute(): { route: string | null; isLoading: boolean } {
         }
       }
     }
-    return { route: "/settings", isLoading: false };
+    return { route: "/sales-orders", isLoading: false };
   }, [data, isLoading]);
 }

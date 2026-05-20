@@ -58,6 +58,9 @@ rsync -avz --delete \
   --exclude 'data/' \
   --exclude '.beads/' \
   --exclude 'presentation/' \
+  --exclude 'oee.db' \
+  --exclude 'oee.db-wal' \
+  --exclude 'oee.db-shm' \
   /Users/zafar/Documents/self_next/erpnext-ui/ ice-production:/var/www/erpnext-ui/
 ```
 
